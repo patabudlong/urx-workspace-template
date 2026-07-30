@@ -1,0 +1,67 @@
+---
+description: Mobile app integration — API contracts, auth, and client consumption patterns
+globs: src/routes/api/**/*,src/lib/shared/**/*
+alwaysApply: false
+---
+
+# Mobile-Ready API Standards
+
+SvelteKit is the **backend for web + mobile**. Native apps (React Native, Flutter, Swift, Kotlin) call `/api/v1/*` over HTTPS.
+
+## Architecture
+
+```
+Mobile app  ──HTTPS JSON──▶  /api/v1/*  ──▶  repositories  ──▶  MongoDB
+Web app     ──fetch/SSR──▶  same API or +page.server.ts
+```
+
+- **Single API surface**: Mobile and web share `/api/v1` routes and `$lib/shared/api/types`.
+- **No cookie-only auth** for mobile: use **Bearer JWT** (`Authorization: Bearer <token>`) or opaque tokens.
+- **CORS**: Configured in `hooks.server.ts` via `ALLOWED_ORIGINS` for Expo web / Capacitor shells. Native apps ignore CORS.
+
+## Shared contracts (`src/lib/shared/`)
+
+- Put DTOs, Zod schemas, and `ApiSuccessResponse` / `ApiErrorResponse` types in `$lib/shared/**`.
+- Mobile clients can mirror these types or codegen from the same Zod schemas.
+- Serialize Mongo `ObjectId` → `string` at the API boundary.
+
+## Mobile client expectations
+
+| Concern | Standard |
+|--------|----------|
+| Base URL | `https://api.yourdomain.com/api/v1` (env per build flavor) |
+| Format | `Content-Type: application/json` |
+| Auth | `Authorization: Bearer <jwt>` |
+| Tracing | `X-Request-Id` (client-generated UUID optional) |
+| Version | `X-Api-Version: v1` (optional header) |
+| Errors | Parse `{ error: { code, message, details }, meta }` |
+| Pagination | `{ data, pagination: { page, limit, total, hasMore }, meta }` |
+
+## Error codes mobile apps should handle
+
+- `401 UNAUTHORIZED` → refresh token or re-login
+- `403 FORBIDDEN` → show permission error
+- `429 RATE_LIMITED` → backoff/retry
+- `503 SERVICE_UNAVAILABLE` → show offline/degraded UI (health check pattern)
+
+## Offline & resilience (mobile-side guidance)
+
+- Cache last-known data locally; sync on reconnect.
+- Poll `/api/v1/health` for connectivity checks before critical flows.
+- Use idempotency keys (`X-Idempotency-Key`) on write endpoints when added.
+
+## Security for mobile
+
+- Store tokens in secure storage (Keychain / Keystore), never AsyncStorage for secrets.
+- Certificate pinning in production mobile builds (client-side).
+- Short-lived access tokens + refresh token rotation.
+- Rate-limit auth endpoints server-side.
+
+## Adding a new mobile-facing endpoint
+
+1. Add Zod schema in `src/lib/shared/schemas/`.
+2. Add repository in `src/lib/server/repositories/`.
+3. Add `src/routes/api/v1/<resource>/+server.ts` using `jsonOk` / `jsonError`.
+4. Export types from `$lib/shared/api/types` if new envelope fields needed.
+5. Document breaking changes only via new API version (`v2`).
+6. Update `src/lib/shared/openapi/v1.ts` so Scalar docs at `/docs` stay current.

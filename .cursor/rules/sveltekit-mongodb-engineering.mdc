@@ -1,0 +1,94 @@
+---
+description: Multi-disciplinary standards for SvelteKit + MongoDB + mobile API backend
+alwaysApply: true
+---
+
+# URX SvelteKit + MongoDB + Mobile Engineering Standards
+
+Apply these lenses on every change: **Architect**, **Software Engineer**, **Database Engineer**, **Data Scientist**, **Security Engineer**.
+
+## Stack & tooling
+
+- **SvelteKit 2** + **Svelte 5 runes** (`$state`, `$derived`, `$effect`, `$props`). No legacy `export let` in new code.
+- **TypeScript strict**. Prefer explicit types at API and DB boundaries.
+- **pnpm** only (`pnpm add`, `pnpm install`). Never add `package-lock.json`.
+- **MongoDB** via official `mongodb` driver. **Zod** for validation.
+- Config in `vite.config.ts`. Run `pnpm check` after substantive TS/Svelte changes.
+
+## Architecture (web + mobile backend)
+
+```
+src/
+  lib/
+    server/           # server-only — MongoDB, secrets, auth, API helpers
+      db/             # client.ts, collections.ts
+      api/            # response.ts, cors.ts
+      repositories/   # query logic per domain
+    shared/           # types, Zod schemas — safe for mobile client mirroring
+      api/types.ts
+  routes/
+    api/v1/**/+server.ts   # versioned JSON API (mobile + web clients)
+    **/+page.server.ts     # web SSR only
+  hooks.server.ts          # CORS for API, security headers
+```
+
+- **SvelteKit = API backend** for native mobile apps (RN, Flutter, Swift, Kotlin) and web.
+- **Layering**: Routes → repositories → MongoDB. No driver calls in `.svelte` files.
+- **Versioned API**: All public JSON under `/api/v1/`. Breaking changes → `/api/v2/`.
+- **Env**: Secrets via `$env/dynamic/private`. See `.env.example`.
+
+## Software engineering
+
+```typescript
+// ✅ Server-only
+import { getUsersCollection } from '$lib/server/db/collections';
+import { jsonOk } from '$lib/server/api/response';
+
+// ❌ NEVER import $lib/server/* or mongodb from .svelte or client code
+```
+
+- Web UI: `+page.server.ts` or `fetch('/api/v1/...')` to shared API routes.
+- Mobile: HTTPS JSON to `/api/v1/*` with Bearer JWT (not cookie-only auth).
+- Shared contracts in `$lib/shared/**` for cross-platform type alignment.
+
+## Database engineering (MongoDB)
+
+- Connection: `src/lib/server/db/client.ts` (singleton, hot-reload safe).
+- Collections: `src/lib/server/db/collections.ts` — register names in `CollectionNames`.
+- Indexes on fields used in `find`, `sort`, `$match`. Projections on all reads.
+- Paginate lists (`limit` + cursor/page). `ObjectId` → string at API boundary.
+- Store `createdAt` / `updatedAt` as UTC `Date`.
+
+## Data science
+
+- Aggregations server-side (`$match`, `$group`, `$lookup`). Cap result sizes.
+- Validate on ingest (Zod). Pre-aggregate heavy reports when needed.
+
+## Cyber security
+
+- Secrets in env only (`MONGODB_URI`, `JWT_SECRET`). Never in client bundles.
+- Zod validation on every API input. Strip `passwordHash`, tokens from responses.
+- JWT Bearer auth for mobile; verify in `hooks.server.ts` or per-route guards.
+- CORS via `ALLOWED_ORIGINS` for web-based mobile shells (Expo web, Capacitor).
+- Security headers in `hooks.server.ts`. Rate-limit auth and write endpoints.
+
+## Mobile readiness checklist
+
+1. Endpoint lives under `/api/v1/` with `jsonOk` / `jsonError` envelope.
+2. Types/schemas in `$lib/shared/` for mobile client parity.
+3. Auth works with Bearer token (not session cookie only).
+4. Pagination on list endpoints. No unbounded data dumps.
+5. Health check: `GET /api/v1/health` for connectivity probes.
+
+## Sub-rules (file-specific)
+
+- `api-routes.mdc` — `src/routes/api/**` handler patterns
+- `mobile-api.mdc` — mobile client contracts and auth
+
+## Definition of done
+
+1. No `$lib/server` or `mongodb` in client-eligible code.
+2. API responses use standard envelope. Inputs validated with Zod.
+3. Queries use projections; indexes considered; lists paginated.
+4. Mobile-breaking API changes require new version prefix (`v2`).
+5. `pnpm check` passes. No secrets in source.
