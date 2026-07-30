@@ -10,7 +10,12 @@
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"docker:up": "docker compose up -d",
+		"docker:down": "docker compose down",
+		"docker:down:clean": "docker compose down -v",
+		"docker:logs": "docker compose logs -f mongo",
+		"docker:ps": "docker compose ps"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^7.0.1",

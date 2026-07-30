@@ -10,7 +10,7 @@ function getMongoUri(): string | undefined {
 }
 
 function getDbName(): string {
-	return env.MONGODB_DB_NAME ?? 'urx';
+	return env.MONGODB_DB_NAME ?? 'urx-workspace';
 }
 
 function createClientPromise(): Promise<MongoClient> {
