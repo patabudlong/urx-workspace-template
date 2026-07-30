@@ -23,6 +23,7 @@
 		"vite": "^8.0.16"
 	},
 	"dependencies": {
+		"@scalar/sveltekit": "^0.3.11",
 		"mongodb": "^7.5.0",
 		"zod": "^4.4.3"
 	}

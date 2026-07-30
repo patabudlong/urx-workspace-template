@@ -64,3 +64,4 @@ Web app     ──fetch/SSR──▶  same API or +page.server.ts
 3. Add `src/routes/api/v1/<resource>/+server.ts` using `jsonOk` / `jsonError`.
 4. Export types from `$lib/shared/api/types` if new envelope fields needed.
 5. Document breaking changes only via new API version (`v2`).
+6. Update `src/lib/shared/openapi/v1.ts` so Scalar docs at `/docs` stay current.

@@ -64,3 +64,4 @@ export const POST: RequestHandler = async ({ request }) => {
 - Use correct HTTP status codes via `jsonError` codes.
 - List endpoints must paginate (`page`, `limit`, max limit 100).
 - Never expose `passwordHash`, tokens, or internal Mongo fields.
+- **Update OpenAPI**: add paths/schemas in `src/lib/shared/openapi/v1.ts` when adding endpoints. Docs live at `/docs`.
