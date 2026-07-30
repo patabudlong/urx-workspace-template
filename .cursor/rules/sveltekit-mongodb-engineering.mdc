@@ -12,6 +12,7 @@ Apply these lenses on every change: **Architect**, **Software Engineer**, **Data
 - **SvelteKit 2** + **Svelte 5 runes** (`$state`, `$derived`, `$effect`, `$props`). No legacy `export let` in new code.
 - **TypeScript strict**. Prefer explicit types at API and DB boundaries.
 - **pnpm** only (`pnpm add`, `pnpm install`). Never add `package-lock.json`.
+- **UI**: Tailwind v4 + shadcn-svelte (nova). Add components via `pnpm dlx shadcn-svelte@latest add <name>`.
 - **MongoDB** via official `mongodb` driver. **Zod** for validation.
 - Config in `vite.config.ts`. Run `pnpm check` after substantive TS/Svelte changes.
 
