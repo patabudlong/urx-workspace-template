@@ -5,14 +5,14 @@ alwaysApply: true
 
 # URX SvelteKit + MongoDB + Mobile Engineering Standards
 
-Apply these lenses on every change: **Architect**, **Software Engineer**, **Database Engineer**, **Data Scientist**, **Security Engineer**.
+Apply these lenses on every change: **Architect**, **Software Engineer**, **Database Engineer**, **Data Scientist**, **Security Engineer**, **UI Designer**.
 
 ## Stack & tooling
 
 - **SvelteKit 2** + **Svelte 5 runes** (`$state`, `$derived`, `$effect`, `$props`). No legacy `export let` in new code.
 - **TypeScript strict**. Prefer explicit types at API and DB boundaries.
 - **pnpm** only (`pnpm add`, `pnpm install`). Never add `package-lock.json`.
-- **UI**: Tailwind v4 + shadcn-svelte (nova). Add components via `pnpm dlx shadcn-svelte@latest add <name>`.
+- **UI**: Tailwind v4 + shadcn-svelte (nova/zinc). See **`ui-tailwind-shadcn.mdc`** for composition, tokens, and conflict-free patterns.
 - **MongoDB** via official `mongodb` driver. **Zod** for validation.
 - Config in `vite.config.ts`. Run `pnpm check` after substantive TS/Svelte changes.
 
@@ -85,6 +85,7 @@ import { jsonOk } from '$lib/server/api/response';
 
 - `api-routes.mdc` — `src/routes/api/**` handler patterns
 - `mobile-api.mdc` — mobile client contracts and auth
+- `ui-tailwind-shadcn.mdc` — Tailwind + shadcn UI composition, tokens, no z-index/layout conflicts
 
 ## Definition of done
 

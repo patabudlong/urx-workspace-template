@@ -1,0 +1,105 @@
+---
+description: Tailwind v4 + shadcn-svelte UI standards — composition, tokens, no layout conflicts
+globs: src/**/*.svelte,src/routes/layout.css,src/lib/components/**/*
+alwaysApply: false
+---
+
+# UI Design Standards (Tailwind v4 + shadcn-svelte)
+
+Apply a **top UI designer** lens: clarity, consistency, accessibility, and zero fighting the design system.
+
+## Stack (do not mix alternatives)
+
+- **Tailwind CSS v4** — utilities + `@theme` in `src/routes/layout.css` only. No `tailwind.config.js`.
+- **shadcn-svelte** — style `nova`, base `zinc`, icons `@lucide/svelte`.
+- **Theme** — `mode-watcher` + `.dark` class. Tokens: `bg-background`, `text-foreground`, `border-border`, etc.
+- **Add primitives**: `pnpm dlx shadcn-svelte@latest add <name> -y` — never hand-copy from docs.
+
+## File boundaries (prevents conflicts)
+
+```
+src/routes/layout.css           # ONLY global theme + @layer base — no page-specific rules
+src/lib/components/ui/**      # shadcn primitives — edit only when customizing the design system
+src/lib/components/**         # app shells (sidebar, header) — compose ui/* here
+src/routes/**/*.svelte        # pages — layout + content; no deep style overrides on ui/*
+```
+
+- **Never** edit `ui/*` for one-off page needs — wrap or compose in app components.
+- **Never** add second CSS frameworks or global resets that compete with shadcn `base` layer.
+
+## Composition rules
+
+```svelte
+<!-- ✅ Compose shadcn primitives -->
+import * as Card from '$lib/components/ui/card/index.js';
+import { Button } from '$lib/components/ui/button/index.js';
+import { cn } from '$lib/utils.js';
+
+<div class={cn('flex flex-col gap-4', className)}>...</div>
+
+<!-- ❌ Raw HTML styled from scratch when shadcn has the part -->
+<button class="rounded bg-gray-800 px-4 py-2">...</button>
+
+<!-- ❌ Conflicting utilities on ui components -->
+<Button class="!bg-red-500 !p-8 z-[9999]">...</Button>
+```
+
+- Prefer **variants** (`variant`, `size`) over `!important` or arbitrary overrides.
+- Merge classes with **`cn()`** from `$lib/utils.js` — never string-concatenate Tailwind classes.
+- Use **`$lib/components/ui/.../index.js`** import paths (matches generated components).
+
+## Tailwind v4 practices
+
+- **Semantic colors only** in components: `bg-primary`, `text-muted-foreground`, `bg-sidebar-accent` — not `bg-zinc-900` unless chart/data viz.
+- **Spacing rhythm**: `gap-2`, `gap-4`, `gap-6`, `p-4`, `p-6` — stay on the scale; avoid random `p-[13px]`.
+- **Responsive**: mobile-first — `flex-col md:flex-row`, `grid md:grid-cols-2`. Sidebar already collapses; don’t hard-code desktop-only layouts.
+- **Typography**: `text-sm` for UI chrome, `text-2xl font-semibold tracking-tight` for page titles — don’t invent new scales per page.
+- **Radius**: use `--radius` tokens (`rounded-lg`, `rounded-md`) — aligned with nova preset.
+
+## shadcn-svelte patterns (Svelte 5)
+
+- **Runes**: `$props()`, `$state`, `$derived` — no `export let`.
+- **Links in sidebar/nav**: `Sidebar.MenuButton` + `{#snippet child({ props })}` + `<a href="..." {...props}>`.
+- **Icons**: `@lucide/svelte/icons/<name>` — `class="size-4"` (shadcn default icon size).
+- **Active nav**: `isActive={page.url.pathname === href}` from `$app/state`.
+- **Dialogs / sheets**: one overlay at a time — use shadcn `Dialog` or `Sheet`; don’t stack custom `fixed inset-0 z-50` divs.
+
+## Avoid blocking & z-index wars
+
+| Do | Don't |
+|----|--------|
+| Let Dialog/Sheet/Dropdown set overlay z-index | Add `z-[9999]` on random wrappers |
+| Use `Sidebar.Provider` + `Sidebar.Inset` for app shell | Nest multiple `fixed` headers that overlap |
+| `min-h-0` + `flex-1` for scroll regions inside layout | `h-screen` on every nested child |
+| `truncate` / `min-w-0` in flex rows for long text | Fixed widths that break mobile |
+| Portal-based menus (bits-ui defaults) | `overflow-hidden` on ancestors that clip popovers |
+
+## Dark mode
+
+- Toggle via **`toggleMode`** / **`ModeWatcher`** — don’t per-component `dark:` color one-offs that ignore tokens.
+- Test both modes when changing `layout.css` variables.
+- Sidebar/docs: use token pairs (`sidebar`, `sidebar-foreground`) — don’t hardcode light-only colors.
+
+## Accessibility (non-negotiable)
+
+- Interactive controls: shadcn `Button`, `Input`, etc. — they carry focus rings (`focus-visible:ring-*`).
+- Icon-only buttons: **`aria-label`** (see `theme-toggle.svelte`).
+- Don’t remove `outline-none` without providing visible focus — shadcn already handles this.
+- Form labels: use shadcn `Label` + `Field` patterns when forms are added.
+
+## When adding new UI
+
+1. Check if shadcn has the component → `pnpm dlx shadcn-svelte@latest add <name> -y`.
+2. Build app-level wrapper in `src/lib/components/` if reused across routes.
+3. Page stays thin — cards, tables, forms composed from primitives.
+4. If theme must change globally → update `layout.css` tokens, not individual pages.
+5. Run `pnpm check` after Svelte changes.
+
+## Red flags (reject in review)
+
+- New global CSS outside `layout.css`
+- Modified `src/lib/components/ui/**` for a single page
+- Raw hex/rgb in `.svelte` files instead of CSS variables
+- Duplicate button/input styles
+- Multiple competing layout roots (second sidebar, second header provider)
+- `!` important utilities on shadcn components
