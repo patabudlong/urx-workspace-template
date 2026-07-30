@@ -1,0 +1,66 @@
+---
+description: REST API route conventions for SvelteKit +server.ts handlers
+globs: src/routes/api/**/*
+alwaysApply: false
+---
+
+# API Route Standards (`src/routes/api/**`)
+
+All mobile and external clients consume these routes. Keep them stable and versioned.
+
+## URL structure
+
+- Base path: `/api/v1/` — never break v1; add `/api/v2/` for breaking changes.
+- Resource naming: plural nouns (`/users`, `/orders`), kebab-case for multi-word.
+- One handler file per route: `+server.ts` only — no HTML, no Svelte.
+
+## Response envelope (required)
+
+Use helpers from `$lib/server/api/response`:
+
+```typescript
+// ✅ Success
+return jsonOk({ id: '...' }, { requestId });
+
+// ✅ Error
+return jsonError('BAD_REQUEST', 'Email is required', { details: { field: 'email' } });
+
+// ✅ Paginated list
+return jsonPaginated(items, { page, limit, total, hasMore });
+```
+
+Never return raw arrays or unwrapped objects from API routes.
+
+## Handler pattern
+
+```typescript
+import type { RequestHandler } from './$types';
+import { jsonError, jsonOk } from '$lib/server/api/response';
+import { z } from 'zod';
+
+const bodySchema = z.object({ email: z.email() });
+
+export const POST: RequestHandler = async ({ request }) => {
+  const requestId = request.headers.get('x-request-id') ?? undefined;
+
+  const parsed = bodySchema.safeParse(await request.json());
+  if (!parsed.success) {
+    return jsonError('BAD_REQUEST', 'Invalid request body', {
+      details: { issues: parsed.error.flatten() },
+      requestId
+    });
+  }
+
+  // repository call here
+  return jsonOk({ email: parsed.data.email }, { requestId });
+};
+```
+
+## Rules
+
+- Validate all inputs with Zod before DB access.
+- Import DB code only from `$lib/server/**`.
+- Accept and echo optional `X-Request-Id` header for tracing.
+- Use correct HTTP status codes via `jsonError` codes.
+- List endpoints must paginate (`page`, `limit`, max limit 100).
+- Never expose `passwordHash`, tokens, or internal Mongo fields.
