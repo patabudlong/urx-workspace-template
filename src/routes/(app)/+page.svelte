@@ -4,13 +4,15 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
 	import SmartphoneIcon from '@lucide/svelte/icons/smartphone';
+
+	let { data } = $props();
 </script>
 
 <div class="space-y-6">
 	<div class="space-y-1">
 		<h2 class="text-2xl font-semibold tracking-tight">Welcome back</h2>
 		<p class="text-muted-foreground text-sm">
-			URX workspace template — SvelteKit API backend, MongoDB, and mobile-ready JSON APIs.
+			Signed in as <span class="text-foreground font-medium">{data.user.email}</span>
 		</p>
 	</div>
 

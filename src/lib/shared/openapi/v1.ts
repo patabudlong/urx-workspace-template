@@ -36,6 +36,10 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 			{
 				name: 'System',
 				description: 'Health and operational endpoints'
+			},
+			{
+				name: 'Auth',
+				description: 'Authentication for web sessions and mobile Bearer tokens'
 			}
 		],
 		paths: {
@@ -68,6 +72,121 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 								'application/json': {
 									schema: {
 										$ref: '#/components/schemas/HealthSuccessResponse'
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			'/auth/login': {
+				post: {
+					tags: ['Auth'],
+					summary: 'Sign in',
+					description:
+						'Authenticates with email and password. Returns a JWT for mobile clients (`Authorization: Bearer <token>`). Web apps may also use the `/login` form which sets an httpOnly session cookie.',
+					operationId: 'login',
+					parameters: [
+						{
+							$ref: '#/components/parameters/XRequestId'
+						}
+					],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: {
+									$ref: '#/components/schemas/LoginRequest'
+								}
+							}
+						}
+					},
+					responses: {
+						'200': {
+							description: 'Authentication successful',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/LoginSuccessResponse'
+									}
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ApiErrorResponse'
+									}
+								}
+							}
+						},
+						'401': {
+							description: 'Invalid email or password',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ApiErrorResponse'
+									}
+								}
+							}
+						},
+						'503': {
+							description: 'Authentication is not configured (missing JWT_SECRET)',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ApiErrorResponse'
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			'/auth/logout': {
+				post: {
+					tags: ['Auth'],
+					summary: 'Sign out (POST)',
+					description:
+						'Clears the web session cookie (`urx_session`). Mobile clients should discard stored tokens locally.',
+					operationId: 'logoutPost',
+					parameters: [
+						{
+							$ref: '#/components/parameters/XRequestId'
+						}
+					],
+					responses: {
+						'200': {
+							description: 'Session cleared',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/LogoutSuccessResponse'
+									}
+								}
+							}
+						}
+					}
+				},
+				get: {
+					tags: ['Auth'],
+					summary: 'Sign out (GET)',
+					description: 'Same as POST — clears the web session cookie.',
+					operationId: 'logoutGet',
+					parameters: [
+						{
+							$ref: '#/components/parameters/XRequestId'
+						}
+					],
+					responses: {
+						'200': {
+							description: 'Session cleared',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/LogoutSuccessResponse'
 									}
 								}
 							}
@@ -228,6 +347,96 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 					properties: {
 						data: {
 							$ref: '#/components/schemas/HealthData'
+						},
+						meta: {
+							$ref: '#/components/schemas/ApiMeta'
+						}
+					}
+				},
+				LoginRequest: {
+					type: 'object',
+					required: ['email', 'password'],
+					properties: {
+						email: {
+							type: 'string',
+							format: 'email',
+							example: 'admin@urx.local'
+						},
+						password: {
+							type: 'string',
+							minLength: 8,
+							format: 'password',
+							example: 'changeme123'
+						}
+					}
+				},
+				AuthUser: {
+					type: 'object',
+					required: ['id', 'email'],
+					properties: {
+						id: {
+							type: 'string',
+							description: 'User id (Mongo ObjectId as string)'
+						},
+						email: {
+							type: 'string',
+							format: 'email'
+						},
+						name: {
+							type: 'string'
+						}
+					}
+				},
+				LoginData: {
+					type: 'object',
+					required: ['accessToken', 'tokenType', 'expiresIn', 'user'],
+					properties: {
+						accessToken: {
+							type: 'string',
+							description: 'JWT access token'
+						},
+						tokenType: {
+							type: 'string',
+							const: 'Bearer'
+						},
+						expiresIn: {
+							type: 'integer',
+							description: 'Token lifetime in seconds',
+							example: 604800
+						},
+						user: {
+							$ref: '#/components/schemas/AuthUser'
+						}
+					}
+				},
+				LoginSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							$ref: '#/components/schemas/LoginData'
+						},
+						meta: {
+							$ref: '#/components/schemas/ApiMeta'
+						}
+					}
+				},
+				LogoutData: {
+					type: 'object',
+					required: ['loggedOut'],
+					properties: {
+						loggedOut: {
+							type: 'boolean',
+							const: true
+						}
+					}
+				},
+				LogoutSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							$ref: '#/components/schemas/LogoutData'
 						},
 						meta: {
 							$ref: '#/components/schemas/ApiMeta'
