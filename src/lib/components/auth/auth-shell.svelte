@@ -20,13 +20,16 @@
 
 <div class="grid min-h-svh lg:grid-cols-2">
 	<aside
-		class="relative hidden overflow-hidden bg-primary lg:flex lg:min-h-svh lg:flex-col lg:p-10 xl:p-14"
+		class="relative hidden overflow-hidden bg-[linear-gradient(155deg,color-mix(in_srgb,var(--primary)_32%,#020f1a)_0%,color-mix(in_srgb,var(--primary)_55%,#000)_38%,var(--primary)_68%,color-mix(in_srgb,var(--secondary)_88%,var(--primary))_100%)] lg:flex lg:min-h-svh lg:flex-col lg:p-10 xl:p-14"
 	>
 		<div
-			class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_55%)]"
+			class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,color-mix(in_srgb,var(--primary)_70%,#000),transparent_62%)]"
 		></div>
 		<div
-			class="pointer-events-none absolute inset-0 opacity-[0.07] [background-image:linear-gradient(to_right,#fff_1px,transparent_1px),linear-gradient(to_bottom,#fff_1px,transparent_1px)] [background-size:3rem_3rem]"
+			class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.24),transparent_52%)]"
+		></div>
+		<div
+			class="pointer-events-none absolute inset-0 opacity-[0.06] [background-image:linear-gradient(to_right,#fff_1px,transparent_1px),linear-gradient(to_bottom,#fff_1px,transparent_1px)] [background-size:3rem_3rem]"
 		></div>
 
 		<div class="relative z-10 flex flex-1 flex-col items-center justify-center py-8">

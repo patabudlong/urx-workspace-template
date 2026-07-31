@@ -101,11 +101,11 @@
 
 	{#snippet footer()}
 		<p class="text-center text-sm">
-			<a href="/verify/resend" class="hover:text-foreground font-medium hover:underline">
+			<a href="/verify/resend" class="hover:text-foreground hover:underline">
 				Resend verification email
 			</a>
 			<span class="text-muted-foreground px-2" aria-hidden="true">|</span>
-			<a href="/forgot-password" class="hover:text-foreground font-medium hover:underline">
+			<a href="/forgot-password" class="hover:text-foreground hover:underline">
 				Can't sign in?
 			</a>
 		</p>
