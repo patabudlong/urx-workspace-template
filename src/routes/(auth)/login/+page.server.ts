@@ -24,7 +24,10 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
 	return {
 		form,
-		redirectTo: safeRedirectPath(url.searchParams.get('redirectTo'))
+		redirectTo: safeRedirectPath(url.searchParams.get('redirectTo')),
+		meta: {
+			title: 'Sign in'
+		}
 	};
 };
 

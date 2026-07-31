@@ -1,9 +1,10 @@
 <script lang="ts">
+	import AuthFormPanel from '$lib/components/auth/auth-form-panel.svelte';
+	import AuthShell from '$lib/components/auth/auth-shell.svelte';
+
 	let { children } = $props();
 </script>
 
-<div class="bg-background flex min-h-svh flex-col items-center justify-center p-4 md:p-8">
-	<div class="w-full max-w-sm">
-		{@render children?.()}
-	</div>
-</div>
+<AuthShell>
+	{@render children?.()}
+</AuthShell>

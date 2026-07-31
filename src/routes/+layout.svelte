@@ -1,12 +1,21 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import { brandTheme } from '$lib/brand';
+	import { formatPageTitle } from '$lib/shared/site-meta';
 	import { ModeWatcher } from 'mode-watcher';
 	import '../routes/layout.css';
 
 	let { children } = $props();
+
+	const documentTitle = $derived(
+		formatPageTitle(
+			typeof page.data.meta?.title === 'string' ? page.data.meta.title : undefined
+		)
+	);
 </script>
 
 <svelte:head>
+	<title>{documentTitle}</title>
 	<style>
 		:global(:root) {
 			--brand-primary: {brandTheme.primary};
