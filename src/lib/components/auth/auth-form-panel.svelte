@@ -27,7 +27,7 @@
 				<p class="text-muted-foreground truncate text-xs">Secure sign-in</p>
 			</div>
 		</div>
-		<ThemeToggle class="ml-auto" />
+		<ThemeToggle class="ml-auto" iconClass="size-5" />
 	</header>
 
 	<main class="flex min-h-0 flex-1 flex-col">
