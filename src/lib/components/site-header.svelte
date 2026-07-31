@@ -1,6 +1,6 @@
 <script lang="ts">
+	import LogoutDialog from '$lib/components/logout-dialog.svelte';
 	import ThemeToggle from '$lib/components/theme-toggle.svelte';
-	import { Button } from '$lib/components/ui/button/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 
@@ -17,9 +17,7 @@
 	<div class="ml-auto flex items-center gap-3">
 		{#if userEmail}
 			<span class="text-muted-foreground hidden text-sm sm:inline">{userEmail}</span>
-			<form method="POST" action="/logout">
-				<Button type="submit" variant="outline" size="sm">Sign out</Button>
-			</form>
+			<LogoutDialog />
 		{/if}
 		<ThemeToggle />
 	</div>
