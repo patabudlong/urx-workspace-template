@@ -50,7 +50,16 @@
 				<Form.Field form={superform} name="password">
 					<Form.Control>
 						{#snippet children({ props })}
-							<Form.Label>Password</Form.Label>
+							<div class="flex items-center justify-between gap-2">
+								<Form.Label>Password</Form.Label>
+								<a
+									href="/forgot-password"
+									tabindex="-1"
+									class="text-primary text-sm hover:underline"
+								>
+									Forgot password?
+								</a>
+							</div>
 							<PasswordInput
 								{...props}
 								autocomplete="current-password"
