@@ -20,6 +20,7 @@ export type UserDocument = {
 	googleId?: string;
 	firstName: string;
 	lastName: string;
+	avatarUrl?: string;
 	emailVerifiedAt?: Date;
 	termsConsent?: TermsConsent;
 	platformRole?: PlatformRole;

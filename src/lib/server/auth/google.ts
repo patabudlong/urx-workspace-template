@@ -5,7 +5,8 @@ import {
 	ensureUserIndexes,
 	findUserByEmail,
 	findUserByGoogleId,
-	linkGoogleAccount
+	linkGoogleAccount,
+	updateUserGoogleAvatar
 } from '$lib/server/repositories/users';
 
 export type GoogleAuthResult =
@@ -22,6 +23,7 @@ export async function authenticateWithGoogle(profile: GoogleProfile): Promise<Go
 		const existingByGoogleId = await findUserByGoogleId(profile.sub);
 
 		if (existingByGoogleId) {
+			await updateUserGoogleAvatar(existingByGoogleId._id.toString(), profile.pictureUrl);
 			const session = await createAuthSession(existingByGoogleId);
 
 			return {
@@ -41,12 +43,17 @@ export async function authenticateWithGoogle(profile: GoogleProfile): Promise<Go
 			const linkedUser =
 				existingByEmail.googleId === profile.sub
 					? existingByEmail
-					: await linkGoogleAccount(existingByEmail._id.toString(), profile.sub);
+					: await linkGoogleAccount(
+							existingByEmail._id.toString(),
+							profile.sub,
+							profile.pictureUrl
+						);
 
 			if (!linkedUser) {
 				throw new Error('Failed to link Google account');
 			}
 
+			await updateUserGoogleAvatar(linkedUser._id.toString(), profile.pictureUrl);
 			const session = await createAuthSession(linkedUser);
 
 			return {
@@ -61,6 +68,7 @@ export async function authenticateWithGoogle(profile: GoogleProfile): Promise<Go
 			googleId: profile.sub,
 			firstName: profile.givenName,
 			lastName: profile.familyName,
+			avatarUrl: profile.pictureUrl,
 			emailVerifiedAt: new Date()
 		});
 

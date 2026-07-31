@@ -17,9 +17,18 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 
 	const user = await findUserById(locals.user.id);
 
+	const firstName = user?.firstName?.trim() ?? '';
+	const lastName = user?.lastName?.trim() ?? '';
+	const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || '?';
+
 	return {
 		user: locals.user,
 		access,
-		isSuperadmin: user ? isSuperadminUser(user) : false
+		isSuperadmin: user ? isSuperadminUser(user) : false,
+		userDisplay: {
+			email: user?.email ?? locals.user.email,
+			avatarUrl: user?.avatarUrl ?? null,
+			initials
+		}
 	};
 };

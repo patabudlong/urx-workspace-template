@@ -1,9 +1,20 @@
 <script lang="ts">
+	import LogoutDialog from '$lib/components/logout-dialog.svelte';
 	import ThemeToggle from '$lib/components/theme-toggle.svelte';
 	import UrixoftLogo from '$lib/components/urixoft-logo.svelte';
 	import type { Snippet } from 'svelte';
 
-	let { children }: { children: Snippet } = $props();
+	let {
+		children,
+		userEmail,
+		userAvatarUrl = null,
+		userInitials = '?'
+	}: {
+		children: Snippet;
+		userEmail?: string;
+		userAvatarUrl?: string | null;
+		userInitials?: string;
+	} = $props();
 </script>
 
 <div class="bg-background flex min-h-svh flex-col">
@@ -17,7 +28,34 @@
 				<p class="text-muted-foreground truncate text-xs">Workspace onboarding</p>
 			</div>
 		</div>
-		<ThemeToggle iconClass="size-5" />
+		<div class="flex shrink-0 items-center gap-2 sm:gap-3">
+			{#if userEmail}
+				<div class="flex items-center gap-2 sm:gap-3">
+					{#if userAvatarUrl}
+						<img
+							src={userAvatarUrl}
+							alt=""
+							class="ring-border size-8 shrink-0 rounded-full object-cover ring-1"
+							width="32"
+							height="32"
+							referrerpolicy="no-referrer"
+						/>
+					{:else}
+						<span
+							class="bg-muted text-muted-foreground ring-border flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ring-1"
+							aria-hidden="true"
+						>
+							{userInitials}
+						</span>
+					{/if}
+					<span class="text-muted-foreground hidden max-w-[12rem] truncate text-sm sm:inline">
+						{userEmail}
+					</span>
+					<LogoutDialog />
+				</div>
+			{/if}
+			<ThemeToggle iconClass="size-5" />
+		</div>
 	</header>
 
 	<main class="min-h-0 flex-1 overflow-y-auto">

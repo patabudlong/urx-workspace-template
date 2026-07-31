@@ -28,6 +28,7 @@ const userProjection = {
 	googleId: 1,
 	firstName: 1,
 	lastName: 1,
+	avatarUrl: 1,
 	emailVerifiedAt: 1,
 	termsConsent: 1,
 	platformRole: 1,
@@ -63,6 +64,7 @@ export async function createUser(input: {
 	googleId?: string;
 	firstName: string;
 	lastName: string;
+	avatarUrl?: string;
 	emailVerifiedAt?: Date;
 	termsConsent?: TermsConsent;
 }): Promise<UserDocument> {
@@ -78,6 +80,7 @@ export async function createUser(input: {
 		googleId: input.googleId,
 		firstName,
 		lastName,
+		avatarUrl: input.avatarUrl,
 		emailVerifiedAt: input.emailVerifiedAt,
 		termsConsent: input.termsConsent,
 		createdAt: now,
@@ -91,6 +94,7 @@ export async function createUser(input: {
 		googleId: input.googleId,
 		firstName,
 		lastName,
+		avatarUrl: input.avatarUrl,
 		emailVerifiedAt: input.emailVerifiedAt,
 		termsConsent: input.termsConsent,
 		createdAt: now,
@@ -144,7 +148,11 @@ export async function rotateUserPassword(
 	return result.matchedCount === 1;
 }
 
-export async function linkGoogleAccount(userId: string, googleId: string): Promise<UserDocument | null> {
+export async function linkGoogleAccount(
+	userId: string,
+	googleId: string,
+	avatarUrl?: string
+): Promise<UserDocument | null> {
 	const users = await getUsersCollection<UserDocument>();
 	const now = new Date();
 
@@ -154,11 +162,33 @@ export async function linkGoogleAccount(userId: string, googleId: string): Promi
 			$set: {
 				googleId,
 				emailVerifiedAt: now,
-				updatedAt: now
+				updatedAt: now,
+				...(avatarUrl ? { avatarUrl } : {})
 			}
 		},
 		{ returnDocument: 'after', projection: userProjection }
 	);
 
 	return result ?? null;
+}
+
+export async function updateUserGoogleAvatar(
+	userId: string,
+	avatarUrl?: string
+): Promise<void> {
+	if (!avatarUrl) {
+		return;
+	}
+
+	const users = await getUsersCollection<UserDocument>();
+
+	await users.updateOne(
+		{ _id: new ObjectId(userId) },
+		{
+			$set: {
+				avatarUrl,
+				updatedAt: new Date()
+			}
+		}
+	);
 }

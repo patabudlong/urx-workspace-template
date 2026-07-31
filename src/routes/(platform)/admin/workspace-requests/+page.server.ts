@@ -50,7 +50,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 };
 
 export const actions: Actions = {
-	approve: async ({ request, locals }) => {
+	approve: async ({ request, locals, url }) => {
 		const admin = await findUserById(locals.user!.id);
 
 		if (!admin || !isSuperadminUser(admin)) {
@@ -66,7 +66,8 @@ export const actions: Actions = {
 
 		const result = await approveWorkspaceOwnerRequest({
 			workspaceId,
-			reviewedByUserId: locals.user!.id
+			reviewedByUserId: locals.user!.id,
+			origin: url.origin
 		});
 
 		if (!result.ok) {

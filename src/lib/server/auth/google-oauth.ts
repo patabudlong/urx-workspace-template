@@ -18,6 +18,7 @@ export type GoogleProfile = {
 	givenName: string;
 	familyName: string;
 	emailVerified: boolean;
+	pictureUrl?: string;
 };
 
 export function isGoogleAuthConfigured(): boolean {
@@ -118,6 +119,7 @@ export async function fetchGoogleProfile(accessToken: string): Promise<GooglePro
 		given_name?: string;
 		family_name?: string;
 		email_verified?: boolean;
+		picture?: string;
 		error?: string;
 	};
 
@@ -134,6 +136,7 @@ export async function fetchGoogleProfile(accessToken: string): Promise<GooglePro
 		email: payload.email.trim().toLowerCase(),
 		givenName: payload.given_name?.trim() || 'Google',
 		familyName: payload.family_name?.trim() || 'User',
-		emailVerified: true
+		emailVerified: true,
+		pictureUrl: payload.picture?.trim() || undefined
 	};
 }
