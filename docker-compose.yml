@@ -10,12 +10,29 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: urx
     volumes:
       - mongo_data:/data/db
+    networks:
+      - urx-network
     healthcheck:
       test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand("ping").ok']
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: urx-workspace-mailhog
+    restart: unless-stopped
+    platform: linux/amd64
+    ports:
+      - '1025:1025' # SMTP
+      - '8025:8025' # Web UI
+    networks:
+      - urx-network
+
+networks:
+  urx-network:
+    driver: bridge
 
 volumes:
   mongo_data:

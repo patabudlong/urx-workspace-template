@@ -15,6 +15,7 @@ pnpm dev
 - App: [http://localhost:5173](http://localhost:5173)
 - API docs: [http://localhost:5173/docs](http://localhost:5173/docs)
 - Health: [http://localhost:5173/api/v1/health](http://localhost:5173/api/v1/health)
+- MailHog UI: [http://localhost:8025](http://localhost:8025) (captured outbound email in local dev)
 
 ## Environment
 
@@ -30,6 +31,9 @@ Copy `.env.example` to `.env` and adjust as needed.
 | `PUBLIC_BRAND_PRIMARY` | Logo primary blue — very important actions (`Button` default) |
 | `PUBLIC_BRAND_SECONDARY` | Logo mid blue — important actions (`variant="secondary"`) |
 | `PUBLIC_BRAND_TERTIARY` | Logo light blue — less important actions (`variant="tertiary"`) |
+| `SMTP_HOST` | SMTP server host (MailHog: `localhost`) |
+| `SMTP_PORT` | SMTP server port (MailHog: `1025`) |
+| `SMTP_FROM` | Default From address for outbound mail |
 
 ### Brand colors
 
@@ -54,12 +58,14 @@ Foreground text on each swatch is chosen automatically for contrast.
 ## Docker
 
 ```sh
-pnpm docker:up          # start MongoDB
+pnpm docker:up          # start MongoDB + MailHog
 pnpm docker:down        # stop (keep data)
 pnpm docker:down:clean  # stop and wipe volume
 pnpm docker:logs        # tail MongoDB logs
 pnpm docker:ps          # container status
 ```
+
+MailHog captures SMTP on `localhost:1025`; open the inbox at [http://localhost:8025](http://localhost:8025).
 
 ## Scripts
 
