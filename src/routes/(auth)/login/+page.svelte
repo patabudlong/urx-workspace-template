@@ -5,11 +5,12 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Form from '$lib/components/ui/form/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
+	import { untrack } from 'svelte';
 	import { superForm } from 'sveltekit-superforms';
 
 	let { data } = $props();
 
-	const superform = superForm(data.form);
+	const superform = superForm(untrack(() => data.form));
 	const { enhance, message: formMessage } = superform;
 </script>
 
