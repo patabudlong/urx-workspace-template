@@ -1,5 +1,9 @@
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
+export function normalizeWorkspaceName(name: string): string {
+	return name.trim().toLowerCase();
+}
+
 export function slugifyWorkspaceName(name: string): string {
 	return name
 		.trim()

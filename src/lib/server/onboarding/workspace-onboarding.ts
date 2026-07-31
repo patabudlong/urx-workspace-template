@@ -1,6 +1,7 @@
 import { findUserById } from '$lib/server/repositories/users';
 import {
 	findPendingWorkspaceByUserId,
+	findWorkspaceByName,
 	findWorkspaceBySlug,
 	findWorkspaceBySlugOrId
 } from '$lib/server/repositories/workspaces';
@@ -63,6 +64,7 @@ export async function submitOwnerWorkspaceRequest(input: {
 			reason:
 				| 'ALREADY_HAS_WORKSPACE'
 				| 'PENDING_REQUEST_EXISTS'
+				| 'NAME_TAKEN'
 				| 'SLUG_TAKEN'
 				| 'MAIL_NOT_CONFIGURED'
 				| 'TEAM_EMAIL_NOT_CONFIGURED';
@@ -76,6 +78,12 @@ export async function submitOwnerWorkspaceRequest(input: {
 
 	if (access.status === 'pending_review') {
 		return { ok: false, reason: 'PENDING_REQUEST_EXISTS' };
+	}
+
+	const existingName = await findWorkspaceByName(input.data.name);
+
+	if (existingName) {
+		return { ok: false, reason: 'NAME_TAKEN' };
 	}
 
 	const existingSlug = await findWorkspaceBySlug(input.data.slug);

@@ -85,6 +85,7 @@ import { jsonOk } from '$lib/server/api/response';
 ## Sub-rules (file-specific)
 
 - `api-routes.mdc` — `src/routes/api/**` handler patterns
+- `email-templates.mdc` — transactional email layout and `sendMail` patterns
 - `mobile-api.mdc` — mobile client contracts and auth
 - `ui-tailwind-shadcn.mdc` — Tailwind + shadcn UI composition, tokens, no z-index/layout conflicts
 

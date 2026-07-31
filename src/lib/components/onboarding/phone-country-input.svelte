@@ -14,7 +14,6 @@
 		id,
 		name,
 		class: className,
-		placeholder = '412 345 678',
 		disabled = false,
 		'aria-invalid': ariaInvalid,
 		'aria-describedby': ariaDescribedby
@@ -23,7 +22,6 @@
 		id?: string;
 		name?: string;
 		class?: string;
-		placeholder?: string;
 		disabled?: boolean;
 		'aria-invalid'?: boolean | 'true' | 'false';
 		'aria-describedby'?: string;
@@ -82,7 +80,6 @@
 		aria-invalid={ariaInvalid}
 		aria-describedby={ariaDescribedby}
 		bind:value={nationalNumber}
-		{placeholder}
 		class="pl-2"
 	/>
 	<input type="hidden" {name} {value} />

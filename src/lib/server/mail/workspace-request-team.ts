@@ -18,18 +18,19 @@ export async function sendWorkspaceRequestTeamEmail(input: {
 	const reviewUrl = `${input.origin}/admin/workspace-requests`;
 	const content = {
 		title: 'New workspace owner request',
+		preheader: `${input.requesterName} requested workspace ${input.workspaceName}.`,
 		paragraphs: [
 			`${input.requesterName} (${input.requesterEmail}) requested to create a workspace.`,
 			`Workspace: ${input.workspaceName}`,
 			`Slug: ${input.workspaceSlug}`,
 			`Team size: ${input.teamSize}`,
 			`Contact: ${input.contactPhone}`,
-			`Country: ${input.country}`,
-			'Review and approve or reject this request from the admin panel.'
+			`Country: ${input.country}`
 		],
 		logoUrl: `${input.origin}/email/urixoft-logo.png`,
 		ctaLabel: 'Review request',
-		ctaUrl: reviewUrl
+		ctaUrl: reviewUrl,
+		infoBoxParagraphs: ['Review and approve or reject this request from the admin panel.']
 	};
 
 	await sendMail({

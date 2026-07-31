@@ -13,7 +13,15 @@
 	import * as Select from '$lib/components/ui/select/index.js';
 	import PhoneCountryInput from '$lib/components/onboarding/phone-country-input.svelte';
 	import WorkspaceCountryCombobox from '$lib/components/onboarding/workspace-country-combobox.svelte';
+	import WorkspaceFieldAvailability, {
+		type WorkspaceAvailabilityStatus
+	} from '$lib/components/onboarding/workspace-field-availability.svelte';
+	import { fetchWorkspaceAvailability } from '$lib/onboarding/workspace-availability';
 	import { hasDismissedOnboardingWelcome } from '$lib/onboarding/welcome';
+	import {
+		isWorkspaceNameReadyForAvailabilityCheck,
+		isWorkspaceSlugReadyForAvailabilityCheck
+	} from '$lib/shared/schemas/workspace-availability';
 	import { slugifyWorkspaceName } from '$lib/shared/workspace-slug';
 	import {
 		memberOnboardingClientSchema,
@@ -56,6 +64,9 @@
 	let slugTouched = $state(false);
 	let ownerBusy = $state(false);
 	let memberBusy = $state(false);
+	let nameAvailability = $state<WorkspaceAvailabilityStatus>('idle');
+	let slugAvailability = $state<WorkspaceAvailabilityStatus>('idle');
+	let availabilityRequestId = 0;
 
 	$effect(() => {
 		if (data.access.status === 'pending_review') {
@@ -105,11 +116,105 @@
 		message: memberMessage
 	} = memberSuperform;
 
-	$effect(() => {
-		if (!slugTouched && $ownerForm.name) {
-			$ownerForm.slug = slugifyWorkspaceName($ownerForm.name);
+	function syncSlugFromName() {
+		if (slugTouched) {
+			return;
 		}
-	});
+
+		const nextSlug = slugifyWorkspaceName($ownerForm.name);
+
+		untrack(() => {
+			$ownerForm.slug = nextSlug;
+		});
+
+		scheduleAvailabilityCheck({ name: $ownerForm.name, slug: nextSlug });
+	}
+
+	function scheduleAvailabilityCheck(fields: { name?: string; slug?: string }) {
+		const requestId = ++availabilityRequestId;
+
+		if (fields.name !== undefined) {
+			nameAvailability = isWorkspaceNameReadyForAvailabilityCheck(fields.name) ? 'checking' : 'idle';
+		}
+
+		if (fields.slug !== undefined) {
+			slugAvailability = isWorkspaceSlugReadyForAvailabilityCheck(fields.slug)
+				? 'checking'
+				: 'idle';
+		}
+
+		window.setTimeout(async () => {
+			if (requestId !== availabilityRequestId) {
+				return;
+			}
+
+			const payload: { name?: string; slug?: string } = {};
+
+			if (fields.name !== undefined && isWorkspaceNameReadyForAvailabilityCheck(fields.name)) {
+				payload.name = fields.name;
+			}
+
+			if (fields.slug !== undefined && isWorkspaceSlugReadyForAvailabilityCheck(fields.slug)) {
+				payload.slug = fields.slug;
+			}
+
+			if (!payload.name && !payload.slug) {
+				return;
+			}
+
+			try {
+				const result = await fetchWorkspaceAvailability(payload);
+
+				if (requestId !== availabilityRequestId) {
+					return;
+				}
+
+				if (payload.name !== undefined) {
+					nameAvailability = result.name?.available ? 'available' : 'taken';
+				}
+
+				if (payload.slug !== undefined) {
+					slugAvailability = result.slug?.available ? 'available' : 'taken';
+				}
+			} catch {
+				if (requestId !== availabilityRequestId) {
+					return;
+				}
+
+				if (payload.name !== undefined) {
+					nameAvailability = 'idle';
+				}
+
+				if (payload.slug !== undefined) {
+					slugAvailability = 'idle';
+				}
+			}
+		}, 400);
+	}
+
+	function handleWorkspaceNameInput() {
+		syncSlugFromName();
+
+		if (!slugTouched) {
+			return;
+		}
+
+		scheduleAvailabilityCheck({ name: $ownerForm.name });
+	}
+
+	function handleWorkspaceSlugInput() {
+		slugTouched = true;
+		$ownerForm.slug = slugifyWorkspaceName($ownerForm.slug);
+		scheduleAvailabilityCheck({ slug: $ownerForm.slug });
+	}
+
+	const ownerSubmitBlocked = $derived(
+		ownerBusy ||
+			nameAvailability === 'taken' ||
+			slugAvailability === 'taken' ||
+			nameAvailability === 'checking' ||
+			slugAvailability === 'checking'
+	);
 
 	async function chooseRole(role: OnboardingRole) {
 		selectedRole = role;
@@ -125,7 +230,7 @@
 	const stepLabels = ['Your role', 'Details', 'Done'];
 	const stepIndex = $derived(step === 'role' ? 0 : step === 'details' ? 1 : 2);
 
-	const onboardingActionClass = 'h-10 w-full sm:flex-1';
+	const onboardingActionClass = 'h-10 w-full sm:w-auto';
 
 	const panelDescription = $derived(
 		step === 'role'
@@ -159,24 +264,33 @@
 		</p>
 		<div class="flex items-center gap-2">
 			{#each stepLabels as label, index}
-				<div class="flex min-w-0 flex-1 flex-col gap-1.5">
+				<div
+					class={cn(
+						'flex min-w-0 flex-col gap-1.5',
+						index < stepLabels.length - 1 ? 'flex-1' : 'shrink-0'
+					)}
+				>
 					<div class="flex items-center gap-1.5">
 						<span
 							class={cn(
 								'flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums transition-colors',
-								index <= stepIndex
-									? 'bg-primary text-primary-foreground'
-									: 'bg-muted text-muted-foreground'
+								index === stepLabels.length - 1 && stepIndex >= index
+									? 'bg-emerald-600 text-white'
+									: index <= stepIndex
+										? 'bg-primary text-primary-foreground'
+										: 'bg-muted text-muted-foreground'
 							)}
 						>
 							{index + 1}
 						</span>
-						<div
-							class={cn(
-								'h-1.5 min-w-0 flex-1 rounded-full transition-colors',
-								index <= stepIndex ? 'bg-primary' : 'bg-muted'
-							)}
-						></div>
+						{#if index < stepLabels.length - 1}
+							<div
+								class={cn(
+									'h-1.5 min-w-0 flex-1 rounded-full transition-colors',
+									index <= stepIndex ? 'bg-primary' : 'bg-muted'
+								)}
+							></div>
+						{/if}
 					</div>
 					<span
 						class={cn(
@@ -204,7 +318,7 @@
 				/>
 			</div>
 		{:else if step === 'details' && selectedRole}
-			<div bind:this={detailsTopRef} class="scroll-mt-4 space-y-5">
+			<div bind:this={detailsTopRef} class="scroll-mt-4 space-y-8">
 				<OnboardingRoleCard option={ROLE_OPTIONS[selectedRole]} compact />
 
 				{#if selectedRole === 'owner'}
@@ -222,12 +336,16 @@
 									{...props}
 									id="workspace-name"
 									bind:value={$ownerForm.name}
-									placeholder="Acme Services"
+									oninput={handleWorkspaceNameInput}
 									autocomplete="organization"
 								/>
 							{/snippet}
 						</Form.Control>
 						<SingleFieldErrors />
+						<WorkspaceFieldAvailability
+							status={nameAvailability}
+							takenMessage="This workspace name is already taken."
+						/>
 					</Form.Field>
 
 					<Form.Field form={ownerSuperform} name="slug" class="md:col-span-1">
@@ -239,11 +357,7 @@
 										{...props}
 										id="workspace-slug"
 										bind:value={$ownerForm.slug}
-										oninput={() => {
-											slugTouched = true;
-											$ownerForm.slug = slugifyWorkspaceName($ownerForm.slug);
-										}}
-										placeholder="acme-services"
+										oninput={handleWorkspaceSlugInput}
 										autocomplete="off"
 										spellcheck="false"
 										class="min-w-0 flex-1"
@@ -257,6 +371,10 @@
 							{/snippet}
 						</Form.Control>
 						<SingleFieldErrors />
+						<WorkspaceFieldAvailability
+							status={slugAvailability}
+							takenMessage="This workspace URL is already taken."
+						/>
 					</Form.Field>
 
 					<Form.Field form={ownerSuperform} name="contactPhone">
@@ -315,7 +433,6 @@
 									{...props}
 									id="website"
 									bind:value={$ownerForm.website}
-									placeholder="https://example.com"
 									autocomplete="url"
 								/>
 							{/snippet}
@@ -407,7 +524,7 @@
 					<Button
 						type="submit"
 						class={cn(onboardingActionClass, ownerBusy && 'pointer-events-none cursor-wait')}
-						disabled={ownerBusy}
+						disabled={ownerSubmitBlocked}
 					>
 						{#if ownerBusy}
 							<Loader2Icon class="size-4 animate-spin" />
@@ -435,7 +552,6 @@
 								{...props}
 								id="workspace-ref"
 								bind:value={$memberForm.workspaceRef}
-								placeholder="acme-services"
 								autocomplete="off"
 								spellcheck="false"
 							/>

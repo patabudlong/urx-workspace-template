@@ -10,6 +10,10 @@ export async function ensureWorkspaceIndexes(): Promise<void> {
 		workspaceIndexesPromise = (async () => {
 			const workspaces = await getWorkspacesCollection();
 			await workspaces.createIndex({ slug: 1 }, { unique: true });
+			await workspaces.createIndex(
+				{ name: 1 },
+				{ unique: true, collation: { locale: 'en', strength: 2 } }
+			);
 			await workspaces.createIndex({ status: 1, createdAt: -1 });
 			await workspaces.createIndex({ requestedByUserId: 1, status: 1 });
 		})().catch((error) => {
@@ -52,6 +56,24 @@ export async function findWorkspaceBySlug(slug: string): Promise<WorkspaceDocume
 	const workspaces = await getWorkspacesCollection<WorkspaceDocument>();
 
 	return workspaces.findOne({ slug: slug.trim().toLowerCase() }, { projection: workspaceProjection });
+}
+
+export async function findWorkspaceByName(name: string): Promise<WorkspaceDocument | null> {
+	const trimmed = name.trim();
+
+	if (!trimmed) {
+		return null;
+	}
+
+	const workspaces = await getWorkspacesCollection<WorkspaceDocument>();
+
+	return workspaces.findOne(
+		{ name: trimmed },
+		{
+			projection: workspaceProjection,
+			collation: { locale: 'en', strength: 2 }
+		}
+	);
 }
 
 export async function findWorkspaceBySlugOrId(ref: string): Promise<WorkspaceDocument | null> {

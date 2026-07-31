@@ -77,6 +77,7 @@ export const actions: Actions = {
 			const messages: Record<typeof result.reason, string> = {
 				ALREADY_HAS_WORKSPACE: 'You already belong to a workspace.',
 				PENDING_REQUEST_EXISTS: 'You already have a workspace request under review.',
+				NAME_TAKEN: 'This workspace name is already taken. Choose a different name.',
 				SLUG_TAKEN: 'This workspace URL is already taken. Choose a different name or slug.',
 				MAIL_NOT_CONFIGURED:
 					'Email is not configured. Set SMTP_HOST, SMTP_PORT, and SMTP_FROM in your environment.',

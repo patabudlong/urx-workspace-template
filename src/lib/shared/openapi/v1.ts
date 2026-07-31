@@ -40,6 +40,10 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 			{
 				name: 'Auth',
 				description: 'Authentication for web sessions and mobile Bearer tokens'
+			},
+			{
+				name: 'Workspaces',
+				description: 'Workspace onboarding and availability'
 			}
 		],
 		paths: {
@@ -509,6 +513,67 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						},
 						'409': {
 							description: 'Email already verified',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ApiErrorResponse'
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			'/workspaces/availability': {
+				get: {
+					tags: ['Workspaces'],
+					summary: 'Check workspace name and slug availability',
+					description:
+						'Returns whether a workspace display name and/or URL slug is available before onboarding submission. Requires authentication.',
+					operationId: 'getWorkspaceAvailability',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{
+							$ref: '#/components/parameters/XRequestId'
+						},
+						{
+							name: 'name',
+							in: 'query',
+							required: false,
+							schema: { type: 'string' },
+							description: 'Workspace display name to check (case-insensitive)'
+						},
+						{
+							name: 'slug',
+							in: 'query',
+							required: false,
+							schema: { type: 'string' },
+							description: 'Workspace URL slug to check'
+						}
+					],
+					responses: {
+						'200': {
+							description: 'Availability result for the requested fields',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/WorkspaceAvailabilitySuccessResponse'
+									}
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid query parameters',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ApiErrorResponse'
+									}
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
 							content: {
 								'application/json': {
 									schema: {
@@ -1031,6 +1096,34 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 								passwordUpdated: {
 									type: 'boolean',
 									const: true
+								}
+							}
+						},
+						meta: {
+							$ref: '#/components/schemas/ApiMeta'
+						}
+					}
+				},
+				WorkspaceAvailabilitySuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							type: 'object',
+							properties: {
+								name: {
+									type: 'object',
+									required: ['available'],
+									properties: {
+										available: { type: 'boolean' }
+									}
+								},
+								slug: {
+									type: 'object',
+									required: ['available'],
+									properties: {
+										available: { type: 'boolean' }
+									}
 								}
 							}
 						},

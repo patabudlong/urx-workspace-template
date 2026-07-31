@@ -87,6 +87,33 @@ import { cn } from '$lib/utils.js';
 - Don’t remove `outline-none` without providing visible focus — shadcn already handles this.
 - Form labels: use shadcn `Label` + `Field` patterns when forms are added.
 
+## Form placeholders
+
+**Do not use `placeholder` on labeled form inputs** — labels (and optional helper text) carry the meaning.
+
+| Use `placeholder` | Do not use `placeholder` |
+|-------------------|--------------------------|
+| Search / filter inputs (`Command.Input`, combobox search) | Text, email, password, tel, URL fields with a visible `Form.Label` |
+| Unlabeled global search bars | Address, select-adjacent inputs, admin action fields |
+| Rare cases with no room for a label — prefer `aria-label` instead | Example values (“Acme Services”, `https://…`, phone samples) |
+
+**Select / combobox empty state** is not an HTML placeholder — keep trigger copy like “Select team size” or `FormCombobox`’s `placeholder` prop when nothing is selected.
+
+```svelte
+<!-- ✅ Labeled field — no placeholder -->
+<Form.Label required>Workspace name</Form.Label>
+<Input {...props} bind:value={$form.name} autocomplete="organization" />
+
+<!-- ✅ Search inside combobox — placeholder allowed -->
+<Command.Input placeholder={searchPlaceholder} />
+
+<!-- ❌ Redundant example placeholder on a labeled field -->
+<Input placeholder="Acme Services" bind:value={$form.name} />
+```
+
+- Optional fields: mark with `(optional)` on the label, not a placeholder.
+- Inline compact inputs without a visible label: use `aria-label` (see admin reject reason).
+
 ## When adding new UI
 
 1. Check if shadcn has the component → `pnpm dlx shadcn-svelte@latest add <name> -y`.
@@ -160,5 +187,6 @@ import StatusAlert from '$lib/components/status-alert.svelte';
 - Duplicate button/input styles
 - Auth `Button` with only `w-full` (missing `h-10` via `AUTH_ACTION_BUTTON_CLASS`)
 - Inline status `div` with only background/border colors and no icon — use `StatusAlert`
+- `placeholder` on labeled `Input` / `Textarea` fields (use labels + helper text instead)
 - Multiple competing layout roots (second sidebar, second header provider)
 - `!` important utilities on shadcn components

@@ -83,7 +83,7 @@
 								<input
 									type="text"
 									name="rejectionReason"
-									placeholder="Optional rejection reason"
+									aria-label="Rejection reason (optional)"
 									class="border-input bg-background h-10 flex-1 rounded-lg border px-2.5 text-sm"
 								/>
 								<Button type="submit" variant="outline">Reject</Button>

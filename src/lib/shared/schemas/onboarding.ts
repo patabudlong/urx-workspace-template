@@ -16,6 +16,13 @@ const workspaceSlugSchema = z
 		message: 'Workspace URL must be 2–48 characters using lowercase letters, numbers, and hyphens.'
 	});
 
+const workspaceSlugClientSchema = z
+	.string()
+	.trim()
+	.refine((value) => !value || isValidWorkspaceSlug(value), {
+		message: 'Workspace URL must be 2–48 characters using lowercase letters, numbers, and hyphens.'
+	});
+
 const contactPhoneSchema = z
 	.string()
 	.trim()
@@ -43,6 +50,17 @@ const optionalWebsiteSchema = z
 		return /^https?:\/\//i.test(value) ? value : `https://${value}`;
 	});
 
+const optionalWebsiteClientSchema = z
+	.string()
+	.trim()
+	.max(200)
+	.refine(
+		(value) => !value || /^https?:\/\/.+/i.test(value) || /^[a-z0-9.-]+\.[a-z]{2,}/i.test(value),
+		{
+			message: 'Enter a valid website URL.'
+		}
+	);
+
 export const ownerOnboardingSchema = z.object({
 	name: workspaceNameSchema,
 	slug: workspaceSlugSchema,
@@ -61,7 +79,23 @@ export const ownerOnboardingSchema = z.object({
 	website: optionalWebsiteSchema
 });
 
-export const ownerOnboardingClientSchema = ownerOnboardingSchema;
+export const ownerOnboardingClientSchema = z.object({
+	name: workspaceNameSchema,
+	slug: workspaceSlugClientSchema,
+	contactPhone: contactPhoneSchema,
+	teamSize: z.enum(WORKSPACE_TEAM_SIZE_VALUES as [string, ...string[]], {
+		error: 'Select your team size.'
+	}),
+	addressLine1: addressLineSchema,
+	addressLine2: z.string().trim().max(200).optional(),
+	city: addressLineSchema,
+	region: z.string().trim().max(120).optional(),
+	postalCode: z.string().trim().max(32).optional(),
+	country: z.enum(WORKSPACE_COUNTRIES as unknown as [string, ...string[]], {
+		error: 'Select a country.'
+	}),
+	website: optionalWebsiteClientSchema
+});
 
 export const memberOnboardingSchema = z.object({
 	workspaceRef: z
