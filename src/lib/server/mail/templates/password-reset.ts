@@ -1,4 +1,4 @@
-import { URIXOFT_SOCIAL, URIXOFT_WEBSITE } from '$lib/shared/site-meta';
+import { APP_NAME, URIXOFT_SOCIAL, URIXOFT_WEBSITE } from '$lib/shared/site-meta';
 
 const BRAND_PRIMARY = '#0471B7';
 const BRAND_TERTIARY = '#C8E6F7';
@@ -38,6 +38,8 @@ export function buildPasswordResetEmailHtml(content: PasswordResetEmailContent):
 	const logoUrl = escapeHtml(content.logoUrl);
 	const illustrationUrl = escapeHtml(content.illustrationUrl);
 	const preheader = escapeHtml(PREHEADER_TEXT);
+	const appName = escapeHtml(APP_NAME);
+	const websiteUrl = escapeHtml(URIXOFT_WEBSITE);
 
 	return [
 		'<!DOCTYPE html>',
@@ -69,6 +71,16 @@ export function buildPasswordResetEmailHtml(content: PasswordResetEmailContent):
 		'border-radius:12px;overflow:hidden;">',
 		'<tr>',
 		'<td style="padding:24px 32px 0 32px;">',
+		'<table role="presentation"',
+		'width="100%" cellpadding="0"',
+		'cellspacing="0" border="0">',
+		'<tr>',
+		'<td style="padding-right:12px;',
+		'vertical-align:middle;width:1px;">',
+		'<a',
+		`href="${websiteUrl}"`,
+		'target="_blank"',
+		'style="text-decoration:none;">',
 		'<img',
 		`src="${logoUrl}"`,
 		`width="${LOGO_DISPLAY_WIDTH}"`,
@@ -78,6 +90,18 @@ export function buildPasswordResetEmailHtml(content: PasswordResetEmailContent):
 		`width:${LOGO_DISPLAY_WIDTH}px;`,
 		`height:${LOGO_DISPLAY_HEIGHT}px;`,
 		'border:0;">',
+		'</a>',
+		'</td>',
+		'<td style="vertical-align:middle;',
+		'font-family:Arial,Helvetica,sans-serif;">',
+		'<span style="font-size:16px;line-height:20px;',
+		'font-weight:600;',
+		`color:${TEXT_PRIMARY};">`,
+		appName,
+		'</span>',
+		'</td>',
+		'</tr>',
+		'</table>',
 		'</td>',
 		'</tr>',
 		'<tr>',

@@ -15,6 +15,7 @@
 	} from '$lib/shared/schemas/auth';
 	import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 	import { warmRecaptcha } from '$lib/recaptcha/client';
+	import { AUTH_ACTION_BUTTON_CLASS, AUTH_INLINE_LINK_CLASS } from '$lib/auth/ui';
 	import { cn } from '$lib/utils.js';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import MailCheckIcon from '@lucide/svelte/icons/mail-check';
@@ -93,7 +94,7 @@
 					</div>
 					<p class="text-muted-foreground text-sm leading-relaxed">{$formMessage}</p>
 				</div>
-				<Button href="/login" class="w-full">Back to sign in</Button>
+				<Button href="/login" class={AUTH_ACTION_BUTTON_CLASS}>Back to sign in</Button>
 			</div>
 		{:else}
 			<form method="POST" use:enhance class="space-y-5" novalidate>
@@ -125,7 +126,7 @@
 					<Button
 						type="submit"
 						class={cn(
-							'h-10 w-full',
+							AUTH_ACTION_BUTTON_CLASS,
 							authLoading.authBusy && 'pointer-events-none cursor-wait'
 						)}
 						disabled={authLoading.authBusy}
@@ -144,7 +145,7 @@
 
 			<p class="text-muted-foreground text-center text-sm">
 				Remember your password?
-				<a href="/login" class="text-primary font-medium hover:underline">Sign in</a>
+				<a href="/login" class={AUTH_INLINE_LINK_CLASS}>Sign in</a>
 			</p>
 		{/if}
 	</div>

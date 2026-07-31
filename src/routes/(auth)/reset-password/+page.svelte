@@ -11,6 +11,7 @@
 	import { resetPasswordClientSchema, type ResetPasswordInput } from '$lib/shared/schemas/auth';
 	import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 	import { warmRecaptcha } from '$lib/recaptcha/client';
+	import { AUTH_ACTION_BUTTON_CLASS, AUTH_INLINE_LINK_CLASS } from '$lib/auth/ui';
 	import { cn } from '$lib/utils.js';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import { get } from 'svelte/store';
@@ -76,9 +77,9 @@
 	<div class="space-y-6">
 		{#if !data.tokenValid}
 			<FormAlert>This reset link is invalid or has expired.</FormAlert>
-			<Button href="/forgot-password" class="w-full">Request a new link</Button>
+			<Button href="/forgot-password" class={AUTH_ACTION_BUTTON_CLASS}>Request a new link</Button>
 			<p class="text-muted-foreground text-center text-sm">
-				<a href="/login" class="text-primary font-medium hover:underline">Back to sign in</a>
+				<a href="/login" class={AUTH_INLINE_LINK_CLASS}>Back to sign in</a>
 			</p>
 		{:else}
 			<form method="POST" use:enhance class="space-y-5" novalidate>
@@ -112,7 +113,7 @@
 					<Button
 						type="submit"
 						class={cn(
-							'h-10 w-full',
+							AUTH_ACTION_BUTTON_CLASS,
 							authLoading.authBusy && 'pointer-events-none cursor-wait'
 						)}
 						disabled={authLoading.authBusy}
@@ -130,7 +131,7 @@
 			</form>
 
 			<p class="text-muted-foreground text-center text-sm">
-				<a href="/login" class="text-primary font-medium hover:underline">Back to sign in</a>
+				<a href="/login" class={AUTH_INLINE_LINK_CLASS}>Back to sign in</a>
 			</p>
 		{/if}
 	</div>

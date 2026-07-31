@@ -15,6 +15,7 @@
 	import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 	import { CONSENT_CONTEXTS } from '$lib/shared/models/consent-event';
 	import { warmRecaptcha } from '$lib/recaptcha/client';
+	import { AUTH_ACTION_BUTTON_CLASS, AUTH_INLINE_LINK_CLASS } from '$lib/auth/ui';
 	import { cn } from '$lib/utils.js';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import { get } from 'svelte/store';
@@ -149,7 +150,7 @@
 				<Button
 					type="submit"
 					class={cn(
-						'h-10 w-full',
+						AUTH_ACTION_BUTTON_CLASS,
 						authLoading.authBusy && 'pointer-events-none cursor-wait'
 					)}
 					disabled={authLoading.authBusy}
@@ -180,7 +181,7 @@
 
 		<p class="text-muted-foreground text-center text-sm">
 			Don't have an account?
-			<a href="/signup" class="text-primary font-medium hover:underline">Sign up</a>
+			<a href="/signup" class={AUTH_INLINE_LINK_CLASS}>Sign up</a>
 		</p>
 	</div>
 

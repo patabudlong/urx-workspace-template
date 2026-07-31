@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { AUTH_ACTION_BUTTON_CLASS } from '$lib/auth/ui';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { cn } from '$lib/utils.js';
 	import { recordConsentEvent } from '$lib/consent/client';
 	import type { ConsentContext } from '$lib/shared/models/consent-event';
 	import { CONSENT_EVENT_TYPES } from '$lib/shared/models/consent-event';
@@ -32,7 +34,7 @@
 <Button
 	type="button"
 	variant="outline"
-	class="h-10 w-full gap-2"
+	class={cn(AUTH_ACTION_BUTTON_CLASS, 'gap-2')}
 	{disabled}
 	onclick={handleClick}
 >

@@ -95,11 +95,42 @@ import { cn } from '$lib/utils.js';
 4. If theme must change globally → update `layout.css` tokens, not individual pages.
 5. Run `pnpm check` after Svelte changes.
 
+## Auth forms (`src/routes/(auth)/**`)
+
+Use shared tokens from **`$lib/auth/ui.ts`** — do not invent per-page button heights or link styles.
+
+| Element | Standard |
+|--------|----------|
+| Full-width actions (submit, OAuth, navigation `Button`) | `class={AUTH_ACTION_BUTTON_CLASS}` → `h-10 w-full` |
+| Inline footer link (“Sign in”, “Sign up”) | `class={AUTH_INLINE_LINK_CLASS}` inside `text-muted-foreground text-center text-sm` |
+| Submit / OAuth busy state | `cn(AUTH_ACTION_BUTTON_CLASS, authLoading.authBusy && 'pointer-events-none cursor-wait')` |
+| Page title | `text-2xl font-semibold tracking-tight` via `AuthFormPanel` |
+| Body / helper copy | `text-sm` + `text-muted-foreground` |
+| Form field spacing | `space-y-5` within forms; `space-y-6` between sections |
+
+```svelte
+import { AUTH_ACTION_BUTTON_CLASS, AUTH_INLINE_LINK_CLASS } from '$lib/auth/ui';
+
+<Button type="submit" class={cn(AUTH_ACTION_BUTTON_CLASS, busy && 'pointer-events-none cursor-wait')}>
+	Sign in
+</Button>
+
+<p class="text-muted-foreground text-center text-sm">
+	Already have an account?
+	<a href="/login" class={AUTH_INLINE_LINK_CLASS}>Sign in</a>
+</p>
+```
+
+- **Never** use `<Button class="w-full">` without `AUTH_ACTION_BUTTON_CLASS` on auth screens — default shadcn height is `h-8`.
+- **Never** mix raw `text-primary font-medium hover:underline` on auth footer links; use `AUTH_INLINE_LINK_CLASS`.
+- Google OAuth button: `GoogleSignInButton` (already uses `AUTH_ACTION_BUTTON_CLASS`).
+
 ## Red flags (reject in review)
 
 - New global CSS outside `layout.css`
 - Modified `src/lib/components/ui/**` for a single page
 - Raw hex/rgb in `.svelte` files instead of CSS variables
 - Duplicate button/input styles
+- Auth `Button` with only `w-full` (missing `h-10` via `AUTH_ACTION_BUTTON_CLASS`)
 - Multiple competing layout roots (second sidebar, second header provider)
 - `!` important utilities on shadcn components
