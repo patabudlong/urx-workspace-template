@@ -45,7 +45,7 @@
 		</Button>
 	</div>
 
-	{#if showStrength}
+	{#if showStrength === true}
 		<PasswordStrength password={value} />
 	{/if}
 </div>

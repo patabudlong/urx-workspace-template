@@ -82,13 +82,17 @@
 >
 	<div class="space-y-6">
 		{#if submitted}
-			<div class="flex flex-col items-center gap-6 text-center">
+			<div class="space-y-6">
 				<div
-					class="bg-primary/10 text-primary flex size-20 items-center justify-center rounded-full"
+					class="flex flex-col items-center gap-6 rounded-xl border border-border/50 bg-muted/30 px-6 py-8 text-center ring-1 ring-foreground/5"
 				>
-					<MailCheckIcon class="size-10" aria-hidden="true" />
+					<div
+						class="bg-primary/10 text-primary flex size-20 items-center justify-center rounded-full"
+					>
+						<MailCheckIcon class="size-10" aria-hidden="true" />
+					</div>
+					<p class="text-muted-foreground text-sm leading-relaxed">{$formMessage}</p>
 				</div>
-				<p class="text-muted-foreground text-sm leading-relaxed">{$formMessage}</p>
 				<Button href="/login" class="w-full">Back to sign in</Button>
 			</div>
 		{:else}

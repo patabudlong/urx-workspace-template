@@ -20,7 +20,14 @@ export function createSmtpTransport(config: {
 				to: message.to,
 				subject: message.subject,
 				text: message.text,
-				html: message.html
+				html: message.html,
+				attachments: message.attachments?.map((attachment) => ({
+					filename: attachment.filename,
+					content: attachment.content,
+					contentType: attachment.contentType,
+					cid: attachment.cid,
+					contentDisposition: 'inline' as const
+				}))
 			});
 		}
 	};

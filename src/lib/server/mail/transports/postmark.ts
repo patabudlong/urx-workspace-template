@@ -21,7 +21,13 @@ export function createPostmarkTransport(config: {
 					Subject: message.subject,
 					TextBody: message.text,
 					HtmlBody: message.html,
-					MessageStream: 'outbound'
+					MessageStream: 'outbound',
+					Attachments: message.attachments?.map((attachment) => ({
+						Name: attachment.filename,
+						Content: attachment.content.toString('base64'),
+						ContentType: attachment.contentType,
+						ContentID: `cid:${attachment.cid}`
+					}))
 				})
 			});
 

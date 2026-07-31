@@ -101,6 +101,7 @@
 									{...props}
 									disabled={authLoading.authBusy}
 									bind:value={$form.password}
+									showStrength
 									autocomplete="new-password"
 								/>
 							{/snippet}
@@ -127,6 +128,10 @@
 					<RecaptchaNotice />
 				</div>
 			</form>
+
+			<p class="text-muted-foreground text-center text-sm">
+				<a href="/login" class="text-primary font-medium hover:underline">Back to sign in</a>
+			</p>
 		{/if}
 	</div>
 </AuthFormPanel>

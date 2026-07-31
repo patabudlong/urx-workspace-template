@@ -10,11 +10,16 @@ import {
 } from '$lib/server/repositories/password-reset-tokens';
 import { ensureUserIndexes, findUserByEmail, updateUserPassword } from '$lib/server/repositories/users';
 
-const TOKEN_BYTES = 32;
+/** 16 bytes → base64url (~22 chars). Keeps email HTML href lines under 76 chars (7bit-safe). */
+const TOKEN_BYTES = 16;
 const TOKEN_TTL_MS = 60 * 60 * 1000;
 
 function hashResetToken(token: string): string {
 	return createHash('sha256').update(token).digest('hex');
+}
+
+function createRawResetToken(): string {
+	return randomBytes(TOKEN_BYTES).toString('base64url');
 }
 
 export async function requestPasswordReset(input: {
@@ -37,7 +42,7 @@ export async function requestPasswordReset(input: {
 		return { ok: true };
 	}
 
-	const rawToken = randomBytes(TOKEN_BYTES).toString('hex');
+	const rawToken = createRawResetToken();
 	const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
 
 	await createPasswordResetToken({
@@ -52,7 +57,8 @@ export async function requestPasswordReset(input: {
 		await sendPasswordResetEmail({
 			to: user.email,
 			firstName: user.firstName,
-			resetUrl
+			resetUrl,
+			origin: input.origin
 		});
 	} catch (error) {
 		console.error('Failed to send password reset email', error);
