@@ -80,7 +80,7 @@
 >
 	<div class="space-y-6">
 		{#if !data.tokenValid}
-			<FormAlert>This reset link is invalid or has expired.</FormAlert>
+			<FormAlert title="Link expired">This reset link is invalid or has expired.</FormAlert>
 			<Button href="/forgot-password" class={AUTH_ACTION_BUTTON_CLASS}>Request a new link</Button>
 			<p class="text-muted-foreground text-center text-sm">
 				<a href="/login" class={AUTH_INLINE_LINK_CLASS}>Back to sign in</a>
@@ -89,7 +89,7 @@
 			<form method="POST" use:enhance class="space-y-5" novalidate>
 				<div class="space-y-5">
 					{#if recaptchaError}
-						<FormAlert>{recaptchaError}</FormAlert>
+						<FormAlert title="Verification failed">{recaptchaError}</FormAlert>
 					{/if}
 
 					{#if $formMessage}

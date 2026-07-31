@@ -1,0 +1,61 @@
+import type { WorkspaceMemberDocument } from '$lib/shared/models/workspace-member';
+import { getWorkspaceMembersCollection } from '$lib/server/db/collections';
+import { ObjectId } from 'mongodb';
+
+let workspaceMemberIndexesPromise: Promise<void> | null = null;
+
+export async function ensureWorkspaceMemberIndexes(): Promise<void> {
+	if (!workspaceMemberIndexesPromise) {
+		workspaceMemberIndexesPromise = (async () => {
+			const members = await getWorkspaceMembersCollection();
+			await members.createIndex({ userId: 1 }, { unique: true });
+			await members.createIndex({ workspaceId: 1, role: 1 });
+		})().catch((error) => {
+			workspaceMemberIndexesPromise = null;
+			throw error;
+		});
+	}
+
+	return workspaceMemberIndexesPromise;
+}
+
+const memberProjection = {
+	_id: 1,
+	userId: 1,
+	workspaceId: 1,
+	role: 1,
+	joinedAt: 1,
+	createdAt: 1,
+	updatedAt: 1
+} as const;
+
+export async function findWorkspaceMemberByUserId(
+	userId: string
+): Promise<WorkspaceMemberDocument | null> {
+	const members = await getWorkspaceMembersCollection<WorkspaceMemberDocument>();
+
+	return members.findOne({ userId: new ObjectId(userId) }, { projection: memberProjection });
+}
+
+export async function createWorkspaceMember(input: {
+	userId: string;
+	workspaceId: string;
+	role: WorkspaceMemberDocument['role'];
+}): Promise<WorkspaceMemberDocument> {
+	const members = await getWorkspaceMembersCollection<WorkspaceMemberDocument>();
+	const now = new Date();
+
+	const document: WorkspaceMemberDocument = {
+		_id: new ObjectId(),
+		userId: new ObjectId(input.userId),
+		workspaceId: new ObjectId(input.workspaceId),
+		role: input.role,
+		joinedAt: now,
+		createdAt: now,
+		updatedAt: now
+	};
+
+	await members.insertOne(document);
+
+	return document;
+}

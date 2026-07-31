@@ -103,7 +103,7 @@
 				{/if}
 
 				{#if recaptchaError}
-					<FormAlert>{recaptchaError}</FormAlert>
+					<FormAlert title="Verification failed">{recaptchaError}</FormAlert>
 				{/if}
 
 				{#if $formMessage}

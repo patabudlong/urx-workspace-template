@@ -2,6 +2,7 @@ import { MongoClient } from 'mongodb';
 import bcrypt from 'bcryptjs';
 import { loadEnvFile } from './load-env.ts';
 import { splitFullName } from '../src/lib/shared/user.ts';
+import { PLATFORM_ROLES } from '../src/lib/shared/models/user.ts';
 
 const envPath = loadEnvFile();
 
@@ -69,6 +70,7 @@ async function main() {
 						firstName,
 						lastName,
 						emailVerifiedAt: now,
+						platformRole: PLATFORM_ROLES.SUPERADMIN,
 						updatedAt: now
 					},
 					$unset: {
@@ -84,6 +86,7 @@ async function main() {
 				firstName,
 				lastName,
 				emailVerifiedAt: now,
+				platformRole: PLATFORM_ROLES.SUPERADMIN,
 				createdAt: now,
 				updatedAt: now
 			});

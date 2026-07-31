@@ -1,5 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
+import { getOnboardingAccessState } from '$lib/server/onboarding/workspace-onboarding';
 
 export const load: LayoutServerLoad = async ({ locals, url }) => {
 	if (!locals.user) {
@@ -7,7 +8,14 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 		redirect(303, `/login?redirectTo=${redirectTo}`);
 	}
 
+	const access = await getOnboardingAccessState(locals.user.id);
+
+	if (access.status !== 'ready' && url.pathname !== '/onboarding') {
+		redirect(303, '/onboarding');
+	}
+
 	return {
-		user: locals.user
+		user: locals.user,
+		workspace: access.status === 'ready' ? access : null
 	};
 };

@@ -124,7 +124,7 @@
 			<form method="POST" use:enhance class="space-y-5" novalidate>
 				<div class="space-y-5">
 					{#if recaptchaError}
-						<FormAlert>{recaptchaError}</FormAlert>
+						<FormAlert title="Verification failed">{recaptchaError}</FormAlert>
 					{/if}
 
 					{#if $formMessage && $formMessage !== 'verified'}

@@ -1,6 +1,8 @@
 <script lang="ts">
-	import StatusAlert from '$lib/components/status-alert.svelte';
-	import type { StatusAlertVariant } from '$lib/components/status-alert.svelte';
+	import StatusAlert, {
+		STATUS_ALERT_DEFAULT_TITLES,
+		type StatusAlertVariant
+	} from '$lib/components/status-alert.svelte';
 	import {
 		formatAuthRateLimitMessage,
 		isAuthRateLimitMessage,
@@ -11,11 +13,13 @@
 		message,
 		retryAfterSeconds = null,
 		variant = 'danger',
+		title,
 		limited = $bindable(false)
 	}: {
 		message?: AuthFormMessage | null;
 		retryAfterSeconds?: number | null;
 		variant?: StatusAlertVariant;
+		title?: string;
 		limited?: boolean;
 	} = $props();
 
@@ -67,8 +71,15 @@
 	const resolvedVariant = $derived<StatusAlertVariant>(
 		initialRetryAfter && initialRetryAfter > 0 ? 'warning' : variant
 	);
+
+	const resolvedTitle = $derived(
+		title ??
+			(resolvedVariant === 'warning'
+				? 'Too many attempts'
+				: STATUS_ALERT_DEFAULT_TITLES[resolvedVariant])
+	);
 </script>
 
 {#if displayMessage}
-	<StatusAlert variant={resolvedVariant}>{displayMessage}</StatusAlert>
+	<StatusAlert variant={resolvedVariant} title={resolvedTitle}>{displayMessage}</StatusAlert>
 {/if}

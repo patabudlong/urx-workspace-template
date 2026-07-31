@@ -6,6 +6,12 @@ export type TermsConsent = {
 	policyVersion: string;
 };
 
+export const PLATFORM_ROLES = {
+	SUPERADMIN: 'superadmin'
+} as const;
+
+export type PlatformRole = (typeof PLATFORM_ROLES)[keyof typeof PLATFORM_ROLES];
+
 export type UserDocument = {
 	_id: ObjectId;
 	email: string;
@@ -16,6 +22,7 @@ export type UserDocument = {
 	lastName: string;
 	emailVerifiedAt?: Date;
 	termsConsent?: TermsConsent;
+	platformRole?: PlatformRole;
 	createdAt: Date;
 	updatedAt: Date;
 };

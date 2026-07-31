@@ -7,6 +7,14 @@
 
 	export type StatusAlertVariant = 'info' | 'warning' | 'danger' | 'success' | 'plain';
 
+	export const STATUS_ALERT_DEFAULT_TITLES: Record<StatusAlertVariant, string> = {
+		info: 'Information',
+		warning: 'Please wait',
+		danger: 'Something went wrong',
+		success: 'Success',
+		plain: 'Note'
+	};
+
 	const variantConfig: Record<
 		StatusAlertVariant,
 		{
@@ -57,26 +65,40 @@
 
 	let {
 		variant = 'plain',
+		title,
+		description,
 		class: className,
 		children
 	}: {
 		variant?: StatusAlertVariant;
+		title?: string;
+		description?: string;
 		class?: string;
-		children: Snippet;
+		children?: Snippet;
 	} = $props();
 
 	const config = $derived(variantConfig[variant]);
 	const Icon = $derived(config.Icon);
+	const resolvedTitle = $derived(title ?? STATUS_ALERT_DEFAULT_TITLES[variant]);
 </script>
 
 <div
 	class={cn(
-		'flex gap-2 rounded-lg border px-3 py-2 text-sm',
+		'flex gap-2 rounded-lg border px-3 py-2.5 text-sm',
 		config.className,
 		className
 	)}
 	role={config.role}
 >
 	<Icon class={cn('mt-0.5 size-4 shrink-0', config.iconClassName)} aria-hidden="true" />
-	<div class="min-w-0 flex-1">{@render children()}</div>
+	<div class="min-w-0 flex-1 space-y-0.5">
+		<p class="font-medium leading-snug">{resolvedTitle}</p>
+		{#if description}
+			<p class="text-sm leading-relaxed opacity-90">{description}</p>
+		{:else if children}
+			<div class="text-sm leading-relaxed opacity-90">
+				{@render children()}
+			</div>
+		{/if}
+	</div>
 </div>

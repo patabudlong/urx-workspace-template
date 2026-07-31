@@ -21,9 +21,7 @@
 		class="relative flex shrink-0 items-center justify-between gap-4 border-b px-4 py-4 sm:px-6 lg:border-b-0 lg:px-10 lg:pt-8"
 	>
 		<div class="flex items-center gap-3 lg:hidden">
-			<div class="rounded-lg bg-primary/10 p-1.5 ring-1 ring-primary/15">
-				<UrixoftLogo class="size-8 shrink-0 rounded-sm" />
-			</div>
+			<UrixoftLogo class="size-8 shrink-0 rounded-sm" />
 			<div class="min-w-0">
 				<p class="truncate text-sm font-medium">Urixoft Workspace</p>
 				<p class="text-muted-foreground truncate text-xs">Secure sign-in</p>

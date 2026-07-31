@@ -6,7 +6,9 @@ export const CollectionNames = {
 	users: 'users',
 	consentEvents: 'consent_events',
 	passwordResetTokens: 'password_reset_tokens',
-	emailVerificationTokens: 'email_verification_tokens'
+	emailVerificationTokens: 'email_verification_tokens',
+	workspaces: 'workspaces',
+	workspaceMembers: 'workspace_members'
 } as const;
 
 type CollectionName = keyof typeof CollectionNames;
@@ -38,4 +40,14 @@ export async function getEmailVerificationTokensCollection<T extends Document = 
 	Collection<T>
 > {
 	return getCollection<T>('emailVerificationTokens');
+}
+
+export async function getWorkspacesCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('workspaces');
+}
+
+export async function getWorkspaceMembersCollection<T extends Document = Document>(): Promise<
+	Collection<T>
+> {
+	return getCollection<T>('workspaceMembers');
 }

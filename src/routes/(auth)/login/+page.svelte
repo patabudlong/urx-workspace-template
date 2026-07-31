@@ -91,9 +91,11 @@
 		>
 			<div class="space-y-5">
 				{#if data.passwordResetSuccess}
-					<StatusAlert variant="success">
-						Your password has been updated. Sign in with your new password.
-					</StatusAlert>
+					<StatusAlert
+						variant="success"
+						title="Password updated"
+						description="Sign in with your new password."
+					/>
 				{/if}
 
 				{#if data.googleAuthError}
@@ -105,7 +107,11 @@
 				{/if}
 
 				{#if recaptchaError}
-					<StatusAlert variant="danger">{recaptchaError}</StatusAlert>
+					<StatusAlert
+						variant="danger"
+						title="Verification failed"
+						description={recaptchaError}
+					/>
 				{/if}
 
 				{#if $formMessage}

@@ -30,6 +30,7 @@ const userProjection = {
 	lastName: 1,
 	emailVerifiedAt: 1,
 	termsConsent: 1,
+	platformRole: 1,
 	createdAt: 1,
 	updatedAt: 1
 } as const;
