@@ -2,7 +2,9 @@ import { z } from 'zod';
 
 export const RECAPTCHA_ACTIONS = {
 	LOGIN: 'login',
-	SIGNUP: 'signup'
+	SIGNUP: 'signup',
+	FORGOT_PASSWORD: 'forgot_password',
+	RESET_PASSWORD: 'reset_password'
 } as const;
 
 export type RecaptchaAction = (typeof RECAPTCHA_ACTIONS)[keyof typeof RECAPTCHA_ACTIONS];

@@ -83,6 +83,15 @@
 			novalidate
 		>
 			<div class="space-y-5">
+				{#if data.passwordResetSuccess}
+					<div
+						class="bg-primary/10 text-primary flex gap-2 rounded-lg border border-primary/20 px-3 py-2 text-sm"
+						role="status"
+					>
+						Your password has been updated. Sign in with your new password.
+					</div>
+				{/if}
+
 				{#if data.googleAuthError}
 					<FormAlert>{data.googleAuthError}</FormAlert>
 				{/if}

@@ -34,6 +34,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		form,
 		redirectTo: safeRedirectPath(url.searchParams.get('redirectTo')),
 		googleAuthError: getGoogleAuthErrorMessage(url.searchParams.get('error')),
+		passwordResetSuccess: url.searchParams.get('reset') === 'success',
 		meta: {
 			title: 'Sign in'
 		}

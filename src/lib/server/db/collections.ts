@@ -4,7 +4,8 @@ import { getDb } from '$lib/server/db/client';
 /** Register collection names here as the schema grows. */
 export const CollectionNames = {
 	users: 'users',
-	consentEvents: 'consent_events'
+	consentEvents: 'consent_events',
+	passwordResetTokens: 'password_reset_tokens'
 } as const;
 
 type CollectionName = keyof typeof CollectionNames;
@@ -24,4 +25,10 @@ export async function getConsentEventsCollection<T extends Document = Document>(
 	Collection<T>
 > {
 	return getCollection<T>('consentEvents');
+}
+
+export async function getPasswordResetTokensCollection<T extends Document = Document>(): Promise<
+	Collection<T>
+> {
+	return getCollection<T>('passwordResetTokens');
 }

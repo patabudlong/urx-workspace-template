@@ -81,6 +81,23 @@ export async function createUser(input: {
 	};
 }
 
+export async function updateUserPassword(userId: string, passwordHash: string): Promise<boolean> {
+	const users = await getUsersCollection<UserDocument>();
+	const now = new Date();
+
+	const result = await users.updateOne(
+		{ _id: new ObjectId(userId) },
+		{
+			$set: {
+				passwordHash,
+				updatedAt: now
+			}
+		}
+	);
+
+	return result.matchedCount === 1;
+}
+
 export async function linkGoogleAccount(userId: string, googleId: string): Promise<UserDocument | null> {
 	const users = await getUsersCollection<UserDocument>();
 	const now = new Date();

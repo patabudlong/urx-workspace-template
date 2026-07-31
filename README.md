@@ -34,6 +34,8 @@ Copy `.env.example` to `.env` and adjust as needed.
 | `SMTP_HOST` | SMTP server host (MailHog: `localhost`) |
 | `SMTP_PORT` | SMTP server port (MailHog: `1025`) |
 | `SMTP_FROM` | Default From address for outbound mail |
+| `MAIL_PROVIDER` | `smtp` (default, MailHog) or `postmark` |
+| `POSTMARK_SERVER_TOKEN` | Postmark server token when `MAIL_PROVIDER=postmark` |
 
 ### Brand colors
 

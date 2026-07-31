@@ -62,3 +62,30 @@ export type LoginSuccessData = {
 	expiresIn: number;
 	user: AuthUser;
 };
+
+export const forgotPasswordSchema = z.object({
+	email: z
+		.string()
+		.min(1, 'Email is required')
+		.pipe(z.email('Enter a valid email address')),
+	recaptchaToken: recaptchaTokenSchema
+});
+
+export const forgotPasswordClientSchema = forgotPasswordSchema.omit({ recaptchaToken: true });
+
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ForgotPasswordClientInput = z.infer<typeof forgotPasswordClientSchema>;
+
+export const resetPasswordSchema = z.object({
+	token: z.string().min(1, 'Reset link is invalid or expired'),
+	password: z
+		.string()
+		.min(1, 'Password is required')
+		.refine(isPasswordStrong, 'Password does not meet all requirements'),
+	recaptchaToken: recaptchaTokenSchema
+});
+
+export const resetPasswordClientSchema = resetPasswordSchema.omit({ recaptchaToken: true });
+
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+export type ResetPasswordClientInput = z.infer<typeof resetPasswordClientSchema>;

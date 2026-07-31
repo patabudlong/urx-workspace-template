@@ -305,6 +305,107 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						}
 					}
 				}
+			},
+			'/auth/forgot-password': {
+				post: {
+					tags: ['Auth'],
+					summary: 'Request password reset',
+					description:
+						'Sends a password reset email when an account with a password exists. Always returns the same success message to avoid email enumeration.',
+					operationId: 'forgotPassword',
+					parameters: [
+						{
+							$ref: '#/components/parameters/XRequestId'
+						}
+					],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: {
+									$ref: '#/components/schemas/ForgotPasswordRequest'
+								}
+							}
+						}
+					},
+					responses: {
+						'200': {
+							description: 'Reset email queued (or no-op if account not found)',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ForgotPasswordSuccessResponse'
+									}
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ApiErrorResponse'
+									}
+								}
+							}
+						},
+						'503': {
+							description: 'Email service unavailable',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ApiErrorResponse'
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			'/auth/reset-password': {
+				post: {
+					tags: ['Auth'],
+					summary: 'Reset password',
+					description: 'Sets a new password using a valid reset token from the email link.',
+					operationId: 'resetPassword',
+					parameters: [
+						{
+							$ref: '#/components/parameters/XRequestId'
+						}
+					],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: {
+									$ref: '#/components/schemas/ResetPasswordRequest'
+								}
+							}
+						}
+					},
+					responses: {
+						'200': {
+							description: 'Password updated',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ResetPasswordSuccessResponse'
+									}
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid token or request body',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ApiErrorResponse'
+									}
+								}
+							}
+						}
+					}
+				}
 			}
 		},
 		components: {
@@ -649,6 +750,79 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 					properties: {
 						data: {
 							$ref: '#/components/schemas/LogoutData'
+						},
+						meta: {
+							$ref: '#/components/schemas/ApiMeta'
+						}
+					}
+				},
+				ForgotPasswordRequest: {
+					type: 'object',
+					required: ['email'],
+					properties: {
+						email: {
+							type: 'string',
+							format: 'email',
+							example: 'admin@urx.local'
+						},
+						recaptchaToken: {
+							type: 'string',
+							description: 'Google reCAPTCHA v3 token (required when reCAPTCHA is enabled)'
+						}
+					}
+				},
+				ForgotPasswordSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							type: 'object',
+							required: ['message'],
+							properties: {
+								message: {
+									type: 'string'
+								}
+							}
+						},
+						meta: {
+							$ref: '#/components/schemas/ApiMeta'
+						}
+					}
+				},
+				ResetPasswordRequest: {
+					type: 'object',
+					required: ['token', 'password'],
+					properties: {
+						token: {
+							type: 'string',
+							description: 'Reset token from the email link'
+						},
+						password: {
+							type: 'string',
+							minLength: 8,
+							format: 'password',
+							description:
+								'Must include uppercase, lowercase, number, and special character'
+						},
+						recaptchaToken: {
+							type: 'string',
+							description: 'Google reCAPTCHA v3 token (required when reCAPTCHA is enabled)'
+						}
+					}
+				},
+				ResetPasswordSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							type: 'object',
+							required: ['passwordUpdated'],
+							properties: {
+								passwordUpdated: {
+									type: 'boolean',
+									const: true
+								}
+							}
 						},
 						meta: {
 							$ref: '#/components/schemas/ApiMeta'
