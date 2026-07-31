@@ -4,7 +4,9 @@ export const RECAPTCHA_ACTIONS = {
 	LOGIN: 'login',
 	SIGNUP: 'signup',
 	FORGOT_PASSWORD: 'forgot_password',
-	RESET_PASSWORD: 'reset_password'
+	RESET_PASSWORD: 'reset_password',
+	RESEND_VERIFICATION: 'resend_verification',
+	VERIFY_EMAIL: 'verify_email'
 } as const;
 
 export type RecaptchaAction = (typeof RECAPTCHA_ACTIONS)[keyof typeof RECAPTCHA_ACTIONS];

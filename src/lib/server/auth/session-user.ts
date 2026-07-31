@@ -2,6 +2,7 @@ import type { UserDocument } from '$lib/shared/models/user';
 import type { AuthUser } from '$lib/shared/schemas/auth';
 import { signAccessToken } from '$lib/server/auth/jwt';
 import { ACCESS_TOKEN_TTL_SECONDS } from '$lib/server/auth/session';
+import { isUserEmailVerified } from '$lib/server/repositories/users';
 
 export type AuthSession = {
 	accessToken: string;
@@ -14,7 +15,8 @@ export function toAuthUser(user: UserDocument): AuthUser {
 		id: user._id.toString(),
 		email: user.email,
 		firstName: user.firstName,
-		lastName: user.lastName
+		lastName: user.lastName,
+		emailVerified: isUserEmailVerified(user)
 	};
 }
 

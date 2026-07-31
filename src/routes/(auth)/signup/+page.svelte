@@ -178,12 +178,7 @@
 					</Form.Field>
 				</div>
 
-				<TermsConsentField
-					{superform}
-					formStore={form}
-					email={$form.email}
-					disabled={submitDisabled}
-				/>
+				<TermsConsentField {superform} formStore={form} disabled={submitDisabled} />
 
 				<Button
 					type="submit"

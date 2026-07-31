@@ -150,7 +150,7 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 					tags: ['Auth'],
 					summary: 'Create account',
 					description:
-						'Registers a new workspace user with email and password. Returns a JWT for mobile clients (`Authorization: Bearer <token>`). Web apps may use the `/signup` form which sets an httpOnly session cookie.',
+						'Registers a new workspace user with email and password. Sends a verification code to the email address. Sign in after verifying via POST /auth/verify-email.',
 					operationId: 'signup',
 					parameters: [
 						{
@@ -169,11 +169,11 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 					},
 					responses: {
 						'201': {
-							description: 'Account created',
+							description: 'Account created; verification email sent',
 							content: {
 								'application/json': {
 									schema: {
-										$ref: '#/components/schemas/LoginSuccessResponse'
+										$ref: '#/components/schemas/SignupSuccessResponse'
 									}
 								}
 							}
@@ -362,6 +362,62 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 					}
 				}
 			},
+			'/auth/resend-verification': {
+				post: {
+					tags: ['Auth'],
+					summary: 'Resend verification email',
+					description:
+						'Sends a verification email with a 6-digit code when an unverified account exists. Always returns the same success message to avoid email enumeration.',
+					operationId: 'resendVerification',
+					parameters: [
+						{
+							$ref: '#/components/parameters/XRequestId'
+						}
+					],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: {
+									$ref: '#/components/schemas/ResendVerificationRequest'
+								}
+							}
+						}
+					},
+					responses: {
+						'200': {
+							description: 'Verification email queued (or no-op if account not found)',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ResendVerificationSuccessResponse'
+									}
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ApiErrorResponse'
+									}
+								}
+							}
+						},
+						'503': {
+							description: 'Email service unavailable',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ApiErrorResponse'
+									}
+								}
+							}
+						}
+					}
+				}
+			},
 			'/auth/reset-password': {
 				post: {
 					tags: ['Auth'],
@@ -396,6 +452,62 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						},
 						'400': {
 							description: 'Invalid token or request body',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ApiErrorResponse'
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			'/auth/verify-email': {
+				post: {
+					tags: ['Auth'],
+					summary: 'Verify email with code',
+					description:
+						'Confirms an email address using the 6-digit code sent to the user.',
+					operationId: 'verifyEmail',
+					parameters: [
+						{
+							$ref: '#/components/parameters/XRequestId'
+						}
+					],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: {
+									$ref: '#/components/schemas/VerifyEmailRequest'
+								}
+							}
+						}
+					},
+					responses: {
+						'200': {
+							description: 'Email verified',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/VerifyEmailSuccessResponse'
+									}
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid or expired verification code',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ApiErrorResponse'
+									}
+								}
+							}
+						},
+						'409': {
+							description: 'Email already verified',
 							content: {
 								'application/json': {
 									schema: {
@@ -635,7 +747,6 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						type: {
 							type: 'string',
 							enum: [
-								'terms_checkbox',
 								'terms_submit',
 								'social_login_google',
 								'social_login_apple',
@@ -680,7 +791,7 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 				},
 				AuthUser: {
 					type: 'object',
-					required: ['id', 'email', 'firstName', 'lastName'],
+					required: ['id', 'email', 'firstName', 'lastName', 'emailVerified'],
 					properties: {
 						id: {
 							type: 'string',
@@ -697,6 +808,31 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						lastName: {
 							type: 'string',
 							example: 'Smith'
+						},
+						emailVerified: {
+							type: 'boolean',
+							description: 'Whether the user has confirmed their email address'
+						}
+					}
+				},
+				SignupSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							type: 'object',
+							required: ['user', 'message'],
+							properties: {
+								user: {
+									$ref: '#/components/schemas/AuthUser'
+								},
+								message: {
+									type: 'string'
+								}
+							}
+						},
+						meta: {
+							$ref: '#/components/schemas/ApiMeta'
 						}
 					}
 				},
@@ -781,6 +917,79 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 							properties: {
 								message: {
 									type: 'string'
+								}
+							}
+						},
+						meta: {
+							$ref: '#/components/schemas/ApiMeta'
+						}
+					}
+				},
+				ResendVerificationRequest: {
+					type: 'object',
+					required: ['email'],
+					properties: {
+						email: {
+							type: 'string',
+							format: 'email',
+							example: 'admin@urx.local'
+						},
+						recaptchaToken: {
+							type: 'string',
+							description: 'Google reCAPTCHA v3 token (required when reCAPTCHA is enabled)'
+						}
+					}
+				},
+				ResendVerificationSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							type: 'object',
+							required: ['message'],
+							properties: {
+								message: {
+									type: 'string'
+								}
+							}
+						},
+						meta: {
+							$ref: '#/components/schemas/ApiMeta'
+						}
+					}
+				},
+				VerifyEmailRequest: {
+					type: 'object',
+					required: ['email', 'code'],
+					properties: {
+						email: {
+							type: 'string',
+							format: 'email',
+							example: 'admin@urx.local'
+						},
+						code: {
+							type: 'string',
+							pattern: '^\\d{6}$',
+							description: '6-digit verification code from the email',
+							example: '123456'
+						},
+						recaptchaToken: {
+							type: 'string',
+							description: 'Google reCAPTCHA v3 token (required when reCAPTCHA is enabled)'
+						}
+					}
+				},
+				VerifyEmailSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							type: 'object',
+							required: ['verified'],
+							properties: {
+								verified: {
+									type: 'boolean',
+									example: true
 								}
 							}
 						},

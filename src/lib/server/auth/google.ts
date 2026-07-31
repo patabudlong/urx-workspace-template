@@ -60,7 +60,8 @@ export async function authenticateWithGoogle(profile: GoogleProfile): Promise<Go
 			email: profile.email,
 			googleId: profile.sub,
 			firstName: profile.givenName,
-			lastName: profile.familyName
+			lastName: profile.familyName,
+			emailVerifiedAt: new Date()
 		});
 
 		const session = await createAuthSession(user);

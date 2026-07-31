@@ -13,6 +13,7 @@ export type UserDocument = {
 	googleId?: string;
 	firstName: string;
 	lastName: string;
+	emailVerifiedAt?: Date;
 	termsConsent?: TermsConsent;
 	createdAt: Date;
 	updatedAt: Date;

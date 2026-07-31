@@ -1,14 +1,15 @@
 import type { RequestHandler } from './$types';
 import { registerWithCredentials } from '$lib/server/auth/signup';
+import { requestVerificationEmail } from '$lib/server/auth/email-verification';
 import { jsonError, jsonOk } from '$lib/server/api/response';
-import { recordConsentEvent } from '$lib/server/repositories/consent-events';
+import { recordEmailSignupConsent } from '$lib/server/repositories/consent-events';
 import { assertAuthRecaptcha } from '$lib/server/security/recaptcha';
+import { SIGNUP_VERIFICATION_SENT_MESSAGE } from '$lib/shared/auth-messages';
 import { signupSchema } from '$lib/shared/schemas/auth';
 import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 import { LEGAL_POLICY_VERSION } from '$lib/shared/legal';
-import { CONSENT_CONTEXTS, CONSENT_EVENT_TYPES } from '$lib/shared/models/consent-event';
 
-export const POST: RequestHandler = async ({ request, getClientAddress }) => {
+export const POST: RequestHandler = async ({ request, url, getClientAddress }) => {
 	const requestId = request.headers.get('x-request-id') ?? undefined;
 
 	let body: unknown;
@@ -45,15 +46,6 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 		policyVersion: LEGAL_POLICY_VERSION
 	};
 
-	await recordConsentEvent({
-		type: CONSENT_EVENT_TYPES.TERMS_SUBMIT,
-		context: CONSENT_CONTEXTS.SIGNUP,
-		ipAddress,
-		userAgent: request.headers.get('user-agent') ?? undefined,
-		email: parsed.data.email,
-		policyVersion: LEGAL_POLICY_VERSION
-	});
-
 	const result = await registerWithCredentials({
 		firstName: parsed.data.firstName,
 		lastName: parsed.data.lastName,
@@ -63,19 +55,34 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 	});
 
 	if (!result.ok) {
-		if (result.reason === 'AUTH_NOT_CONFIGURED') {
-			return jsonError('SERVICE_UNAVAILABLE', 'Authentication is not configured', { requestId });
+		return jsonError('CONFLICT', 'An account with this email already exists', { requestId });
+	}
+
+	await recordEmailSignupConsent({
+		userId: result.user.id,
+		email: parsed.data.email,
+		ipAddress,
+		userAgent: request.headers.get('user-agent') ?? undefined,
+		policyVersion: LEGAL_POLICY_VERSION
+	});
+
+	const emailResult = await requestVerificationEmail({
+		email: parsed.data.email,
+		origin: url.origin
+	});
+
+	if (!emailResult.ok) {
+		if (emailResult.reason === 'MAIL_NOT_CONFIGURED') {
+			return jsonError('SERVICE_UNAVAILABLE', 'Email is not configured', { requestId });
 		}
 
-		return jsonError('CONFLICT', 'An account with this email already exists', { requestId });
+		return jsonError('SERVICE_UNAVAILABLE', 'Unable to send verification email', { requestId });
 	}
 
 	return jsonOk(
 		{
-			accessToken: result.accessToken,
-			tokenType: 'Bearer',
-			expiresIn: result.expiresIn,
-			user: result.user
+			user: result.user,
+			message: SIGNUP_VERIFICATION_SENT_MESSAGE
 		},
 		{ requestId, status: 201 }
 	);

@@ -32,6 +32,8 @@ export function createAuthFormOnSubmit<T extends Record<string, unknown>>(option
 		const parsed = options.clientSchema.safeParse(options.getFormData());
 
 		if (!parsed.success) {
+			options.onAuthBusyChange?.(false);
+			options.onLoadingReset?.();
 			await options.getValidateForm()({ update: true });
 			input.cancel();
 			return;
@@ -39,11 +41,17 @@ export function createAuthFormOnSubmit<T extends Record<string, unknown>>(option
 
 		options.onAuthBusyChange?.(true);
 
-		await createRecaptchaSubmitHandler(options.recaptchaAction, (message) => {
-			options.onRecaptchaError(message);
+		try {
+			await createRecaptchaSubmitHandler(options.recaptchaAction, (message) => {
+				options.onRecaptchaError(message);
+				options.onAuthBusyChange?.(false);
+				options.onLoadingReset?.();
+			})(input);
+		} catch {
 			options.onAuthBusyChange?.(false);
 			options.onLoadingReset?.();
-		})(input);
+			input.cancel();
+		}
 	};
 }
 

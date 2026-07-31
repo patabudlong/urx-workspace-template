@@ -5,7 +5,8 @@ import { getDb } from '$lib/server/db/client';
 export const CollectionNames = {
 	users: 'users',
 	consentEvents: 'consent_events',
-	passwordResetTokens: 'password_reset_tokens'
+	passwordResetTokens: 'password_reset_tokens',
+	emailVerificationTokens: 'email_verification_tokens'
 } as const;
 
 type CollectionName = keyof typeof CollectionNames;
@@ -31,4 +32,10 @@ export async function getPasswordResetTokensCollection<T extends Document = Docu
 	Collection<T>
 > {
 	return getCollection<T>('passwordResetTokens');
+}
+
+export async function getEmailVerificationTokensCollection<T extends Document = Document>(): Promise<
+	Collection<T>
+> {
+	return getCollection<T>('emailVerificationTokens');
 }

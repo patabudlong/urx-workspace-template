@@ -7,6 +7,8 @@ const DEFAULT_FORGOT_PASSWORD_MAX_ATTEMPTS = 5;
 const DEFAULT_FORGOT_PASSWORD_WINDOW_SECONDS = 3600;
 const DEFAULT_FORGOT_PASSWORD_EMAIL_MAX_ATTEMPTS = 3;
 const DEFAULT_FORGOT_PASSWORD_EMAIL_WINDOW_SECONDS = 3600;
+const DEFAULT_VERIFICATION_EMAIL_MAX_ATTEMPTS = 3;
+const DEFAULT_VERIFICATION_EMAIL_WINDOW_SECONDS = 3600;
 
 type RateLimitEntry = {
 	count: number;
@@ -103,6 +105,26 @@ function getForgotPasswordEmailWindowMs(): number {
 	return DEFAULT_FORGOT_PASSWORD_EMAIL_WINDOW_SECONDS * 1000;
 }
 
+function getVerificationEmailMaxAttempts(): number {
+	const configured = Number(env.AUTH_VERIFICATION_EMAIL_MAX);
+
+	if (Number.isFinite(configured) && configured > 0) {
+		return Math.floor(configured);
+	}
+
+	return DEFAULT_VERIFICATION_EMAIL_MAX_ATTEMPTS;
+}
+
+function getVerificationEmailWindowMs(): number {
+	const configured = Number(env.AUTH_VERIFICATION_EMAIL_WINDOW_SECONDS);
+
+	if (Number.isFinite(configured) && configured > 0) {
+		return Math.floor(configured) * 1000;
+	}
+
+	return DEFAULT_VERIFICATION_EMAIL_WINDOW_SECONDS * 1000;
+}
+
 function pruneExpiredEntries(now: number): void {
 	for (const [key, entry] of store) {
 		if (entry.resetAt <= now) {
@@ -127,6 +149,14 @@ export function isForgotPasswordPath(pathname: string): boolean {
 	return normalized === '/forgot-password' || normalized === '/api/v1/auth/forgot-password';
 }
 
+export function isResendVerificationPath(pathname: string): boolean {
+	const normalized = normalizeAuthPath(pathname);
+
+	return (
+		normalized === '/verify/resend' || normalized === '/api/v1/auth/resend-verification'
+	);
+}
+
 function getRateLimitBucket(pathname: string): string {
 	const normalized = normalizeAuthPath(pathname);
 
@@ -146,6 +176,14 @@ function getRateLimitBucket(pathname: string): string {
 		return 'forgot-password';
 	}
 
+	if (isResendVerificationPath(normalized)) {
+		return 'resend-verification';
+	}
+
+	if (normalized === '/verify' || normalized === '/api/v1/auth/verify-email') {
+		return 'verify-email';
+	}
+
 	if (normalized === '/reset-password' || normalized === '/api/v1/auth/reset-password') {
 		return 'reset-password';
 	}
@@ -158,7 +196,7 @@ function getRateLimitBucket(pathname: string): string {
 }
 
 function getPathRateLimitConfig(pathname: string): { maxAttempts: number; windowMs: number } {
-	if (isForgotPasswordPath(pathname)) {
+	if (isForgotPasswordPath(pathname) || isResendVerificationPath(pathname)) {
 		return {
 			maxAttempts: getForgotPasswordMaxAttempts(),
 			windowMs: getForgotPasswordWindowMs()
@@ -201,9 +239,24 @@ function consumeRateLimit(
 	return { ok: true };
 }
 
-const AUTH_API_RESOURCES = ['login', 'signup', 'forgot-password', 'reset-password', 'consent'] as const;
+const AUTH_API_RESOURCES = [
+	'login',
+	'signup',
+	'forgot-password',
+	'reset-password',
+	'resend-verification',
+	'verify-email',
+	'consent'
+] as const;
 
-export const AUTH_FORM_PATHS = ['/login', '/signup', '/forgot-password', '/reset-password'] as const;
+export const AUTH_FORM_PATHS = [
+	'/login',
+	'/signup',
+	'/forgot-password',
+	'/reset-password',
+	'/verify/resend',
+	'/verify'
+] as const;
 
 export function isAuthApiRateLimitedRoute(pathname: string, method: string): boolean {
 	if (method !== 'POST' || !pathname.startsWith('/api/v1/auth/')) {
@@ -258,6 +311,25 @@ export function isForgotPasswordEmailThrottled(email: string): boolean {
 	const result = consumeRateLimit(`forgot-email:${normalizedEmail}`, {
 		maxAttempts: getForgotPasswordEmailMaxAttempts(),
 		windowMs: getForgotPasswordEmailWindowMs()
+	});
+
+	return !result.ok;
+}
+
+export function isVerificationEmailThrottled(email: string): boolean {
+	if (!isAuthRateLimitEnabled()) {
+		return false;
+	}
+
+	const normalizedEmail = email.trim().toLowerCase();
+
+	if (!normalizedEmail) {
+		return false;
+	}
+
+	const result = consumeRateLimit(`verify-email:${normalizedEmail}`, {
+		maxAttempts: getVerificationEmailMaxAttempts(),
+		windowMs: getVerificationEmailWindowMs()
 	});
 
 	return !result.ok;

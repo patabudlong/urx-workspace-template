@@ -68,6 +68,7 @@ async function main() {
 						passwordHash,
 						firstName,
 						lastName,
+						emailVerifiedAt: now,
 						updatedAt: now
 					},
 					$unset: {
@@ -82,6 +83,7 @@ async function main() {
 				passwordHash,
 				firstName,
 				lastName,
+				emailVerifiedAt: now,
 				createdAt: now,
 				updatedAt: now
 			});

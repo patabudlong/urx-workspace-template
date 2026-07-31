@@ -2,30 +2,17 @@
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
 	import * as Form from '$lib/components/ui/form/index.js';
-	import { recordConsentEvent } from '$lib/consent/client';
 	import { LEGAL_ROUTES } from '$lib/shared/legal';
-	import { CONSENT_CONTEXTS, CONSENT_EVENT_TYPES } from '$lib/shared/models/consent-event';
 	import type { SignupInput } from '$lib/shared/schemas/auth';
 	import type { SuperForm } from 'sveltekit-superforms';
 
 	type Props = {
 		superform: SuperForm<SignupInput>;
 		formStore: SuperForm<SignupInput>['form'];
-		email?: string;
 		disabled?: boolean;
 	};
 
-	let { superform, formStore, email, disabled = false }: Props = $props();
-
-	function handleCheckedChange(checked: boolean | 'indeterminate') {
-		if (checked === true) {
-			recordConsentEvent({
-				type: CONSENT_EVENT_TYPES.TERMS_CHECKBOX,
-				context: CONSENT_CONTEXTS.SIGNUP,
-				email
-			});
-		}
-	}
+	let { superform, formStore, disabled = false }: Props = $props();
 </script>
 
 <Form.Field form={superform} name="acceptedTerms" class="space-y-1">
@@ -38,7 +25,6 @@
 					aria-required="true"
 					{disabled}
 					bind:checked={$formStore.acceptedTerms}
-					onCheckedChange={handleCheckedChange}
 				/>
 				<label
 					for={props.id}

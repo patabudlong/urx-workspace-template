@@ -1,6 +1,15 @@
 export const FORGOT_PASSWORD_SUCCESS_MESSAGE =
 	'If an account exists for that email, we sent a link to reset your password. Check your inbox and spam folder.';
 
+export const SIGNUP_VERIFICATION_SENT_MESSAGE =
+	'Your account was created. We sent a 6-digit verification code to your email — check your inbox and spam folder.';
+
+export const RESEND_VERIFICATION_SUCCESS_MESSAGE =
+	'If an account exists for that email and is not yet verified, we sent a new verification code. Check your inbox and spam folder.';
+
+export const EMAIL_NOT_VERIFIED_MESSAGE =
+	'Please verify your email before signing in. Check your inbox or resend a verification code.';
+
 export const AUTH_RATE_LIMIT_MESSAGE =
 	'Too many attempts. Please wait a few minutes and try again.';
 

@@ -2,6 +2,7 @@ import type { RequestHandler } from './$types';
 import { authenticateWithCredentials } from '$lib/server/auth/login';
 import { jsonError, jsonOk } from '$lib/server/api/response';
 import { assertAuthRecaptcha } from '$lib/server/security/recaptcha';
+import { EMAIL_NOT_VERIFIED_MESSAGE } from '$lib/shared/auth-messages';
 import { loginSchema } from '$lib/shared/schemas/auth';
 import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 
@@ -41,6 +42,13 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 	if (!result.ok) {
 		if (result.reason === 'AUTH_NOT_CONFIGURED') {
 			return jsonError('SERVICE_UNAVAILABLE', 'Authentication is not configured', { requestId });
+		}
+
+		if (result.reason === 'EMAIL_NOT_VERIFIED') {
+			return jsonError('FORBIDDEN', EMAIL_NOT_VERIFIED_MESSAGE, {
+				details: { code: 'EMAIL_NOT_VERIFIED' },
+				requestId
+			});
 		}
 
 		return jsonError('UNAUTHORIZED', 'Invalid email or password', { requestId });

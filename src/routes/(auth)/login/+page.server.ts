@@ -8,7 +8,7 @@ import { getSessionCookieOptions, SESSION_COOKIE_NAME } from '$lib/server/auth/s
 import { getAuthRateLimitFormFailure } from '$lib/server/security/auth-rate-limit-form';
 import { assertAuthRecaptcha } from '$lib/server/security/recaptcha';
 import { loginSchema } from '$lib/shared/schemas/auth';
-import { getAuthRedirectAlert } from '$lib/shared/auth-messages';
+import { EMAIL_NOT_VERIFIED_MESSAGE, getAuthRedirectAlert } from '$lib/shared/auth-messages';
 import { getGoogleAuthErrorMessage } from '$lib/shared/google-auth';
 import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 
@@ -83,6 +83,10 @@ export const actions: Actions = {
 				return message(form, 'Authentication is not configured. Set JWT_SECRET in your environment.', {
 					status: 503
 				});
+			}
+
+			if (result.reason === 'EMAIL_NOT_VERIFIED') {
+				return message(form, EMAIL_NOT_VERIFIED_MESSAGE, { status: 403 });
 			}
 
 			return message(form, 'Invalid email or password.', { status: 401 });

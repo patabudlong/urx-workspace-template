@@ -1,7 +1,6 @@
 import type { ObjectId } from 'mongodb';
 
 export const CONSENT_EVENT_TYPES = {
-	TERMS_CHECKBOX: 'terms_checkbox',
 	TERMS_SUBMIT: 'terms_submit',
 	SOCIAL_LOGIN_GOOGLE: 'social_login_google',
 	SOCIAL_LOGIN_APPLE: 'social_login_apple',

@@ -26,10 +26,15 @@ const userProjection = {
 	googleId: 1,
 	firstName: 1,
 	lastName: 1,
+	emailVerifiedAt: 1,
 	termsConsent: 1,
 	createdAt: 1,
 	updatedAt: 1
 } as const;
+
+export function isUserEmailVerified(user: UserDocument): boolean {
+	return user.emailVerifiedAt != null;
+}
 
 export async function findUserByEmail(email: string): Promise<UserDocument | null> {
 	const users = await getUsersCollection<UserDocument>();
@@ -49,6 +54,7 @@ export async function createUser(input: {
 	googleId?: string;
 	firstName: string;
 	lastName: string;
+	emailVerifiedAt?: Date;
 	termsConsent?: TermsConsent;
 }): Promise<UserDocument> {
 	const users = await getUsersCollection<UserDocument>();
@@ -63,6 +69,7 @@ export async function createUser(input: {
 		googleId: input.googleId,
 		firstName,
 		lastName,
+		emailVerifiedAt: input.emailVerifiedAt,
 		termsConsent: input.termsConsent,
 		createdAt: now,
 		updatedAt: now
@@ -75,10 +82,28 @@ export async function createUser(input: {
 		googleId: input.googleId,
 		firstName,
 		lastName,
+		emailVerifiedAt: input.emailVerifiedAt,
 		termsConsent: input.termsConsent,
 		createdAt: now,
 		updatedAt: now
 	};
+}
+
+export async function markUserEmailVerified(userId: string): Promise<boolean> {
+	const users = await getUsersCollection<UserDocument>();
+	const now = new Date();
+
+	const result = await users.updateOne(
+		{ _id: new ObjectId(userId) },
+		{
+			$set: {
+				emailVerifiedAt: now,
+				updatedAt: now
+			}
+		}
+	);
+
+	return result.matchedCount === 1;
 }
 
 export async function updateUserPassword(userId: string, passwordHash: string): Promise<boolean> {
@@ -107,6 +132,7 @@ export async function linkGoogleAccount(userId: string, googleId: string): Promi
 		{
 			$set: {
 				googleId,
+				emailVerifiedAt: now,
 				updatedAt: now
 			}
 		},

@@ -54,6 +54,7 @@ export type AuthUser = {
 	email: string;
 	firstName: string;
 	lastName: string;
+	emailVerified: boolean;
 };
 
 export type LoginSuccessData = {
@@ -89,3 +90,36 @@ export const resetPasswordClientSchema = resetPasswordSchema.omit({ recaptchaTok
 
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export type ResetPasswordClientInput = z.infer<typeof resetPasswordClientSchema>;
+
+export const resendVerificationSchema = z.object({
+	email: z
+		.string()
+		.min(1, 'Email is required')
+		.pipe(z.email('Enter a valid email address')),
+	recaptchaToken: recaptchaTokenSchema
+});
+
+export const resendVerificationClientSchema = resendVerificationSchema.omit({ recaptchaToken: true });
+
+export type ResendVerificationInput = z.infer<typeof resendVerificationSchema>;
+export type ResendVerificationClientInput = z.infer<typeof resendVerificationClientSchema>;
+
+const verificationCodeSchema = z
+	.string()
+	.trim()
+	.min(1, 'Verification code is required')
+	.regex(/^\d{6}$/, 'Enter the 6-digit code from your email');
+
+export const verifyEmailSchema = z.object({
+	email: z
+		.string()
+		.min(1, 'Email is required')
+		.pipe(z.email('Enter a valid email address')),
+	code: verificationCodeSchema,
+	recaptchaToken: recaptchaTokenSchema
+});
+
+export const verifyEmailClientSchema = verifyEmailSchema.omit({ recaptchaToken: true });
+
+export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
+export type VerifyEmailClientInput = z.infer<typeof verifyEmailClientSchema>;
