@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { hashPassword } from '$lib/server/auth/password';
+import { matchesStoredPassword } from '$lib/server/auth/password-history';
 import { isForgotPasswordEmailThrottled } from '$lib/server/security/auth-rate-limit';
 import { isMailConfigured } from '$lib/server/mail/index';
 import { sendPasswordResetEmail } from '$lib/server/mail/password-reset-email';
@@ -9,7 +10,8 @@ import {
 	findValidPasswordResetToken,
 	markPasswordResetTokenUsed
 } from '$lib/server/repositories/password-reset-tokens';
-import { ensureUserIndexes, findUserByEmail, updateUserPassword } from '$lib/server/repositories/users';
+import { ensureUserIndexes, findUserByEmail, findUserById, rotateUserPassword } from '$lib/server/repositories/users';
+import { isPasswordStrong } from '$lib/shared/password-policy';
 
 /** 16 bytes → base64url (~22 chars). Keeps email HTML href lines under 76 chars (7bit-safe). */
 const TOKEN_BYTES = 16;
@@ -90,9 +92,15 @@ export async function resetPasswordWithToken(input: {
 }): Promise<
 	| { ok: true }
 	| { ok: false; reason: 'INVALID_TOKEN' }
+	| { ok: false; reason: 'WEAK_PASSWORD' }
+	| { ok: false; reason: 'PASSWORD_REUSED' }
 	| { ok: false; reason: 'UPDATE_FAILED' }
 > {
 	await Promise.all([ensureUserIndexes(), ensurePasswordResetTokenIndexes()]);
+
+	if (!isPasswordStrong(input.password)) {
+		return { ok: false, reason: 'WEAK_PASSWORD' };
+	}
 
 	const record = await findValidPasswordResetToken(hashResetToken(input.token));
 
@@ -100,8 +108,28 @@ export async function resetPasswordWithToken(input: {
 		return { ok: false, reason: 'INVALID_TOKEN' };
 	}
 
+	const user = await findUserById(record.userId.toString());
+
+	if (!user) {
+		return { ok: false, reason: 'INVALID_TOKEN' };
+	}
+
+	if (
+		await matchesStoredPassword(
+			input.password,
+			user.passwordHash,
+			user.passwordHistory ?? []
+		)
+	) {
+		return { ok: false, reason: 'PASSWORD_REUSED' };
+	}
+
 	const passwordHash = await hashPassword(input.password);
-	const updated = await updateUserPassword(record.userId.toString(), passwordHash);
+	const updated = await rotateUserPassword(record.userId.toString(), {
+		newPasswordHash: passwordHash,
+		currentPasswordHash: user.passwordHash,
+		passwordHistory: user.passwordHistory
+	});
 
 	if (!updated) {
 		return { ok: false, reason: 'UPDATE_FAILED' };

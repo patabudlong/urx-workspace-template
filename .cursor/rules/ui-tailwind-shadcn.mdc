@@ -125,6 +125,33 @@ import { AUTH_ACTION_BUTTON_CLASS, AUTH_INLINE_LINK_CLASS } from '$lib/auth/ui';
 - **Never** mix raw `text-primary font-medium hover:underline` on auth footer links; use `AUTH_INLINE_LINK_CLASS`.
 - Google OAuth button: `GoogleSignInButton` (already uses `AUTH_ACTION_BUTTON_CLASS`).
 
+## Status alerts (info, warning, danger, success, plain)
+
+**Every inline status message must include an icon.** Use **`StatusAlert`** from `$lib/components/status-alert.svelte` — never hand-roll colored `div`s for feedback.
+
+| Variant | Use for | Icon (`@lucide/svelte`) |
+|--------|---------|-------------------------|
+| `info` | Neutral guidance, “check your email”, tips | `info` |
+| `warning` | Rate limits, caution, recoverable issues | `triangle-alert` |
+| `danger` | Errors, invalid input, failed actions | `circle-alert` |
+| `success` | Confirmed actions (password updated, saved) | `circle-check` |
+| `plain` | Low-emphasis notes without semantic color | `info` (muted) |
+
+```svelte
+import StatusAlert from '$lib/components/status-alert.svelte';
+
+<StatusAlert variant="success">Your password has been updated.</StatusAlert>
+<StatusAlert variant="warning">Too many attempts. Try again in 2:00.</StatusAlert>
+<StatusAlert variant="danger">Invalid email or password.</StatusAlert>
+<StatusAlert variant="info">We sent a verification code to your email.</StatusAlert>
+<StatusAlert variant="plain">Optional helper note.</StatusAlert>
+```
+
+- **`FormAlert`** (`$lib/components/auth/form-alert.svelte`) — shorthand for `variant="danger"` on auth forms; prefer `StatusAlert` when the variant is not danger.
+- **`AuthFormMessageAlert`** — wraps `StatusAlert`; passes `variant` (default `danger`); auto-uses `warning` for rate-limit countdowns.
+- Large **hero panels** (centered illustration + copy, e.g. email sent) may keep a decorative icon in the panel — inline banners above forms must still use `StatusAlert`.
+- Icons: `class="size-4 shrink-0"` in the component; `aria-hidden="true"` on decorative icons. `role="alert"` for danger/warning; `role="status"` for info/success/plain.
+
 ## Red flags (reject in review)
 
 - New global CSS outside `layout.css`
@@ -132,5 +159,6 @@ import { AUTH_ACTION_BUTTON_CLASS, AUTH_INLINE_LINK_CLASS } from '$lib/auth/ui';
 - Raw hex/rgb in `.svelte` files instead of CSS variables
 - Duplicate button/input styles
 - Auth `Button` with only `w-full` (missing `h-10` via `AUTH_ACTION_BUTTON_CLASS`)
+- Inline status `div` with only background/border colors and no icon — use `StatusAlert`
 - Multiple competing layout roots (second sidebar, second header provider)
 - `!` important utilities on shadcn components

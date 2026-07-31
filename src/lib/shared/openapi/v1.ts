@@ -422,7 +422,8 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 				post: {
 					tags: ['Auth'],
 					summary: 'Reset password',
-					description: 'Sets a new password using a valid reset token from the email link.',
+					description:
+						'Sets a new password using a valid reset token from the email link. The new password must meet strength requirements and cannot match the current password or any of the last five previous passwords.',
 					operationId: 'resetPassword',
 					parameters: [
 						{

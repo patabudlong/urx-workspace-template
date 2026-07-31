@@ -9,6 +9,7 @@ import {
 } from '$lib/server/auth/password-reset';
 import { getAuthRateLimitFormFailure } from '$lib/server/security/auth-rate-limit-form';
 import { assertAuthRecaptcha } from '$lib/server/security/recaptcha';
+import { PASSWORD_REUSE_MESSAGE, PASSWORD_WEAK_MESSAGE } from '$lib/shared/auth-messages';
 import { resetPasswordSchema } from '$lib/shared/schemas/auth';
 import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 
@@ -73,6 +74,14 @@ export const actions: Actions = {
 				return message(form, 'This reset link is invalid or has expired. Request a new one.', {
 					status: 400
 				});
+			}
+
+			if (result.reason === 'PASSWORD_REUSED') {
+				return message(form, PASSWORD_REUSE_MESSAGE, { status: 400 });
+			}
+
+			if (result.reason === 'WEAK_PASSWORD') {
+				return message(form, PASSWORD_WEAK_MESSAGE, { status: 400 });
 			}
 
 			return message(form, 'We could not update your password. Please try again.', { status: 500 });

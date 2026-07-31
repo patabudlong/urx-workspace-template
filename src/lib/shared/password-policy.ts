@@ -1,3 +1,5 @@
+export const PASSWORD_HISTORY_LIMIT = 5;
+
 export const PASSWORD_RULES = [
 	{
 		id: 'length',
@@ -52,6 +54,20 @@ export function getPasswordChecks(password: string): PasswordCheck[] {
 
 export function isPasswordStrong(password: string): boolean {
 	return PASSWORD_RULES.every((rule) => rule.test(password));
+}
+
+export const PASSWORD_REQUIREMENTS_SUMMARY =
+	'At least 8 characters with uppercase, lowercase, a number, and a special character.';
+
+export function buildNextPasswordHistory(
+	currentPasswordHash: string | undefined,
+	existingHistory: string[] | undefined
+): string[] {
+	if (!currentPasswordHash) {
+		return (existingHistory ?? []).slice(0, PASSWORD_HISTORY_LIMIT);
+	}
+
+	return [currentPasswordHash, ...(existingHistory ?? [])].slice(0, PASSWORD_HISTORY_LIMIT);
 }
 
 export function getPasswordStrength(password: string): PasswordStrength {

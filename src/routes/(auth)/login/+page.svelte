@@ -3,7 +3,7 @@
 	import { createAuthLoadingState } from '$lib/auth/loading.svelte';
 	import AuthFormMessageAlert from '$lib/components/auth/auth-form-message-alert.svelte';
 	import AuthFormPanel from '$lib/components/auth/auth-form-panel.svelte';
-	import FormAlert from '$lib/components/auth/form-alert.svelte';
+	import StatusAlert from '$lib/components/status-alert.svelte';
 	import GoogleSignInButton from '$lib/components/auth/google-sign-in-button.svelte';
 	import RecaptchaNotice from '$lib/components/auth/recaptcha-notice.svelte';
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
@@ -91,12 +91,9 @@
 		>
 			<div class="space-y-5">
 				{#if data.passwordResetSuccess}
-					<div
-						class="bg-primary/10 text-primary flex gap-2 rounded-lg border border-primary/20 px-3 py-2 text-sm"
-						role="status"
-					>
+					<StatusAlert variant="success">
 						Your password has been updated. Sign in with your new password.
-					</div>
+					</StatusAlert>
 				{/if}
 
 				{#if data.googleAuthError}
@@ -108,7 +105,7 @@
 				{/if}
 
 				{#if recaptchaError}
-					<FormAlert>{recaptchaError}</FormAlert>
+					<StatusAlert variant="danger">{recaptchaError}</StatusAlert>
 				{/if}
 
 				{#if $formMessage}

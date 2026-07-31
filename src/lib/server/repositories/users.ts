@@ -1,4 +1,5 @@
 import type { UserDocument, TermsConsent } from '$lib/shared/models/user';
+import { buildNextPasswordHistory } from '$lib/shared/password-policy';
 import { getUsersCollection } from '$lib/server/db/collections';
 import { ObjectId } from 'mongodb';
 
@@ -23,6 +24,7 @@ const userProjection = {
 	_id: 1,
 	email: 1,
 	passwordHash: 1,
+	passwordHistory: 1,
 	googleId: 1,
 	firstName: 1,
 	lastName: 1,
@@ -34,6 +36,12 @@ const userProjection = {
 
 export function isUserEmailVerified(user: UserDocument): boolean {
 	return user.emailVerifiedAt != null;
+}
+
+export async function findUserById(userId: string): Promise<UserDocument | null> {
+	const users = await getUsersCollection<UserDocument>();
+
+	return users.findOne({ _id: new ObjectId(userId) }, { projection: userProjection });
 }
 
 export async function findUserByEmail(email: string): Promise<UserDocument | null> {
@@ -106,15 +114,27 @@ export async function markUserEmailVerified(userId: string): Promise<boolean> {
 	return result.matchedCount === 1;
 }
 
-export async function updateUserPassword(userId: string, passwordHash: string): Promise<boolean> {
+export async function rotateUserPassword(
+	userId: string,
+	input: {
+		newPasswordHash: string;
+		currentPasswordHash?: string;
+		passwordHistory?: string[];
+	}
+): Promise<boolean> {
 	const users = await getUsersCollection<UserDocument>();
 	const now = new Date();
+	const passwordHistory = buildNextPasswordHistory(
+		input.currentPasswordHash,
+		input.passwordHistory
+	);
 
 	const result = await users.updateOne(
 		{ _id: new ObjectId(userId) },
 		{
 			$set: {
-				passwordHash,
+				passwordHash: input.newPasswordHash,
+				passwordHistory,
 				updatedAt: now
 			}
 		}

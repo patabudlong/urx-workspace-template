@@ -10,6 +10,11 @@ export const RESEND_VERIFICATION_SUCCESS_MESSAGE =
 export const EMAIL_NOT_VERIFIED_MESSAGE =
 	'Please verify your email before signing in. Check your inbox or resend a verification code.';
 
+export const PASSWORD_REUSE_MESSAGE =
+	'Your new password cannot match your current password or any of your last 5 passwords.';
+
+export const PASSWORD_WEAK_MESSAGE = 'Password does not meet all requirements.';
+
 export const AUTH_RATE_LIMIT_MESSAGE =
 	'Too many attempts. Please wait a few minutes and try again.';
 

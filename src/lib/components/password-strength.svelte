@@ -2,13 +2,15 @@
 	import {
 		getPasswordChecks,
 		getPasswordStrength,
+		PASSWORD_HISTORY_LIMIT,
 		type PasswordStrengthLevel
 	} from '$lib/shared/password-policy';
 	import { cn } from '$lib/utils.js';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import CircleIcon from '@lucide/svelte/icons/circle';
 
-	let { password = '' }: { password?: string } = $props();
+	let { password = '', showReuseHint = false }: { password?: string; showReuseHint?: boolean } =
+		$props();
 
 	const checks = $derived(getPasswordChecks(password));
 	const strength = $derived(getPasswordStrength(password));
@@ -67,5 +69,10 @@
 				</li>
 			{/each}
 		</ul>
+		{#if showReuseHint}
+			<p class="text-muted-foreground text-xs">
+				Cannot match your current password or any of your last {PASSWORD_HISTORY_LIMIT} passwords.
+			</p>
+		{/if}
 	</div>
 </div>

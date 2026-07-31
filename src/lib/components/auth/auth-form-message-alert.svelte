@@ -1,5 +1,6 @@
 <script lang="ts">
-	import FormAlert from '$lib/components/auth/form-alert.svelte';
+	import StatusAlert from '$lib/components/status-alert.svelte';
+	import type { StatusAlertVariant } from '$lib/components/status-alert.svelte';
 	import {
 		formatAuthRateLimitMessage,
 		isAuthRateLimitMessage,
@@ -9,10 +10,12 @@
 	let {
 		message,
 		retryAfterSeconds = null,
+		variant = 'danger',
 		limited = $bindable(false)
 	}: {
 		message?: AuthFormMessage | null;
 		retryAfterSeconds?: number | null;
+		variant?: StatusAlertVariant;
 		limited?: boolean;
 	} = $props();
 
@@ -60,8 +63,12 @@
 			? formatAuthRateLimitMessage(remaining)
 			: alertText
 	);
+
+	const resolvedVariant = $derived<StatusAlertVariant>(
+		initialRetryAfter && initialRetryAfter > 0 ? 'warning' : variant
+	);
 </script>
 
 {#if displayMessage}
-	<FormAlert>{displayMessage}</FormAlert>
+	<StatusAlert variant={resolvedVariant}>{displayMessage}</StatusAlert>
 {/if}

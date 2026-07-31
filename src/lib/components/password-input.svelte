@@ -9,12 +9,14 @@
 
 	type PasswordInputProps = WithElementRef<Omit<ComponentProps<typeof Input>, 'type' | 'files'>> & {
 		showStrength?: boolean;
+		showReuseHint?: boolean;
 	};
 
 	let {
 		class: className,
 		value = $bindable(''),
 		showStrength = false,
+		showReuseHint = false,
 		...restProps
 	}: PasswordInputProps = $props();
 
@@ -46,6 +48,6 @@
 	</div>
 
 	{#if showStrength === true}
-		<PasswordStrength password={value} />
+		<PasswordStrength password={value} {showReuseHint} />
 	{/if}
 </div>

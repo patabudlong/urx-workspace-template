@@ -10,6 +10,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Form from '$lib/components/ui/form/index.js';
 	import { resetPasswordClientSchema, type ResetPasswordInput } from '$lib/shared/schemas/auth';
+	import { PASSWORD_HISTORY_LIMIT, PASSWORD_REQUIREMENTS_SUMMARY } from '$lib/shared/password-policy';
 	import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 	import { warmRecaptcha } from '$lib/recaptcha/client';
 	import { AUTH_ACTION_BUTTON_CLASS, AUTH_INLINE_LINK_CLASS } from '$lib/auth/ui';
@@ -75,7 +76,7 @@
 
 <AuthFormPanel
 	title="Reset password"
-	description="Choose a new password for your workspace account."
+	description={`Choose a new password that is not one of your last ${PASSWORD_HISTORY_LIMIT} passwords. ${PASSWORD_REQUIREMENTS_SUMMARY}`}
 >
 	<div class="space-y-6">
 		{#if !data.tokenValid}
@@ -106,6 +107,7 @@
 									disabled={submitDisabled}
 									bind:value={$form.password}
 									showStrength
+									showReuseHint
 									autocomplete="new-password"
 								/>
 							{/snippet}
