@@ -172,6 +172,22 @@ export function preloadRecaptcha(): void {
 	});
 }
 
+/** Remove reCAPTCHA script and badge when leaving auth routes. */
+export function cleanupRecaptcha(): void {
+	if (!browser) {
+		return;
+	}
+
+	tokenEntry = null;
+	scriptLoadPromise = null;
+
+	document.getElementById(RECAPTCHA_SCRIPT_ID)?.remove();
+	document.querySelectorAll('.grecaptcha-badge').forEach((element) => element.remove());
+	document.querySelectorAll('iframe[src*="recaptcha"]').forEach((element) => element.remove());
+
+	delete window.grecaptcha;
+}
+
 /** Prefetch a token so submit does not wait on grecaptcha.execute. */
 export function warmRecaptcha(action: RecaptchaAction): void {
 	if (!isRecaptchaClientEnabled()) {

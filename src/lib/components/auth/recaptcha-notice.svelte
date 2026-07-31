@@ -3,7 +3,7 @@
 </script>
 
 {#if isRecaptchaClientEnabled()}
-	<p class="text-muted-foreground text-center text-[0.65rem] leading-relaxed">
+	<p class="text-muted-foreground text-left text-[0.65rem] leading-relaxed">
 		This site is protected by reCAPTCHA and the Google
 		<a
 			href="https://policies.google.com/privacy"

@@ -135,6 +135,11 @@
 	a[data-slot='button']:not([aria-disabled='true']) {
 		@apply cursor-pointer;
 	}
+
+	/* Branding is shown via RecaptchaNotice on auth forms. */
+	.grecaptcha-badge {
+		visibility: hidden;
+	}
 }
 
 @keyframes action-progress-slide {

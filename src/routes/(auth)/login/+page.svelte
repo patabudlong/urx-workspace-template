@@ -2,6 +2,7 @@
 	import { createAuthFormOnSubmit } from '$lib/auth/form';
 	import { createAuthLoadingState } from '$lib/auth/loading.svelte';
 	import AuthFormPanel from '$lib/components/auth/auth-form-panel.svelte';
+	import FormAlert from '$lib/components/auth/form-alert.svelte';
 	import GoogleSignInButton from '$lib/components/auth/google-sign-in-button.svelte';
 	import RecaptchaNotice from '$lib/components/auth/recaptcha-notice.svelte';
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
@@ -83,21 +84,11 @@
 		>
 			<div class="space-y-5">
 				{#if recaptchaError}
-					<div
-						class="bg-destructive/10 text-destructive rounded-lg border border-destructive/20 px-3 py-2 text-sm"
-						role="alert"
-					>
-						{recaptchaError}
-					</div>
+					<FormAlert>{recaptchaError}</FormAlert>
 				{/if}
 
 				{#if $formMessage}
-					<div
-						class="bg-destructive/10 text-destructive rounded-lg border border-destructive/20 px-3 py-2 text-sm"
-						role="alert"
-					>
-						{$formMessage}
-					</div>
+					<FormAlert>{$formMessage}</FormAlert>
 				{/if}
 
 				<div class="space-y-4">

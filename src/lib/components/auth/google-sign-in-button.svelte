@@ -7,27 +7,12 @@
 	type Props = {
 		context: ConsentContext;
 		email?: string;
-		requireTerms?: boolean;
-		termsAccepted?: boolean;
 		disabled?: boolean;
-		onTermsRequired?: () => void;
 	};
 
-	let {
-		context,
-		email,
-		requireTerms = false,
-		termsAccepted = false,
-		disabled = false,
-		onTermsRequired
-	}: Props = $props();
+	let { context, email, disabled = false }: Props = $props();
 
 	function handleClick() {
-		if (requireTerms && !termsAccepted) {
-			onTermsRequired?.();
-			return;
-		}
-
 		recordConsentEvent({
 			type: CONSENT_EVENT_TYPES.SOCIAL_LOGIN_GOOGLE,
 			context,

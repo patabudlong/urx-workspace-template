@@ -2,6 +2,7 @@
 	import { createAuthFormOnSubmit } from '$lib/auth/form';
 	import { createAuthLoadingState } from '$lib/auth/loading.svelte';
 	import AuthFormPanel from '$lib/components/auth/auth-form-panel.svelte';
+	import FormAlert from '$lib/components/auth/form-alert.svelte';
 	import GoogleSignInButton from '$lib/components/auth/google-sign-in-button.svelte';
 	import RecaptchaNotice from '$lib/components/auth/recaptcha-notice.svelte';
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
@@ -25,7 +26,6 @@
 	let { data } = $props();
 
 	let recaptchaError = $state<string | null>(null);
-	let termsRequiredMessage = $state<string | null>(null);
 	const authLoading = createAuthLoadingState();
 
 	let formStore: SuperForm<SignupInput>['form'];
@@ -72,12 +72,6 @@
 
 	formStore = form;
 	validateFormFn = superform.validateForm;
-
-	$effect(() => {
-		if ($form.acceptedTerms) {
-			termsRequiredMessage = null;
-		}
-	});
 </script>
 
 <AuthFormPanel
@@ -94,30 +88,11 @@
 		>
 			<div class="space-y-5">
 				{#if recaptchaError}
-					<div
-						class="bg-destructive/10 text-destructive rounded-lg border border-destructive/20 px-3 py-2 text-sm"
-						role="alert"
-					>
-						{recaptchaError}
-					</div>
+					<FormAlert>{recaptchaError}</FormAlert>
 				{/if}
 
 				{#if $formMessage}
-					<div
-						class="bg-destructive/10 text-destructive rounded-lg border border-destructive/20 px-3 py-2 text-sm"
-						role="alert"
-					>
-						{$formMessage}
-					</div>
-				{/if}
-
-				{#if termsRequiredMessage}
-					<div
-						class="bg-destructive/10 text-destructive rounded-lg border border-destructive/20 px-3 py-2 text-sm"
-						role="alert"
-					>
-						{termsRequiredMessage}
-					</div>
+					<FormAlert>{$formMessage}</FormAlert>
 				{/if}
 
 				<div class="space-y-4">
@@ -225,13 +200,7 @@
 		<GoogleSignInButton
 			context={CONSENT_CONTEXTS.SIGNUP}
 			email={$form.email}
-			requireTerms
-			termsAccepted={$form.acceptedTerms}
 			disabled={authLoading.authBusy}
-			onTermsRequired={() => {
-				termsRequiredMessage =
-					'Please agree to the Terms of Service and Privacy Notice before continuing with Google.';
-			}}
 		/>
 
 		<p class="text-muted-foreground text-center text-sm">
