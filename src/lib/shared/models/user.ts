@@ -9,7 +9,8 @@ export type TermsConsent = {
 export type UserDocument = {
 	_id: ObjectId;
 	email: string;
-	passwordHash: string;
+	passwordHash?: string;
+	googleId?: string;
 	firstName: string;
 	lastName: string;
 	termsConsent?: TermsConsent;

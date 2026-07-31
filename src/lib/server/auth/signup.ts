@@ -1,7 +1,6 @@
 import type { AuthUser } from '$lib/shared/schemas/auth';
-import { signAccessToken } from '$lib/server/auth/jwt';
 import { hashPassword } from '$lib/server/auth/password';
-import { ACCESS_TOKEN_TTL_SECONDS } from '$lib/server/auth/session';
+import { createAuthSession } from '$lib/server/auth/session-user';
 import {
 	createUser,
 	ensureUserIndexes,
@@ -46,23 +45,11 @@ export async function registerWithCredentials(input: {
 			termsConsent: input.termsConsent
 		});
 
-		const authUser: AuthUser = {
-			id: user._id.toString(),
-			email: user.email,
-			firstName: user.firstName,
-			lastName: user.lastName
-		};
-
-		const accessToken = await signAccessToken({
-			sub: authUser.id,
-			email: authUser.email
-		});
+		const session = await createAuthSession(user);
 
 		return {
 			ok: true,
-			accessToken,
-			expiresIn: ACCESS_TOKEN_TTL_SECONDS,
-			user: authUser
+			...session
 		};
 	} catch (error) {
 		if (error instanceof Error && error.message.includes('JWT_SECRET')) {

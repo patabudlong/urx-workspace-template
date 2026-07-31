@@ -1,8 +1,7 @@
 import type { UserDocument } from '$lib/shared/models/user';
 import type { AuthUser } from '$lib/shared/schemas/auth';
-import { signAccessToken } from '$lib/server/auth/jwt';
 import { verifyPassword } from '$lib/server/auth/password';
-import { ACCESS_TOKEN_TTL_SECONDS } from '$lib/server/auth/session';
+import { createAuthSession, toAuthUser } from '$lib/server/auth/session-user';
 import { findUserByEmail } from '$lib/server/repositories/users';
 
 export type LoginResult =
@@ -24,27 +23,15 @@ export async function authenticateWithCredentials(
 	try {
 		const user = await findUserByEmail(email);
 
-		if (!user || !(await verifyPassword(password, user.passwordHash))) {
+		if (!user || !user.passwordHash || !(await verifyPassword(password, user.passwordHash))) {
 			return { ok: false, reason: 'INVALID_CREDENTIALS' };
 		}
 
-		const authUser: AuthUser = {
-			id: user._id.toString(),
-			email: user.email,
-			firstName: user.firstName,
-			lastName: user.lastName
-		};
-
-		const accessToken = await signAccessToken({
-			sub: authUser.id,
-			email: authUser.email
-		});
+		const session = await createAuthSession(user);
 
 		return {
 			ok: true,
-			accessToken,
-			expiresIn: ACCESS_TOKEN_TTL_SECONDS,
-			user: authUser
+			...session
 		};
 	} catch (error) {
 		if (error instanceof Error && error.message.includes('JWT_SECRET')) {
@@ -56,10 +43,5 @@ export async function authenticateWithCredentials(
 }
 
 export function toPublicUser(user: UserDocument): AuthUser {
-	return {
-		id: user._id.toString(),
-		email: user.email,
-		firstName: user.firstName,
-		lastName: user.lastName
-	};
+	return toAuthUser(user);
 }

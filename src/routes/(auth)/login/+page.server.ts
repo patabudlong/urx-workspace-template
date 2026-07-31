@@ -7,6 +7,7 @@ import { authenticateWithCredentials } from '$lib/server/auth/login';
 import { getSessionCookieOptions, SESSION_COOKIE_NAME } from '$lib/server/auth/session';
 import { assertAuthRecaptcha } from '$lib/server/security/recaptcha';
 import { loginSchema } from '$lib/shared/schemas/auth';
+import { getGoogleAuthErrorMessage } from '$lib/shared/google-auth';
 import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 
 function safeRedirectPath(value: string | null): string {
@@ -32,6 +33,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	return {
 		form,
 		redirectTo: safeRedirectPath(url.searchParams.get('redirectTo')),
+		googleAuthError: getGoogleAuthErrorMessage(url.searchParams.get('error')),
 		meta: {
 			title: 'Sign in'
 		}

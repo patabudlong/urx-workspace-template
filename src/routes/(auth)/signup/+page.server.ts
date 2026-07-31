@@ -8,6 +8,7 @@ import { getSessionCookieOptions, SESSION_COOKIE_NAME } from '$lib/server/auth/s
 import { recordConsentEvent } from '$lib/server/repositories/consent-events';
 import { assertAuthRecaptcha } from '$lib/server/security/recaptcha';
 import { signupSchema } from '$lib/shared/schemas/auth';
+import { getGoogleAuthErrorMessage } from '$lib/shared/google-auth';
 import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 import { LEGAL_POLICY_VERSION } from '$lib/shared/legal';
 import { CONSENT_CONTEXTS, CONSENT_EVENT_TYPES } from '$lib/shared/models/consent-event';
@@ -38,6 +39,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	return {
 		form,
 		redirectTo: safeRedirectPath(url.searchParams.get('redirectTo')),
+		googleAuthError: getGoogleAuthErrorMessage(url.searchParams.get('error')),
 		meta: {
 			title: 'Sign up'
 		}

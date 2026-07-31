@@ -6,11 +6,12 @@
 
 	type Props = {
 		context: ConsentContext;
+		redirectTo?: string;
 		email?: string;
 		disabled?: boolean;
 	};
 
-	let { context, email, disabled = false }: Props = $props();
+	let { context, redirectTo = '/', email, disabled = false }: Props = $props();
 
 	function handleClick() {
 		recordConsentEvent({
@@ -19,7 +20,12 @@
 			email
 		});
 
-		// OAuth wiring lands in a follow-up; consent is recorded at click time.
+		const params = new URLSearchParams({
+			context,
+			redirectTo
+		});
+
+		window.location.assign(`/auth/google?${params.toString()}`);
 	}
 </script>
 

@@ -87,6 +87,10 @@
 			novalidate
 		>
 			<div class="space-y-5">
+				{#if data.googleAuthError}
+					<FormAlert>{data.googleAuthError}</FormAlert>
+				{/if}
+
 				{#if recaptchaError}
 					<FormAlert>{recaptchaError}</FormAlert>
 				{/if}
@@ -199,6 +203,7 @@
 
 		<GoogleSignInButton
 			context={CONSENT_CONTEXTS.SIGNUP}
+			redirectTo={data.redirectTo}
 			email={$form.email}
 			disabled={authLoading.authBusy}
 		/>

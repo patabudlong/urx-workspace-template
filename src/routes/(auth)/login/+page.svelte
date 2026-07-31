@@ -83,6 +83,10 @@
 			novalidate
 		>
 			<div class="space-y-5">
+				{#if data.googleAuthError}
+					<FormAlert>{data.googleAuthError}</FormAlert>
+				{/if}
+
 				{#if recaptchaError}
 					<FormAlert>{recaptchaError}</FormAlert>
 				{/if}
@@ -159,7 +163,11 @@
 			<Separator class="flex-1" />
 		</div>
 
-		<GoogleSignInButton context={CONSENT_CONTEXTS.LOGIN} disabled={authLoading.authBusy} />
+		<GoogleSignInButton
+			context={CONSENT_CONTEXTS.LOGIN}
+			redirectTo={data.redirectTo}
+			disabled={authLoading.authBusy}
+		/>
 
 		<p class="text-muted-foreground text-center text-sm">
 			Don't have an account?
