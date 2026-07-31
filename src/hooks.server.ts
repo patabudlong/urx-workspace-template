@@ -41,7 +41,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 			return new Response(null, {
 				status: 303,
 				headers: {
-					Location: `${returnPath}?error=rate_limited`,
+					Location: `${returnPath}?error=rate_limited&retry=${retryAfter}`,
 					'Retry-After': retryAfter
 				}
 			});

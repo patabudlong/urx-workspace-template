@@ -1,5 +1,5 @@
 import { message, type SuperValidated } from 'sveltekit-superforms';
-import { AUTH_RATE_LIMIT_MESSAGE } from '$lib/shared/auth-messages';
+import { createAuthRateLimitMessage } from '$lib/shared/auth-messages';
 import { consumeAuthRateLimit } from '$lib/server/security/auth-rate-limit';
 
 export function getAuthRateLimitFormFailure<T extends Record<string, unknown>>(
@@ -9,7 +9,7 @@ export function getAuthRateLimitFormFailure<T extends Record<string, unknown>>(
 	const rateLimit = consumeAuthRateLimit(input);
 
 	if (!rateLimit.ok) {
-		return message(form, AUTH_RATE_LIMIT_MESSAGE, { status: 429 });
+		return message(form, createAuthRateLimitMessage(rateLimit.retryAfterSeconds), { status: 429 });
 	}
 
 	return null;

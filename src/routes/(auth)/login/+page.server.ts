@@ -8,6 +8,7 @@ import { getSessionCookieOptions, SESSION_COOKIE_NAME } from '$lib/server/auth/s
 import { getAuthRateLimitFormFailure } from '$lib/server/security/auth-rate-limit-form';
 import { assertAuthRecaptcha } from '$lib/server/security/recaptcha';
 import { loginSchema } from '$lib/shared/schemas/auth';
+import { getAuthRedirectAlert } from '$lib/shared/auth-messages';
 import { getGoogleAuthErrorMessage } from '$lib/shared/google-auth';
 import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 
@@ -31,10 +32,14 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		}
 	});
 
+	const authRedirectAlert = getAuthRedirectAlert(url.searchParams);
+
 	return {
 		form,
 		redirectTo: safeRedirectPath(url.searchParams.get('redirectTo')),
-		googleAuthError: getGoogleAuthErrorMessage(url.searchParams.get('error')),
+		googleAuthError:
+			authRedirectAlert.message ?? getGoogleAuthErrorMessage(url.searchParams.get('error')),
+		rateLimitRetryAfter: authRedirectAlert.rateLimitRetryAfter,
 		passwordResetSuccess: url.searchParams.get('reset') === 'success',
 		meta: {
 			title: 'Sign in'

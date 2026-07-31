@@ -3,3 +3,84 @@ export const FORGOT_PASSWORD_SUCCESS_MESSAGE =
 
 export const AUTH_RATE_LIMIT_MESSAGE =
 	'Too many attempts. Please wait a few minutes and try again.';
+
+export type AuthRateLimitMessage = {
+	type: 'rate_limited';
+	text: string;
+	retryAfterSeconds: number;
+};
+
+export type AuthFormMessage = string | AuthRateLimitMessage;
+
+export function isAuthRateLimitMessage(message: unknown): message is AuthRateLimitMessage {
+	return (
+		typeof message === 'object' &&
+		message !== null &&
+		'type' in message &&
+		message.type === 'rate_limited' &&
+		'retryAfterSeconds' in message &&
+		typeof message.retryAfterSeconds === 'number'
+	);
+}
+
+export function createAuthRateLimitMessage(retryAfterSeconds: number): AuthRateLimitMessage {
+	return {
+		type: 'rate_limited',
+		text: AUTH_RATE_LIMIT_MESSAGE,
+		retryAfterSeconds
+	};
+}
+
+export function formatRateLimitCountdown(seconds: number): string {
+	const safeSeconds = Math.max(0, Math.ceil(seconds));
+
+	if (safeSeconds <= 0) {
+		return 'now';
+	}
+
+	const minutes = Math.floor(safeSeconds / 60);
+	const remainingSeconds = safeSeconds % 60;
+
+	if (minutes > 0) {
+		return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+	}
+
+	return `${remainingSeconds} second${remainingSeconds === 1 ? '' : 's'}`;
+}
+
+export function formatAuthRateLimitMessage(retryAfterSeconds: number): string {
+	if (retryAfterSeconds <= 0) {
+		return 'Too many attempts. You can try again now.';
+	}
+
+	return `Too many attempts. Try again in ${formatRateLimitCountdown(retryAfterSeconds)}.`;
+}
+
+export function parseRateLimitRetryAfter(value: string | null | undefined): number | null {
+	const parsed = Number(value);
+
+	if (!Number.isFinite(parsed) || parsed <= 0) {
+		return null;
+	}
+
+	return Math.ceil(parsed);
+}
+
+export function getAuthRedirectAlert(searchParams: URLSearchParams): {
+	message: string | null;
+	rateLimitRetryAfter: number | null;
+} {
+	const error = searchParams.get('error');
+
+	if (error === 'rate_limited') {
+		return {
+			message: AUTH_RATE_LIMIT_MESSAGE,
+			rateLimitRetryAfter: parseRateLimitRetryAfter(searchParams.get('retry'))
+		};
+	}
+
+	return {
+		message: null,
+		rateLimitRetryAfter: null
+	};
+}

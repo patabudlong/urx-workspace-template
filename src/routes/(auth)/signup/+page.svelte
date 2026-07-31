@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { createAuthFormOnSubmit } from '$lib/auth/form';
 	import { createAuthLoadingState } from '$lib/auth/loading.svelte';
+	import AuthFormMessageAlert from '$lib/components/auth/auth-form-message-alert.svelte';
 	import AuthFormPanel from '$lib/components/auth/auth-form-panel.svelte';
 	import FormAlert from '$lib/components/auth/form-alert.svelte';
 	import GoogleSignInButton from '$lib/components/auth/google-sign-in-button.svelte';
@@ -27,7 +28,12 @@
 	let { data } = $props();
 
 	let recaptchaError = $state<string | null>(null);
+	let formRateLimited = $state(false);
+	let redirectRateLimited = $state(false);
 	const authLoading = createAuthLoadingState();
+	const submitDisabled = $derived(
+		authLoading.authBusy || formRateLimited || redirectRateLimited
+	);
 
 	let formStore: SuperForm<SignupInput>['form'];
 	let validateFormFn: SuperForm<SignupInput>['validateForm'];
@@ -89,7 +95,11 @@
 		>
 			<div class="space-y-5">
 				{#if data.googleAuthError}
-					<FormAlert>{data.googleAuthError}</FormAlert>
+					<AuthFormMessageAlert
+						message={data.googleAuthError}
+						retryAfterSeconds={data.rateLimitRetryAfter}
+						bind:limited={redirectRateLimited}
+					/>
 				{/if}
 
 				{#if recaptchaError}
@@ -97,7 +107,7 @@
 				{/if}
 
 				{#if $formMessage}
-					<FormAlert>{$formMessage}</FormAlert>
+					<AuthFormMessageAlert message={$formMessage} bind:limited={formRateLimited} />
 				{/if}
 
 				<div class="space-y-4">
@@ -110,7 +120,7 @@
 										{...props}
 										type="text"
 										autocomplete="given-name"
-										disabled={authLoading.authBusy}
+										disabled={submitDisabled}
 										bind:value={$form.firstName}
 									/>
 								{/snippet}
@@ -126,7 +136,7 @@
 										{...props}
 										type="text"
 										autocomplete="family-name"
-										disabled={authLoading.authBusy}
+										disabled={submitDisabled}
 										bind:value={$form.lastName}
 									/>
 								{/snippet}
@@ -143,7 +153,7 @@
 									{...props}
 									type="email"
 									autocomplete="email"
-									disabled={authLoading.authBusy}
+									disabled={submitDisabled}
 									bind:value={$form.email}
 								/>
 							{/snippet}
@@ -157,7 +167,7 @@
 								<Form.Label>Password</Form.Label>
 								<PasswordInput
 									{...props}
-									disabled={authLoading.authBusy}
+									disabled={submitDisabled}
 									bind:value={$form.password}
 									showStrength
 									autocomplete="new-password"
@@ -172,17 +182,17 @@
 					{superform}
 					formStore={form}
 					email={$form.email}
-					disabled={authLoading.authBusy}
+					disabled={submitDisabled}
 				/>
 
 				<Button
 					type="submit"
 					class={cn(
 						AUTH_ACTION_BUTTON_CLASS,
-						(!$form.acceptedTerms || authLoading.authBusy) && 'pointer-events-none',
+						(!$form.acceptedTerms || submitDisabled) && 'pointer-events-none',
 						authLoading.authBusy && 'cursor-wait'
 					)}
-					disabled={!$form.acceptedTerms || authLoading.authBusy}
+					disabled={!$form.acceptedTerms || submitDisabled}
 					aria-busy={authLoading.authBusy}
 				>
 					{#if authLoading.isAuthLoading}
@@ -206,7 +216,7 @@
 			context={CONSENT_CONTEXTS.SIGNUP}
 			redirectTo={data.redirectTo}
 			email={$form.email}
-			disabled={authLoading.authBusy}
+			disabled={submitDisabled}
 		/>
 
 		<p class="text-muted-foreground text-center text-sm">

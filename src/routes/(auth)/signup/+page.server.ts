@@ -9,6 +9,7 @@ import { recordConsentEvent } from '$lib/server/repositories/consent-events';
 import { getAuthRateLimitFormFailure } from '$lib/server/security/auth-rate-limit-form';
 import { assertAuthRecaptcha } from '$lib/server/security/recaptcha';
 import { signupSchema } from '$lib/shared/schemas/auth';
+import { getAuthRedirectAlert } from '$lib/shared/auth-messages';
 import { getGoogleAuthErrorMessage } from '$lib/shared/google-auth';
 import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 import { LEGAL_POLICY_VERSION } from '$lib/shared/legal';
@@ -37,10 +38,14 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		}
 	});
 
+	const authRedirectAlert = getAuthRedirectAlert(url.searchParams);
+
 	return {
 		form,
 		redirectTo: safeRedirectPath(url.searchParams.get('redirectTo')),
-		googleAuthError: getGoogleAuthErrorMessage(url.searchParams.get('error')),
+		googleAuthError:
+			authRedirectAlert.message ?? getGoogleAuthErrorMessage(url.searchParams.get('error')),
+		rateLimitRetryAfter: authRedirectAlert.rateLimitRetryAfter,
 		meta: {
 			title: 'Sign up'
 		}

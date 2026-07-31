@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { createAuthFormOnSubmit } from '$lib/auth/form';
 	import { createAuthLoadingState } from '$lib/auth/loading.svelte';
+	import AuthFormMessageAlert from '$lib/components/auth/auth-form-message-alert.svelte';
 	import AuthFormPanel from '$lib/components/auth/auth-form-panel.svelte';
 	import FormAlert from '$lib/components/auth/form-alert.svelte';
 	import RecaptchaNotice from '$lib/components/auth/recaptcha-notice.svelte';
@@ -22,7 +23,9 @@
 	let { data } = $props();
 
 	let recaptchaError = $state<string | null>(null);
+	let formRateLimited = $state(false);
 	const authLoading = createAuthLoadingState();
+	const submitDisabled = $derived(authLoading.authBusy || formRateLimited);
 
 	let formStore: SuperForm<ResetPasswordInput>['form'];
 	let validateFormFn: SuperForm<ResetPasswordInput>['validateForm'];
@@ -89,7 +92,7 @@
 					{/if}
 
 					{#if $formMessage}
-						<FormAlert>{$formMessage}</FormAlert>
+						<AuthFormMessageAlert message={$formMessage} bind:limited={formRateLimited} />
 					{/if}
 
 					<input type="hidden" name="token" value={$form.token} />
@@ -100,7 +103,7 @@
 								<Form.Label required>New password</Form.Label>
 								<PasswordInput
 									{...props}
-									disabled={authLoading.authBusy}
+									disabled={submitDisabled}
 									bind:value={$form.password}
 									showStrength
 									autocomplete="new-password"
@@ -114,9 +117,9 @@
 						type="submit"
 						class={cn(
 							AUTH_ACTION_BUTTON_CLASS,
-							authLoading.authBusy && 'pointer-events-none cursor-wait'
+							submitDisabled && 'pointer-events-none cursor-wait'
 						)}
-						disabled={authLoading.authBusy}
+						disabled={submitDisabled}
 						aria-busy={authLoading.authBusy}
 					>
 						{#if authLoading.isAuthLoading}

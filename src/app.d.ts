@@ -14,6 +14,9 @@ declare global {
 				email: string;
 			};
 		}
+		namespace Superforms {
+			type Message = import('$lib/shared/auth-messages').AuthFormMessage;
+		}
 	}
 }
 
