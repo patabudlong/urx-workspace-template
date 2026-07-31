@@ -1,11 +1,14 @@
-import type { UserDocument } from '$lib/shared/models/user';
 import type { AuthUser } from '$lib/shared/schemas/auth';
 import { signAccessToken } from '$lib/server/auth/jwt';
-import { verifyPassword } from '$lib/server/auth/password';
+import { hashPassword } from '$lib/server/auth/password';
 import { ACCESS_TOKEN_TTL_SECONDS } from '$lib/server/auth/session';
-import { findUserByEmail } from '$lib/server/repositories/users';
+import {
+	createUser,
+	ensureUserIndexes,
+	findUserByEmail
+} from '$lib/server/repositories/users';
 
-export type LoginResult =
+export type SignupResult =
 	| {
 			ok: true;
 			accessToken: string;
@@ -14,19 +17,31 @@ export type LoginResult =
 	  }
 	| {
 			ok: false;
-			reason: 'INVALID_CREDENTIALS' | 'AUTH_NOT_CONFIGURED';
+			reason: 'EMAIL_EXISTS' | 'AUTH_NOT_CONFIGURED';
 	  };
 
-export async function authenticateWithCredentials(
-	email: string,
-	password: string
-): Promise<LoginResult> {
+export async function registerWithCredentials(input: {
+	firstName: string;
+	lastName: string;
+	email: string;
+	password: string;
+}): Promise<SignupResult> {
 	try {
-		const user = await findUserByEmail(email);
+		await ensureUserIndexes();
 
-		if (!user || !(await verifyPassword(password, user.passwordHash))) {
-			return { ok: false, reason: 'INVALID_CREDENTIALS' };
+		const existing = await findUserByEmail(input.email);
+
+		if (existing) {
+			return { ok: false, reason: 'EMAIL_EXISTS' };
 		}
+
+		const passwordHash = await hashPassword(input.password);
+		const user = await createUser({
+			email: input.email,
+			passwordHash,
+			firstName: input.firstName,
+			lastName: input.lastName
+		});
 
 		const authUser: AuthUser = {
 			id: user._id.toString(),
@@ -53,13 +68,4 @@ export async function authenticateWithCredentials(
 
 		throw error;
 	}
-}
-
-export function toPublicUser(user: UserDocument): AuthUser {
-	return {
-		id: user._id.toString(),
-		email: user.email,
-		firstName: user.firstName,
-		lastName: user.lastName
-	};
 }

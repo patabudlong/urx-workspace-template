@@ -16,7 +16,8 @@ export async function findUserByEmail(email: string): Promise<UserDocument | nul
 				_id: 1,
 				email: 1,
 				passwordHash: 1,
-				name: 1,
+				firstName: 1,
+				lastName: 1,
 				createdAt: 1,
 				updatedAt: 1
 			}
@@ -27,16 +28,20 @@ export async function findUserByEmail(email: string): Promise<UserDocument | nul
 export async function createUser(input: {
 	email: string;
 	passwordHash: string;
-	name?: string;
+	firstName: string;
+	lastName: string;
 }): Promise<UserDocument> {
 	const users = await getUsersCollection<UserDocument>();
 	const now = new Date();
 	const email = input.email.trim().toLowerCase();
+	const firstName = input.firstName.trim();
+	const lastName = input.lastName.trim();
 
 	const result = await users.insertOne({
 		email,
 		passwordHash: input.passwordHash,
-		name: input.name,
+		firstName,
+		lastName,
 		createdAt: now,
 		updatedAt: now
 	} as UserDocument);
@@ -45,7 +50,8 @@ export async function createUser(input: {
 		_id: result.insertedId,
 		email,
 		passwordHash: input.passwordHash,
-		name: input.name,
+		firstName,
+		lastName,
 		createdAt: now,
 		updatedAt: now
 	};

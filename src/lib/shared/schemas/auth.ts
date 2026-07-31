@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isPasswordStrong } from '$lib/shared/password-policy';
 
 export const loginSchema = z.object({
 	email: z.email('Enter a valid email address'),
@@ -7,10 +8,29 @@ export const loginSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 
+const personNameSchema = z
+	.string()
+	.trim()
+	.min(1, 'This field is required')
+	.max(60, 'Must be 60 characters or fewer');
+
+export const signupSchema = z.object({
+	firstName: personNameSchema,
+	lastName: personNameSchema,
+	email: z.email('Enter a valid email address'),
+	password: z
+		.string()
+		.min(1, 'Password is required')
+		.refine(isPasswordStrong, 'Password does not meet all requirements')
+});
+
+export type SignupInput = z.infer<typeof signupSchema>;
+
 export type AuthUser = {
 	id: string;
 	email: string;
-	name?: string;
+	firstName: string;
+	lastName: string;
 };
 
 export type LoginSuccessData = {

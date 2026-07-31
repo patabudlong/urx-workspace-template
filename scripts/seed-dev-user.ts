@@ -1,9 +1,36 @@
 import { MongoClient } from 'mongodb';
 import bcrypt from 'bcryptjs';
+import { loadEnvFile } from './load-env.ts';
+import { splitFullName } from '../src/lib/shared/user.ts';
+
+const envPath = loadEnvFile();
+
+if (!envPath) {
+	console.warn('No .env file found — using process environment and defaults.');
+}
 
 const DEFAULT_EMAIL = 'admin@urx.local';
 const DEFAULT_PASSWORD = 'changeme123';
-const DEFAULT_NAME = 'Admin';
+const DEFAULT_FIRST_NAME = 'Admin';
+const DEFAULT_LAST_NAME = 'User';
+
+function resolveSeedNames(): { firstName: string; lastName: string } {
+	if (process.env.SEED_USER_FIRST_NAME || process.env.SEED_USER_LAST_NAME) {
+		return {
+			firstName: (process.env.SEED_USER_FIRST_NAME ?? DEFAULT_FIRST_NAME).trim(),
+			lastName: (process.env.SEED_USER_LAST_NAME ?? DEFAULT_LAST_NAME).trim()
+		};
+	}
+
+	if (process.env.SEED_USER_NAME) {
+		return splitFullName(process.env.SEED_USER_NAME);
+	}
+
+	return {
+		firstName: DEFAULT_FIRST_NAME,
+		lastName: DEFAULT_LAST_NAME
+	};
+}
 
 async function main() {
 	const uri = process.env.MONGODB_URI;
@@ -16,7 +43,9 @@ async function main() {
 
 	const email = process.env.SEED_USER_EMAIL ?? DEFAULT_EMAIL;
 	const password = process.env.SEED_USER_PASSWORD ?? DEFAULT_PASSWORD;
-	const name = process.env.SEED_USER_NAME ?? DEFAULT_NAME;
+	const { firstName, lastName } = resolveSeedNames();
+
+	console.log(`Seeding user: ${email} (${firstName} ${lastName})`);
 
 	const client = new MongoClient(uri);
 
@@ -37,8 +66,12 @@ async function main() {
 				{
 					$set: {
 						passwordHash,
-						name,
+						firstName,
+						lastName,
 						updatedAt: now
+					},
+					$unset: {
+						name: ''
 					}
 				}
 			);
@@ -47,7 +80,8 @@ async function main() {
 			await users.insertOne({
 				email: normalizedEmail,
 				passwordHash,
-				name,
+				firstName,
+				lastName,
 				createdAt: now,
 				updatedAt: now
 			});

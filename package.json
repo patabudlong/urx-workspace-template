@@ -16,7 +16,7 @@
 		"docker:down:clean": "docker compose down -v",
 		"docker:logs": "docker compose logs -f mongo",
 		"docker:ps": "docker compose ps",
-		"seed:user": "node --env-file=.env --import tsx scripts/seed-dev-user.ts",
+		"seed:user": "node --import tsx scripts/seed-dev-user.ts",
 		"rotate:jwt-secret": "node --import tsx scripts/rotate-jwt-secret.ts",
 		"rotate:jwt-secret:dry": "node --import tsx scripts/rotate-jwt-secret.ts --dry-run"
 	},

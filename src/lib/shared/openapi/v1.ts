@@ -145,6 +145,72 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 					}
 				}
 			},
+			'/auth/signup': {
+				post: {
+					tags: ['Auth'],
+					summary: 'Create account',
+					description:
+						'Registers a new workspace user with email and password. Returns a JWT for mobile clients (`Authorization: Bearer <token>`). Web apps may use the `/signup` form which sets an httpOnly session cookie.',
+					operationId: 'signup',
+					parameters: [
+						{
+							$ref: '#/components/parameters/XRequestId'
+						}
+					],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: {
+									$ref: '#/components/schemas/SignupRequest'
+								}
+							}
+						}
+					},
+					responses: {
+						'201': {
+							description: 'Account created',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/LoginSuccessResponse'
+									}
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ApiErrorResponse'
+									}
+								}
+							}
+						},
+						'409': {
+							description: 'An account with this email already exists',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ApiErrorResponse'
+									}
+								}
+							}
+						},
+						'503': {
+							description: 'Authentication is not configured (missing JWT_SECRET)',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ApiErrorResponse'
+									}
+								}
+							}
+						}
+					}
+				}
+			},
 			'/auth/logout': {
 				post: {
 					tags: ['Auth'],
@@ -370,9 +436,40 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						}
 					}
 				},
+				SignupRequest: {
+					type: 'object',
+					required: ['firstName', 'lastName', 'email', 'password'],
+					properties: {
+						firstName: {
+							type: 'string',
+							minLength: 1,
+							maxLength: 60,
+							example: 'Jane'
+						},
+						lastName: {
+							type: 'string',
+							minLength: 1,
+							maxLength: 60,
+							example: 'Smith'
+						},
+						email: {
+							type: 'string',
+							format: 'email',
+							example: 'jane@company.com'
+						},
+						password: {
+							type: 'string',
+							minLength: 8,
+							format: 'password',
+							description:
+								'Must include uppercase, lowercase, number, and special character',
+							example: 'Changeme123!'
+						}
+					}
+				},
 				AuthUser: {
 					type: 'object',
-					required: ['id', 'email'],
+					required: ['id', 'email', 'firstName', 'lastName'],
 					properties: {
 						id: {
 							type: 'string',
@@ -382,8 +479,13 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 							type: 'string',
 							format: 'email'
 						},
-						name: {
-							type: 'string'
+						firstName: {
+							type: 'string',
+							example: 'Jane'
+						},
+						lastName: {
+							type: 'string',
+							example: 'Smith'
 						}
 					}
 				},

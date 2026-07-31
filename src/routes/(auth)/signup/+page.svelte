@@ -11,10 +11,13 @@
 	let { data } = $props();
 
 	const superform = superForm(untrack(() => data.form));
-	const { enhance, message: formMessage } = superform;
+	const { enhance, form, message: formMessage } = superform;
 </script>
 
-<AuthFormPanel title="Sign in" description="Use your workspace account to access the dashboard and tools.">
+<AuthFormPanel
+	title="Create your account"
+	description="Start managing jobs, clients, and your team in one workspace."
+>
 	<div class="space-y-6">
 		<form
 			method="POST"
@@ -32,6 +35,36 @@
 			{/if}
 
 			<div class="space-y-4">
+				<div class="grid gap-4 sm:grid-cols-2">
+					<Form.Field form={superform} name="firstName">
+						<Form.Control>
+							{#snippet children({ props })}
+								<Form.Label>First name</Form.Label>
+								<Input
+									{...props}
+									type="text"
+									autocomplete="given-name"
+								/>
+							{/snippet}
+						</Form.Control>
+						<Form.FieldErrors />
+					</Form.Field>
+
+					<Form.Field form={superform} name="lastName">
+						<Form.Control>
+							{#snippet children({ props })}
+								<Form.Label>Last name</Form.Label>
+								<Input
+									{...props}
+									type="text"
+									autocomplete="family-name"
+								/>
+							{/snippet}
+						</Form.Control>
+						<Form.FieldErrors />
+					</Form.Field>
+				</div>
+
 				<Form.Field form={superform} name="email">
 					<Form.Control>
 						{#snippet children({ props })}
@@ -49,19 +82,12 @@
 				<Form.Field form={superform} name="password">
 					<Form.Control>
 						{#snippet children({ props })}
-							<div class="flex items-center justify-between gap-2">
-								<Form.Label>Password</Form.Label>
-								<a
-									href="/forgot-password"
-									tabindex="-1"
-									class="text-primary text-sm hover:underline"
-								>
-									Forgot password?
-								</a>
-							</div>
+							<Form.Label>Password</Form.Label>
 							<PasswordInput
 								{...props}
-								autocomplete="current-password"
+								bind:value={$form.password}
+								showStrength
+								autocomplete="new-password"
 							/>
 						{/snippet}
 					</Form.Control>
@@ -69,7 +95,7 @@
 				</Form.Field>
 			</div>
 
-			<Button type="submit" class="h-10 w-full">Sign in</Button>
+			<Button type="submit" class="h-10 w-full">Create account</Button>
 		</form>
 
 		<div class="flex items-center gap-3">
@@ -101,20 +127,8 @@
 		</Button>
 
 		<p class="text-muted-foreground text-center text-sm">
-			Don't have an account?
-			<a href="/signup" class="text-primary font-medium hover:underline">Sign up</a>
+			Already have an account?
+			<a href="/login" class="text-primary font-medium hover:underline">Sign in</a>
 		</p>
 	</div>
-
-	{#snippet footer()}
-		<p class="text-center text-sm">
-			<a href="/verify/resend" class="hover:text-foreground hover:underline">
-				Resend verification email
-			</a>
-			<span class="text-muted-foreground px-2" aria-hidden="true">|</span>
-			<a href="/forgot-password" class="hover:text-foreground hover:underline">
-				Can't sign in?
-			</a>
-		</p>
-	{/snippet}
 </AuthFormPanel>
