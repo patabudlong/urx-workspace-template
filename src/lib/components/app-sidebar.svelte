@@ -20,7 +20,7 @@
 				<Sidebar.MenuButton size="lg">
 					{#snippet child({ props })}
 						<a href="/" {...props}>
-							<UrixoftLogo class="size-8 shrink-0 rounded-lg" />
+							<UrixoftLogo class="size-8 shrink-0 rounded-sm" />
 							<div class="grid flex-1 text-left text-sm leading-tight">
 								<span class="truncate font-medium">Urixoft</span>
 								<span class="truncate text-xs text-muted-foreground">Workspace</span>

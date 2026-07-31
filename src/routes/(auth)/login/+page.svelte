@@ -16,7 +16,7 @@
 <Card.Root class="border-border/60 shadow-sm">
 	<Card.Header class="space-y-4">
 		<div class="flex items-center justify-between gap-4">
-			<UrixoftLogo class="size-10 shrink-0 rounded-lg" />
+			<UrixoftLogo class="size-10 shrink-0 rounded-sm" />
 			<ThemeToggle />
 		</div>
 		<div class="space-y-1">
