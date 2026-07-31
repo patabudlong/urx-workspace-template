@@ -1,16 +1,28 @@
 <script lang="ts">
 	import AuthFormPanel from '$lib/components/auth/auth-form-panel.svelte';
+	import RecaptchaNotice from '$lib/components/auth/recaptcha-notice.svelte';
 	import PasswordInput from '$lib/components/password-input.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Form from '$lib/components/ui/form/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
+	import { createRecaptchaSubmitHandler } from '$lib/recaptcha/client';
+	import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 	import { untrack } from 'svelte';
 	import { superForm } from 'sveltekit-superforms';
 
 	let { data } = $props();
 
-	const superform = superForm(untrack(() => data.form));
+	let recaptchaError = $state<string | null>(null);
+
+	const superform = superForm(untrack(() => data.form), {
+		async onSubmit(input) {
+			recaptchaError = null;
+			await createRecaptchaSubmitHandler(RECAPTCHA_ACTIONS.SIGNUP, (message) => {
+				recaptchaError = message;
+			})(input);
+		}
+	});
 	const { enhance, form, message: formMessage } = superform;
 </script>
 
@@ -25,6 +37,15 @@
 			use:enhance
 			class="space-y-5"
 		>
+			{#if recaptchaError}
+				<div
+					class="bg-destructive/10 text-destructive rounded-lg border border-destructive/20 px-3 py-2 text-sm"
+					role="alert"
+				>
+					{recaptchaError}
+				</div>
+			{/if}
+
 			{#if $formMessage}
 				<div
 					class="bg-destructive/10 text-destructive rounded-lg border border-destructive/20 px-3 py-2 text-sm"
@@ -96,6 +117,7 @@
 			</div>
 
 			<Button type="submit" class="h-10 w-full">Create account</Button>
+			<RecaptchaNotice />
 		</form>
 
 		<div class="flex items-center gap-3">

@@ -1,9 +1,11 @@
 import { z } from 'zod';
 import { isPasswordStrong } from '$lib/shared/password-policy';
+import { recaptchaTokenSchema } from '$lib/shared/recaptcha';
 
 export const loginSchema = z.object({
 	email: z.email('Enter a valid email address'),
-	password: z.string().min(8, 'Password must be at least 8 characters')
+	password: z.string().min(8, 'Password must be at least 8 characters'),
+	recaptchaToken: recaptchaTokenSchema
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
@@ -21,7 +23,8 @@ export const signupSchema = z.object({
 	password: z
 		.string()
 		.min(1, 'Password is required')
-		.refine(isPasswordStrong, 'Password does not meet all requirements')
+		.refine(isPasswordStrong, 'Password does not meet all requirements'),
+	recaptchaToken: recaptchaTokenSchema
 });
 
 export type SignupInput = z.infer<typeof signupSchema>;

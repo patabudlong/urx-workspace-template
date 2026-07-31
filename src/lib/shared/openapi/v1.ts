@@ -433,6 +433,10 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 							minLength: 8,
 							format: 'password',
 							example: 'changeme123'
+						},
+						recaptchaToken: {
+							type: 'string',
+							description: 'Google reCAPTCHA v3 token (required when reCAPTCHA is enabled)'
 						}
 					}
 				},
@@ -464,6 +468,10 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 							description:
 								'Must include uppercase, lowercase, number, and special character',
 							example: 'Changeme123!'
+						},
+						recaptchaToken: {
+							type: 'string',
+							description: 'Google reCAPTCHA v3 token (required when reCAPTCHA is enabled)'
 						}
 					}
 				},

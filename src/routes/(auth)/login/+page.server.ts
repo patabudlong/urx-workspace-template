@@ -5,7 +5,9 @@ import { message } from 'sveltekit-superforms';
 import type { Actions, PageServerLoad } from './$types';
 import { authenticateWithCredentials } from '$lib/server/auth/login';
 import { getSessionCookieOptions, SESSION_COOKIE_NAME } from '$lib/server/auth/session';
+import { assertAuthRecaptcha } from '$lib/server/security/recaptcha';
 import { loginSchema } from '$lib/shared/schemas/auth';
+import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 
 function safeRedirectPath(value: string | null): string {
 	if (!value || !value.startsWith('/') || value.startsWith('//')) {
@@ -32,11 +34,22 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request, cookies, url }) => {
+	default: async (event) => {
+		const { request, cookies, url, getClientAddress } = event;
 		const form = await superValidate(request, zod4(loginSchema));
 
 		if (!form.valid) {
 			return fail(400, { form });
+		}
+
+		const recaptcha = await assertAuthRecaptcha({
+			token: form.data.recaptchaToken,
+			action: RECAPTCHA_ACTIONS.LOGIN,
+			remoteIp: getClientAddress()
+		});
+
+		if (!recaptcha.ok) {
+			return message(form, recaptcha.message, { status: 400 });
 		}
 
 		const result = await authenticateWithCredentials(form.data.email, form.data.password);
