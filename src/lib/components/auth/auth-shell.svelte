@@ -4,9 +4,12 @@
 	import type { Snippet } from 'svelte';
 
 	const features = [
-		'Versioned JSON API for web and mobile clients',
-		'Interactive OpenAPI docs for your whole team',
-		'Secure JWT sessions with MongoDB-backed auth'
+		'Business: Run your Workspace',
+		'Email & SMS: Stay connected',
+		'Schedule: Plan jobs & Visits',
+		'Files: Docs in one place',
+		'Jobs: Track every task',
+		'Team: Clients and staff'
 	];
 
 	let { children }: { children: Snippet } = $props();
@@ -31,11 +34,10 @@
 
 			<div class="space-y-4">
 				<h1 class="max-w-md text-3xl font-semibold tracking-tight text-primary-foreground xl:text-4xl">
-					One workspace for your product, API, and mobile apps
+					Your service business workspace, made simple.
 				</h1>
 				<p class="max-w-md text-base leading-relaxed text-primary-foreground/80 xl:text-lg">
-					Ship faster with a unified dashboard, documented endpoints, and auth that works across
-					every client.
+					Manage Jobs, Clients, and your Team in one place.
 				</p>
 			</div>
 
