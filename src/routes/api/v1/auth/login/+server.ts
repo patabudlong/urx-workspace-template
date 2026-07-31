@@ -25,17 +25,18 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 		});
 	}
 
-	const recaptcha = await assertAuthRecaptcha({
-		token: parsed.data.recaptchaToken,
-		action: RECAPTCHA_ACTIONS.LOGIN,
-		remoteIp: getClientAddress()
-	});
+	const [recaptcha, result] = await Promise.all([
+		assertAuthRecaptcha({
+			token: parsed.data.recaptchaToken,
+			action: RECAPTCHA_ACTIONS.LOGIN,
+			remoteIp: getClientAddress()
+		}),
+		authenticateWithCredentials(parsed.data.email, parsed.data.password)
+	]);
 
 	if (!recaptcha.ok) {
 		return jsonError('BAD_REQUEST', recaptcha.message, { requestId });
 	}
-
-	const result = await authenticateWithCredentials(parsed.data.email, parsed.data.password);
 
 	if (!result.ok) {
 		if (result.reason === 'AUTH_NOT_CONFIGURED') {

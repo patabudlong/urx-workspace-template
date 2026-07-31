@@ -1,56 +1,75 @@
 <script lang="ts">
-	import { actionProgress } from '$lib/action-progress.svelte';
 	import { createAuthFormOnSubmit } from '$lib/auth/form';
+	import { createAuthLoadingState } from '$lib/auth/loading.svelte';
 	import AuthFormPanel from '$lib/components/auth/auth-form-panel.svelte';
 	import GoogleSignInButton from '$lib/components/auth/google-sign-in-button.svelte';
 	import RecaptchaNotice from '$lib/components/auth/recaptcha-notice.svelte';
+	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
 	import PasswordInput from '$lib/components/password-input.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Form from '$lib/components/ui/form/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
-	import { loginSchema, type LoginInput } from '$lib/shared/schemas/auth';
+	import { loginClientSchema, type LoginInput } from '$lib/shared/schemas/auth';
 	import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 	import { CONSENT_CONTEXTS } from '$lib/shared/models/consent-event';
+	import { warmRecaptcha } from '$lib/recaptcha/client';
+	import { cn } from '$lib/utils.js';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
-	import { untrack } from 'svelte';
+	import { get } from 'svelte/store';
+	import { onMount, untrack } from 'svelte';
 	import { superForm, type SuperForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
 
 	let { data } = $props();
 
 	let recaptchaError = $state<string | null>(null);
+	const authLoading = createAuthLoadingState();
 
+	let formStore: SuperForm<LoginInput>['form'];
 	let validateFormFn: SuperForm<LoginInput>['validateForm'];
 
+	onMount(() => {
+		warmRecaptcha(RECAPTCHA_ACTIONS.LOGIN);
+	});
+
 	const superform = superForm(untrack(() => data.form), {
-		validators: zod4Client(loginSchema),
+		validators: zod4Client(loginClientSchema),
 		onSubmit: createAuthFormOnSubmit({
+			getFormData: () => {
+				const { email, password } = get(formStore);
+				return { email, password };
+			},
+			clientSchema: loginClientSchema,
 			getValidateForm: () => validateFormFn,
 			recaptchaAction: RECAPTCHA_ACTIONS.LOGIN,
 			onRecaptchaError: (message) => {
 				recaptchaError = message;
+				warmRecaptcha(RECAPTCHA_ACTIONS.LOGIN);
 			},
 			onBeforeSubmit: () => {
 				recaptchaError = null;
+			},
+			onAuthBusyChange: (busy) => {
+				authLoading.setAuthBusy(busy);
+			},
+			onLoadingReset: () => {
+				authLoading.reset();
 			}
-		})
-	});
-	const { enhance, form, message: formMessage, delayed } = superform;
-
-	validateFormFn = superform.validateForm;
-
-	$effect(() => {
-		if (!$delayed) {
-			return;
+		}),
+		onUpdated: () => {
+			authLoading.reset();
+			warmRecaptcha(RECAPTCHA_ACTIONS.LOGIN);
+		},
+		onError: () => {
+			authLoading.reset();
+			warmRecaptcha(RECAPTCHA_ACTIONS.LOGIN);
 		}
-
-		actionProgress.start();
-
-		return () => {
-			actionProgress.stop();
-		};
 	});
+	const { enhance, form, message: formMessage } = superform;
+
+	formStore = form;
+	validateFormFn = superform.validateForm;
 </script>
 
 <AuthFormPanel title="Sign in" description="Use your workspace account to access the dashboard and tools.">
@@ -62,7 +81,7 @@
 			class="space-y-5"
 			novalidate
 		>
-			<fieldset class="space-y-5" disabled={$delayed}>
+			<div class="space-y-5">
 				{#if recaptchaError}
 					<div
 						class="bg-destructive/10 text-destructive rounded-lg border border-destructive/20 px-3 py-2 text-sm"
@@ -90,11 +109,12 @@
 									{...props}
 									type="email"
 									autocomplete="email"
+									disabled={authLoading.authBusy}
 									bind:value={$form.email}
 								/>
 							{/snippet}
 						</Form.Control>
-						<Form.FieldErrors />
+						<SingleFieldErrors />
 					</Form.Field>
 
 					<Form.Field form={superform} name="password">
@@ -112,17 +132,26 @@
 								</div>
 								<PasswordInput
 									{...props}
+									disabled={authLoading.authBusy}
 									bind:value={$form.password}
 									autocomplete="current-password"
 								/>
 							{/snippet}
 						</Form.Control>
-						<Form.FieldErrors />
+						<SingleFieldErrors />
 					</Form.Field>
 				</div>
 
-				<Button type="submit" class="h-10 w-full" disabled={$delayed}>
-					{#if $delayed}
+				<Button
+					type="submit"
+					class={cn(
+						'h-10 w-full',
+						authLoading.authBusy && 'pointer-events-none cursor-wait'
+					)}
+					disabled={authLoading.authBusy}
+					aria-busy={authLoading.authBusy}
+				>
+					{#if authLoading.isAuthLoading}
 						<Loader2Icon class="size-4 animate-spin" aria-hidden="true" />
 						Signing in...
 					{:else}
@@ -130,7 +159,7 @@
 					{/if}
 				</Button>
 				<RecaptchaNotice />
-			</fieldset>
+			</div>
 		</form>
 
 		<div class="flex items-center gap-3">
@@ -139,7 +168,7 @@
 			<Separator class="flex-1" />
 		</div>
 
-		<GoogleSignInButton context={CONSENT_CONTEXTS.LOGIN} disabled={$delayed} />
+		<GoogleSignInButton context={CONSENT_CONTEXTS.LOGIN} disabled={authLoading.authBusy} />
 
 		<p class="text-muted-foreground text-center text-sm">
 			Don't have an account?

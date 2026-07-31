@@ -70,22 +70,23 @@ export const actions: Actions = {
 			policyVersion: LEGAL_POLICY_VERSION
 		};
 
-		await recordConsentEvent({
-			type: CONSENT_EVENT_TYPES.TERMS_SUBMIT,
-			context: CONSENT_CONTEXTS.SIGNUP,
-			ipAddress,
-			userAgent: request.headers.get('user-agent') ?? undefined,
-			email: form.data.email,
-			policyVersion: LEGAL_POLICY_VERSION
-		});
-
-		const result = await registerWithCredentials({
-			firstName: form.data.firstName,
-			lastName: form.data.lastName,
-			email: form.data.email,
-			password: form.data.password,
-			termsConsent
-		});
+		const [, result] = await Promise.all([
+			recordConsentEvent({
+				type: CONSENT_EVENT_TYPES.TERMS_SUBMIT,
+				context: CONSENT_CONTEXTS.SIGNUP,
+				ipAddress,
+				userAgent: request.headers.get('user-agent') ?? undefined,
+				email: form.data.email,
+				policyVersion: LEGAL_POLICY_VERSION
+			}),
+			registerWithCredentials({
+				firstName: form.data.firstName,
+				lastName: form.data.lastName,
+				email: form.data.email,
+				password: form.data.password,
+				termsConsent
+			})
+		]);
 
 		if (!result.ok) {
 			if (result.reason === 'AUTH_NOT_CONFIGURED') {

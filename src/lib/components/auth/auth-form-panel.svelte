@@ -1,5 +1,4 @@
 <script lang="ts">
-	import ActionProgressBar from '$lib/components/action-progress-bar.svelte';
 	import ThemeToggle from '$lib/components/theme-toggle.svelte';
 	import UrixoftLogo from '$lib/components/urixoft-logo.svelte';
 	import type { Snippet } from 'svelte';
@@ -18,8 +17,6 @@
 </script>
 
 <div class="relative flex min-h-full flex-col">
-	<ActionProgressBar />
-
 	<header
 		class="relative flex shrink-0 items-center justify-between gap-4 border-b px-4 py-4 sm:px-6 lg:border-b-0 lg:px-10 lg:pt-8"
 	>

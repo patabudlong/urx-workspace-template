@@ -47,17 +47,18 @@ export const actions: Actions = {
 			return fail(400, { form });
 		}
 
-		const recaptcha = await assertAuthRecaptcha({
-			token: form.data.recaptchaToken,
-			action: RECAPTCHA_ACTIONS.LOGIN,
-			remoteIp: getClientAddress()
-		});
+		const [recaptcha, result] = await Promise.all([
+			assertAuthRecaptcha({
+				token: form.data.recaptchaToken,
+				action: RECAPTCHA_ACTIONS.LOGIN,
+				remoteIp: getClientAddress()
+			}),
+			authenticateWithCredentials(form.data.email, form.data.password)
+		]);
 
 		if (!recaptcha.ok) {
 			return message(form, recaptcha.message, { status: 400 });
 		}
-
-		const result = await authenticateWithCredentials(form.data.email, form.data.password);
 
 		if (!result.ok) {
 			if (result.reason === 'AUTH_NOT_CONFIGURED') {

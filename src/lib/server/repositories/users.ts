@@ -1,9 +1,20 @@
 import type { UserDocument, TermsConsent } from '$lib/shared/models/user';
 import { getUsersCollection } from '$lib/server/db/collections';
 
+let userIndexesPromise: Promise<void> | null = null;
+
 export async function ensureUserIndexes(): Promise<void> {
-	const users = await getUsersCollection();
-	await users.createIndex({ email: 1 }, { unique: true });
+	if (!userIndexesPromise) {
+		userIndexesPromise = (async () => {
+			const users = await getUsersCollection();
+			await users.createIndex({ email: 1 }, { unique: true });
+		})().catch((error) => {
+			userIndexesPromise = null;
+			throw error;
+		});
+	}
+
+	return userIndexesPromise;
 }
 
 export async function findUserByEmail(email: string): Promise<UserDocument | null> {

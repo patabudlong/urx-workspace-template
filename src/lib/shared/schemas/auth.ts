@@ -6,15 +6,19 @@ export const loginSchema = z.object({
 	email: z
 		.string()
 		.min(1, 'Email is required')
-		.email('Enter a valid email address'),
+		.pipe(z.email('Enter a valid email address')),
 	password: z
 		.string()
 		.min(1, 'Password is required')
-		.min(8, 'Password must be at least 8 characters'),
+		.refine((value) => value.length >= 8, 'Password must be at least 8 characters'),
 	recaptchaToken: recaptchaTokenSchema
 });
 
+/** Client-side fields only — reCAPTCHA is injected on submit after this passes. */
+export const loginClientSchema = loginSchema.omit({ recaptchaToken: true });
+
 export type LoginInput = z.infer<typeof loginSchema>;
+export type LoginClientInput = z.infer<typeof loginClientSchema>;
 
 const personNameSchema = z
 	.string()
@@ -25,7 +29,10 @@ const personNameSchema = z
 export const signupSchema = z.object({
 	firstName: personNameSchema,
 	lastName: personNameSchema,
-	email: z.email('Enter a valid email address'),
+	email: z
+		.string()
+		.min(1, 'Email is required')
+		.pipe(z.email('Enter a valid email address')),
 	password: z
 		.string()
 		.min(1, 'Password is required')
@@ -36,7 +43,11 @@ export const signupSchema = z.object({
 	recaptchaToken: recaptchaTokenSchema
 });
 
+/** Client-side fields only — reCAPTCHA is injected on submit after this passes. */
+export const signupClientSchema = signupSchema.omit({ recaptchaToken: true });
+
 export type SignupInput = z.infer<typeof signupSchema>;
+export type SignupClientInput = z.infer<typeof signupClientSchema>;
 
 export type AuthUser = {
 	id: string;

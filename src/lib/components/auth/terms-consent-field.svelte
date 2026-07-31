@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
+	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
 	import * as Form from '$lib/components/ui/form/index.js';
 	import { recordConsentEvent } from '$lib/consent/client';
 	import { LEGAL_ROUTES } from '$lib/shared/legal';
@@ -11,9 +12,10 @@
 		superform: SuperForm<SignupInput>;
 		formStore: SuperForm<SignupInput>['form'];
 		email?: string;
+		disabled?: boolean;
 	};
 
-	let { superform, formStore, email }: Props = $props();
+	let { superform, formStore, email, disabled = false }: Props = $props();
 
 	function handleCheckedChange(checked: boolean | 'indeterminate') {
 		if (checked === true) {
@@ -34,6 +36,7 @@
 					{...props}
 					class="mt-0.5 shrink-0"
 					aria-required="true"
+					{disabled}
 					bind:checked={$formStore.acceptedTerms}
 					onCheckedChange={handleCheckedChange}
 				/>
@@ -70,5 +73,5 @@
 			<input type="hidden" name={props.name} value={$formStore.acceptedTerms ? 'on' : ''} />
 		{/snippet}
 	</Form.Control>
-	<Form.FieldErrors />
+	<SingleFieldErrors />
 </Form.Field>

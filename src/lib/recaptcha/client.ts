@@ -13,8 +13,18 @@ declare global {
 
 const RECAPTCHA_SCRIPT_ID = 'google-recaptcha-v3';
 const LOAD_TIMEOUT_MS = 15_000;
+/** Google tokens are valid ~2 minutes; refresh before that. */
+const TOKEN_MAX_AGE_MS = 90_000;
 
 let scriptLoadPromise: Promise<void> | null = null;
+
+type TokenEntry = {
+	action: RecaptchaAction;
+	obtainedAt: number;
+	promise: Promise<string>;
+};
+
+let tokenEntry: TokenEntry | null = null;
 
 export function getRecaptchaSiteKey(): string | undefined {
 	const siteKey = env.PUBLIC_RECAPTCHA_SITE_KEY?.trim();
@@ -107,19 +117,7 @@ function loadRecaptchaScript(siteKey: string): Promise<void> {
 	return scriptLoadPromise;
 }
 
-export function preloadRecaptcha(): void {
-	const siteKey = getRecaptchaSiteKey();
-
-	if (!siteKey) {
-		return;
-	}
-
-	void loadRecaptchaScript(siteKey).catch(() => {
-		// Preload failures are handled again on submit.
-	});
-}
-
-export async function executeRecaptcha(action: RecaptchaAction): Promise<string> {
+async function requestRecaptchaToken(action: RecaptchaAction): Promise<string> {
 	const siteKey = getRecaptchaSiteKey();
 
 	if (!siteKey) {
@@ -138,6 +136,68 @@ export async function executeRecaptcha(action: RecaptchaAction): Promise<string>
 		grecaptcha.execute(siteKey, { action }),
 		'reCAPTCHA timed out while verifying'
 	);
+}
+
+function isTokenEntryFresh(entry: TokenEntry, action: RecaptchaAction): boolean {
+	return entry.action === action && Date.now() - entry.obtainedAt < TOKEN_MAX_AGE_MS;
+}
+
+function startTokenFetch(action: RecaptchaAction): TokenEntry {
+	const obtainedAt = Date.now();
+	const entry: TokenEntry = {
+		action,
+		obtainedAt,
+		promise: requestRecaptchaToken(action).catch((error) => {
+			if (tokenEntry?.obtainedAt === obtainedAt) {
+				tokenEntry = null;
+			}
+
+			throw error;
+		})
+	};
+
+	tokenEntry = entry;
+	return entry;
+}
+
+export function preloadRecaptcha(): void {
+	const siteKey = getRecaptchaSiteKey();
+
+	if (!siteKey) {
+		return;
+	}
+
+	void loadRecaptchaScript(siteKey).catch(() => {
+		// Preload failures are handled again on submit.
+	});
+}
+
+/** Prefetch a token so submit does not wait on grecaptcha.execute. */
+export function warmRecaptcha(action: RecaptchaAction): void {
+	if (!isRecaptchaClientEnabled()) {
+		return;
+	}
+
+	if (tokenEntry && isTokenEntryFresh(tokenEntry, action)) {
+		return;
+	}
+
+	startTokenFetch(action);
+}
+
+export async function executeRecaptcha(action: RecaptchaAction): Promise<string> {
+	if (!getRecaptchaSiteKey()) {
+		throw new Error('reCAPTCHA site key is not configured');
+	}
+
+	const existing = tokenEntry && isTokenEntryFresh(tokenEntry, action) ? tokenEntry : startTokenFetch(action);
+	const token = await existing.promise;
+
+	if (tokenEntry?.obtainedAt === existing.obtainedAt) {
+		tokenEntry = null;
+	}
+
+	return token;
 }
 
 export const RECAPTCHA_CLIENT_ERROR =
