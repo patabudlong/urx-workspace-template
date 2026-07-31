@@ -1,3 +1,5 @@
+import { URIXOFT_SOCIAL, URIXOFT_WEBSITE } from '$lib/shared/site-meta';
+
 const BRAND_PRIMARY = '#0471B7';
 const BRAND_TERTIARY = '#C8E6F7';
 const PAGE_BG = '#f4f7fb';
@@ -9,8 +11,7 @@ const TEXT_FOOTER = '#9ca3af';
 const BORDER = '#e5e7eb';
 
 const COMPANY_ADDRESS_LINES = [
-	'Door 1, Lote 84 Business Hub Bldg, Palm Street,',
-	'Mintal Tugbok',
+	'Door 1, Lote 84 Business Hub Bldg, Palm Street, Mintal Tugbok',
 	'Davao City, 8000, Philippines'
 ] as const;
 
@@ -195,8 +196,30 @@ export function buildPasswordResetEmailHtml(content: PasswordResetEmailContent):
 		COMPANY_ADDRESS_LINES[0],
 		'<br>',
 		COMPANY_ADDRESS_LINES[1],
-		'<br>',
-		COMPANY_ADDRESS_LINES[2],
+		'</p>',
+		'<p style="margin:12px 0 0 0;',
+		'font-size:11px;line-height:16px;',
+		`color:${TEXT_FOOTER};">`,
+		'<a',
+		`href="${escapeHtml(URIXOFT_WEBSITE)}"`,
+		`style="color:${BRAND_PRIMARY};`,
+		'text-decoration:underline;">',
+		'urixoft.com',
+		'</a>',
+		'&nbsp;|&nbsp;',
+		'<a',
+		`href="${escapeHtml(URIXOFT_SOCIAL.facebook)}"`,
+		`style="color:${BRAND_PRIMARY};`,
+		'text-decoration:underline;">',
+		'facebook',
+		'</a>',
+		'&nbsp;|&nbsp;',
+		'<a',
+		`href="${escapeHtml(URIXOFT_SOCIAL.linkedin)}"`,
+		`style="color:${BRAND_PRIMARY};`,
+		'text-decoration:underline;">',
+		'linkedin',
+		'</a>',
 		'</p>',
 		'</td>',
 		'</tr>',
@@ -221,7 +244,11 @@ export function buildPasswordResetEmailText(content: PasswordResetEmailContent):
 		'',
 		'- Urixoft Workspace',
 		'',
-		...COMPANY_ADDRESS_LINES
+		...COMPANY_ADDRESS_LINES,
+		'',
+		`urixoft.com: ${URIXOFT_WEBSITE}`,
+		`facebook: ${URIXOFT_SOCIAL.facebook}`,
+		`linkedin: ${URIXOFT_SOCIAL.linkedin}`
 	].join('\n');
 }
 

@@ -1,7 +1,9 @@
 export const APP_NAME = 'Urixoft Workspace';
 
+export const URIXOFT_WEBSITE = 'https://urixoft.com';
+
 export const URIXOFT_SOCIAL = {
-	facebook: 'https://www.facebook.com/urixoft',
+	facebook: 'https://www.facebook.com/profile.php?id=61591756655092',
 	linkedin: 'https://www.linkedin.com/company/urixoft'
 } as const;
 
