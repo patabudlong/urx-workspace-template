@@ -22,7 +22,12 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		redirect(303, safeRedirectPath(url.searchParams.get('redirectTo')));
 	}
 
-	const form = await superValidate(zod4(loginSchema));
+	const form = await superValidate(zod4(loginSchema), {
+		defaults: {
+			email: '',
+			password: ''
+		}
+	});
 
 	return {
 		form,

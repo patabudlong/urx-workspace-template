@@ -7,6 +7,7 @@ import {
 	ensureUserIndexes,
 	findUserByEmail
 } from '$lib/server/repositories/users';
+import type { TermsConsent } from '$lib/shared/models/user';
 
 export type SignupResult =
 	| {
@@ -25,6 +26,7 @@ export async function registerWithCredentials(input: {
 	lastName: string;
 	email: string;
 	password: string;
+	termsConsent: TermsConsent;
 }): Promise<SignupResult> {
 	try {
 		await ensureUserIndexes();
@@ -40,7 +42,8 @@ export async function registerWithCredentials(input: {
 			email: input.email,
 			passwordHash,
 			firstName: input.firstName,
-			lastName: input.lastName
+			lastName: input.lastName,
+			termsConsent: input.termsConsent
 		});
 
 		const authUser: AuthUser = {

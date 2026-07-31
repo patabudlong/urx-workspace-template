@@ -18,9 +18,9 @@
 	const year = new Date().getFullYear();
 </script>
 
-<div class="grid min-h-svh lg:grid-cols-2">
+<div class="grid h-svh overflow-hidden lg:grid-cols-2">
 	<aside
-		class="relative hidden overflow-hidden bg-[linear-gradient(155deg,color-mix(in_srgb,var(--primary)_32%,var(--brand-deep))_0%,color-mix(in_srgb,var(--primary)_55%,var(--brand-deep))_38%,var(--primary)_68%,color-mix(in_srgb,var(--secondary)_88%,var(--primary))_100%)] lg:flex lg:min-h-svh lg:flex-col lg:p-10 xl:p-14"
+		class="relative hidden h-svh overflow-hidden bg-[linear-gradient(155deg,color-mix(in_srgb,var(--primary)_32%,var(--brand-deep))_0%,color-mix(in_srgb,var(--primary)_55%,var(--brand-deep))_38%,var(--primary)_68%,color-mix(in_srgb,var(--secondary)_88%,var(--primary))_100%)] lg:flex lg:flex-col lg:p-10 xl:p-14"
 	>
 		<div
 			class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,color-mix(in_srgb,var(--primary)_70%,var(--brand-deep)),transparent_62%)]"
@@ -95,7 +95,7 @@
 		</div>
 	</aside>
 
-	<div class="bg-background flex min-h-svh flex-col">
+	<div class="bg-background flex h-svh min-h-0 flex-col overflow-y-auto">
 		{@render children?.()}
 	</div>
 </div>

@@ -1,11 +1,18 @@
 import type { ObjectId } from 'mongodb';
 
+export type TermsConsent = {
+	acceptedAt: Date;
+	ipAddress: string;
+	policyVersion: string;
+};
+
 export type UserDocument = {
 	_id: ObjectId;
 	email: string;
 	passwordHash: string;
 	firstName: string;
 	lastName: string;
+	termsConsent?: TermsConsent;
 	createdAt: Date;
 	updatedAt: Date;
 };

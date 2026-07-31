@@ -1,4 +1,4 @@
-import type { UserDocument } from '$lib/shared/models/user';
+import type { UserDocument, TermsConsent } from '$lib/shared/models/user';
 import { getUsersCollection } from '$lib/server/db/collections';
 
 export async function ensureUserIndexes(): Promise<void> {
@@ -30,6 +30,7 @@ export async function createUser(input: {
 	passwordHash: string;
 	firstName: string;
 	lastName: string;
+	termsConsent?: TermsConsent;
 }): Promise<UserDocument> {
 	const users = await getUsersCollection<UserDocument>();
 	const now = new Date();
@@ -42,6 +43,7 @@ export async function createUser(input: {
 		passwordHash: input.passwordHash,
 		firstName,
 		lastName,
+		termsConsent: input.termsConsent,
 		createdAt: now,
 		updatedAt: now
 	} as UserDocument);
@@ -52,6 +54,7 @@ export async function createUser(input: {
 		passwordHash: input.passwordHash,
 		firstName,
 		lastName,
+		termsConsent: input.termsConsent,
 		createdAt: now,
 		updatedAt: now
 	};

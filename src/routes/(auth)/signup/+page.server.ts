@@ -5,9 +5,12 @@ import { message } from 'sveltekit-superforms';
 import type { Actions, PageServerLoad } from './$types';
 import { registerWithCredentials } from '$lib/server/auth/signup';
 import { getSessionCookieOptions, SESSION_COOKIE_NAME } from '$lib/server/auth/session';
+import { recordConsentEvent } from '$lib/server/repositories/consent-events';
 import { assertAuthRecaptcha } from '$lib/server/security/recaptcha';
 import { signupSchema } from '$lib/shared/schemas/auth';
 import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
+import { LEGAL_POLICY_VERSION } from '$lib/shared/legal';
+import { CONSENT_CONTEXTS, CONSENT_EVENT_TYPES } from '$lib/shared/models/consent-event';
 
 function safeRedirectPath(value: string | null): string {
 	if (!value || !value.startsWith('/') || value.startsWith('//')) {
@@ -22,7 +25,15 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		redirect(303, safeRedirectPath(url.searchParams.get('redirectTo')));
 	}
 
-	const form = await superValidate(zod4(signupSchema));
+	const form = await superValidate(zod4(signupSchema), {
+		defaults: {
+			firstName: '',
+			lastName: '',
+			email: '',
+			password: '',
+			acceptedTerms: false
+		}
+	});
 
 	return {
 		form,
@@ -52,11 +63,28 @@ export const actions: Actions = {
 			return message(form, recaptcha.message, { status: 400 });
 		}
 
+		const ipAddress = getClientAddress();
+		const termsConsent = {
+			acceptedAt: new Date(),
+			ipAddress,
+			policyVersion: LEGAL_POLICY_VERSION
+		};
+
+		await recordConsentEvent({
+			type: CONSENT_EVENT_TYPES.TERMS_SUBMIT,
+			context: CONSENT_CONTEXTS.SIGNUP,
+			ipAddress,
+			userAgent: request.headers.get('user-agent') ?? undefined,
+			email: form.data.email,
+			policyVersion: LEGAL_POLICY_VERSION
+		});
+
 		const result = await registerWithCredentials({
 			firstName: form.data.firstName,
 			lastName: form.data.lastName,
 			email: form.data.email,
-			password: form.data.password
+			password: form.data.password,
+			termsConsent
 		});
 
 		if (!result.ok) {

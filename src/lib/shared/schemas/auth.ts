@@ -3,8 +3,14 @@ import { isPasswordStrong } from '$lib/shared/password-policy';
 import { recaptchaTokenSchema } from '$lib/shared/recaptcha';
 
 export const loginSchema = z.object({
-	email: z.email('Enter a valid email address'),
-	password: z.string().min(8, 'Password must be at least 8 characters'),
+	email: z
+		.string()
+		.min(1, 'Email is required')
+		.email('Enter a valid email address'),
+	password: z
+		.string()
+		.min(1, 'Password is required')
+		.min(8, 'Password must be at least 8 characters'),
 	recaptchaToken: recaptchaTokenSchema
 });
 
@@ -24,6 +30,9 @@ export const signupSchema = z.object({
 		.string()
 		.min(1, 'Password is required')
 		.refine(isPasswordStrong, 'Password does not meet all requirements'),
+	acceptedTerms: z
+		.boolean()
+		.refine((value) => value, 'You must agree to the Terms of Service and Privacy Notice'),
 	recaptchaToken: recaptchaTokenSchema
 });
 

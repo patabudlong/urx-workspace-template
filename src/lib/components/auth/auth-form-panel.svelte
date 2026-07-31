@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ActionProgressBar from '$lib/components/action-progress-bar.svelte';
 	import ThemeToggle from '$lib/components/theme-toggle.svelte';
 	import UrixoftLogo from '$lib/components/urixoft-logo.svelte';
 	import type { Snippet } from 'svelte';
@@ -16,8 +17,12 @@
 	} = $props();
 </script>
 
-<div class="flex min-h-svh flex-col">
-	<header class="flex shrink-0 items-center justify-between gap-4 border-b px-4 py-4 sm:px-6 lg:border-b-0 lg:px-10 lg:pt-8">
+<div class="relative flex min-h-full flex-col">
+	<ActionProgressBar />
+
+	<header
+		class="relative flex shrink-0 items-center justify-between gap-4 border-b px-4 py-4 sm:px-6 lg:border-b-0 lg:px-10 lg:pt-8"
+	>
 		<div class="flex items-center gap-3 lg:hidden">
 			<div class="rounded-lg bg-primary/10 p-1.5 ring-1 ring-primary/15">
 				<UrixoftLogo class="size-8 shrink-0 rounded-sm" />
@@ -31,9 +36,7 @@
 	</header>
 
 	<main class="flex min-h-0 flex-1 flex-col">
-		<div
-			class="flex flex-1 flex-col justify-center px-4 py-8 sm:px-6 lg:px-10 lg:py-10 xl:px-16"
-		>
+		<div class="flex flex-1 flex-col justify-center px-4 py-8 sm:px-6 lg:px-10 lg:py-10 xl:px-16">
 			<div class="mx-auto w-full max-w-md space-y-8">
 				<div class="space-y-2">
 					<h2 class="text-2xl font-semibold tracking-tight">{title}</h2>
