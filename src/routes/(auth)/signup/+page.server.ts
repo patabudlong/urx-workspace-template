@@ -6,6 +6,7 @@ import type { Actions, PageServerLoad } from './$types';
 import { registerWithCredentials } from '$lib/server/auth/signup';
 import { getSessionCookieOptions, SESSION_COOKIE_NAME } from '$lib/server/auth/session';
 import { recordConsentEvent } from '$lib/server/repositories/consent-events';
+import { getAuthRateLimitFormFailure } from '$lib/server/security/auth-rate-limit-form';
 import { assertAuthRecaptcha } from '$lib/server/security/recaptcha';
 import { signupSchema } from '$lib/shared/schemas/auth';
 import { getGoogleAuthErrorMessage } from '$lib/shared/google-auth';
@@ -50,6 +51,15 @@ export const actions: Actions = {
 	default: async (event) => {
 		const { request, cookies, url, getClientAddress } = event;
 		const form = await superValidate(request, zod4(signupSchema));
+
+		const rateLimited = getAuthRateLimitFormFailure(form, {
+			clientIp: getClientAddress(),
+			pathname: url.pathname
+		});
+
+		if (rateLimited) {
+			return rateLimited;
+		}
 
 		if (!form.valid) {
 			return fail(400, { form });

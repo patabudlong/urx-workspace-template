@@ -5,6 +5,7 @@ import { message } from 'sveltekit-superforms';
 import type { Actions, PageServerLoad } from './$types';
 import { authenticateWithCredentials } from '$lib/server/auth/login';
 import { getSessionCookieOptions, SESSION_COOKIE_NAME } from '$lib/server/auth/session';
+import { getAuthRateLimitFormFailure } from '$lib/server/security/auth-rate-limit-form';
 import { assertAuthRecaptcha } from '$lib/server/security/recaptcha';
 import { loginSchema } from '$lib/shared/schemas/auth';
 import { getGoogleAuthErrorMessage } from '$lib/shared/google-auth';
@@ -45,6 +46,15 @@ export const actions: Actions = {
 	default: async (event) => {
 		const { request, cookies, url, getClientAddress } = event;
 		const form = await superValidate(request, zod4(loginSchema));
+
+		const rateLimited = getAuthRateLimitFormFailure(form, {
+			clientIp: getClientAddress(),
+			pathname: url.pathname
+		});
+
+		if (rateLimited) {
+			return rateLimited;
+		}
 
 		if (!form.valid) {
 			return fail(400, { form });

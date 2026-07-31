@@ -4,6 +4,7 @@ import { zod4 } from 'sveltekit-superforms/adapters';
 import { message } from 'sveltekit-superforms';
 import type { Actions, PageServerLoad } from './$types';
 import { requestPasswordReset } from '$lib/server/auth/password-reset';
+import { getAuthRateLimitFormFailure } from '$lib/server/security/auth-rate-limit-form';
 import { assertAuthRecaptcha } from '$lib/server/security/recaptcha';
 import { FORGOT_PASSWORD_SUCCESS_MESSAGE } from '$lib/shared/auth-messages';
 import { forgotPasswordSchema } from '$lib/shared/schemas/auth';
@@ -26,6 +27,15 @@ export const actions: Actions = {
 	default: async (event) => {
 		const { request, url, getClientAddress } = event;
 		const form = await superValidate(request, zod4(forgotPasswordSchema));
+
+		const rateLimited = getAuthRateLimitFormFailure(form, {
+			clientIp: getClientAddress(),
+			pathname: url.pathname
+		});
+
+		if (rateLimited) {
+			return rateLimited;
+		}
 
 		if (!form.valid) {
 			return fail(400, { form });

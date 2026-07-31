@@ -7,6 +7,7 @@ import {
 	isPasswordResetTokenValid,
 	resetPasswordWithToken
 } from '$lib/server/auth/password-reset';
+import { getAuthRateLimitFormFailure } from '$lib/server/security/auth-rate-limit-form';
 import { assertAuthRecaptcha } from '$lib/server/security/recaptcha';
 import { resetPasswordSchema } from '$lib/shared/schemas/auth';
 import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
@@ -36,8 +37,17 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request, getClientAddress }) => {
+	default: async ({ request, url, getClientAddress }) => {
 		const form = await superValidate(request, zod4(resetPasswordSchema));
+
+		const rateLimited = getAuthRateLimitFormFailure(form, {
+			clientIp: getClientAddress(),
+			pathname: url.pathname
+		});
+
+		if (rateLimited) {
+			return rateLimited;
+		}
 
 		if (!form.valid) {
 			return fail(400, { form });

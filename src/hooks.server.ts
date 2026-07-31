@@ -1,12 +1,52 @@
 import type { Handle } from '@sveltejs/kit';
 import { applyCorsHeaders, getCorsHeaders, isApiRoute } from '$lib/server/api/cors';
+import { jsonError } from '$lib/server/api/response';
 import { verifyAccessToken } from '$lib/server/auth/jwt';
 import { SESSION_COOKIE_NAME } from '$lib/server/auth/session';
+import {
+	consumeAuthRateLimit,
+	getAuthRateLimitMessage,
+	isAuthApiRateLimitedRoute,
+	isAuthOAuthRateLimitedRoute
+} from '$lib/server/security/auth-rate-limit';
+import { CONSENT_CONTEXTS } from '$lib/shared/models/consent-event';
 
 export const handle: Handle = async ({ event, resolve }) => {
 	const origin = event.request.headers.get('origin');
 	const pathname = event.url.pathname;
+	const method = event.request.method;
 	const sessionToken = event.cookies.get(SESSION_COOKIE_NAME);
+
+	if (isAuthApiRateLimitedRoute(pathname, method) || isAuthOAuthRateLimitedRoute(pathname, method)) {
+		const rateLimit = consumeAuthRateLimit({
+			clientIp: event.getClientAddress(),
+			pathname
+		});
+
+		if (!rateLimit.ok) {
+			const retryAfter = String(rateLimit.retryAfterSeconds);
+			const message = getAuthRateLimitMessage();
+
+			if (isApiRoute(pathname)) {
+				return jsonError('RATE_LIMITED', message, {
+					requestId: event.request.headers.get('x-request-id') ?? undefined,
+					headers: { 'Retry-After': retryAfter }
+				});
+			}
+
+			const context = event.url.searchParams.get('context');
+			const returnPath =
+				context === CONSENT_CONTEXTS.SIGNUP ? '/signup' : '/login';
+
+			return new Response(null, {
+				status: 303,
+				headers: {
+					Location: `${returnPath}?error=rate_limited`,
+					'Retry-After': retryAfter
+				}
+			});
+		}
+	}
 
 	if (sessionToken) {
 		const payload = await verifyAccessToken(sessionToken);

@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { hashPassword } from '$lib/server/auth/password';
+import { isForgotPasswordEmailThrottled } from '$lib/server/security/auth-rate-limit';
 import { isMailConfigured } from '$lib/server/mail/index';
 import { sendPasswordResetEmail } from '$lib/server/mail/password-reset-email';
 import {
@@ -34,6 +35,10 @@ export async function requestPasswordReset(input: {
 
 	if (!(await isMailConfigured())) {
 		return { ok: false, reason: 'MAIL_NOT_CONFIGURED' };
+	}
+
+	if (isForgotPasswordEmailThrottled(input.email)) {
+		return { ok: true };
 	}
 
 	const user = await findUserByEmail(input.email);
