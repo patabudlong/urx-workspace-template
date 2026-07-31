@@ -25,10 +25,15 @@
 			data-slot="form-label"
 			class={cn("data-[fs-error]:text-destructive", className)}
 		>
-			<span>
+			<span class="inline-flex items-baseline gap-1.5">
 				{@render children?.()}
 				{#if showRequired}
-					<span class="text-destructive ml-0.5" aria-hidden="true">*</span>
+					<span
+						class="text-muted-foreground text-[0.65rem] font-normal tracking-wide uppercase"
+						aria-hidden="true"
+					>
+						Required
+					</span>
 				{/if}
 			</span>
 		</Label>
