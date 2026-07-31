@@ -1,4 +1,5 @@
 <script lang="ts">
+	import AuthWorkspaceHeadline from '$lib/components/auth/auth-workspace-headline.svelte';
 	import UrixoftLogo from '$lib/components/urixoft-logo.svelte';
 	import { URIXOFT_SOCIAL } from '$lib/shared/site-meta';
 	import CheckIcon from '@lucide/svelte/icons/check';
@@ -37,9 +38,7 @@
 				<UrixoftLogo variant="white" class="size-12 shrink-0" />
 
 				<div class="space-y-4">
-					<h1 class="text-3xl font-semibold tracking-tight text-primary-foreground xl:text-4xl">
-						Your service business workspace, <span class="underline underline-offset-4">made simple.</span>
-					</h1>
+					<AuthWorkspaceHeadline />
 					<p class="text-base leading-relaxed text-primary-foreground/80 xl:text-lg">
 						Manage Jobs, Clients, and your Team in one place.
 					</p>

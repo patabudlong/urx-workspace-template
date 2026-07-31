@@ -16,8 +16,13 @@ const COMPANY_ADDRESS_LINES = [
 ] as const;
 
 const BRAND_TAGLINE = 'Your business workspace, made simple.';
-const LOGO_DISPLAY_WIDTH = 40;
-const LOGO_DISPLAY_HEIGHT = 36;
+const LOGO_DISPLAY_WIDTH = 52;
+const LOGO_DISPLAY_HEIGHT = 46;
+const LOGO_BORDER_RADIUS = 6;
+const BRAND_NAME_FONT_SIZE = 14;
+const BRAND_NAME_LINE_HEIGHT = 17;
+const BRAND_TAGLINE_FONT_SIZE = 12;
+const BRAND_TAGLINE_LINE_HEIGHT = 15;
 const ILLUSTRATION_DISPLAY_WIDTH = 240;
 
 export type PasswordResetEmailContent = {
@@ -79,7 +84,7 @@ export function buildPasswordResetEmailHtml(content: PasswordResetEmailContent):
 		'<table role="presentation"',
 		'cellpadding="0" cellspacing="0" border="0">',
 		'<tr>',
-		'<td style="padding-right:10px;',
+		'<td style="padding-right:12px;',
 		'vertical-align:middle;width:1px;">',
 		'<img',
 		`src="${logoUrl}"`,
@@ -89,18 +94,21 @@ export function buildPasswordResetEmailHtml(content: PasswordResetEmailContent):
 		'style="display:block;',
 		`width:${LOGO_DISPLAY_WIDTH}px;`,
 		`height:${LOGO_DISPLAY_HEIGHT}px;`,
+		`border-radius:${LOGO_BORDER_RADIUS}px;`,
 		'border:0;">',
 		'</td>',
 		'<td style="vertical-align:middle;',
 		'font-family:Arial,Helvetica,sans-serif;">',
 		'<p style="margin:0;',
-		'font-size:12px;line-height:18px;',
+		`font-size:${BRAND_NAME_FONT_SIZE}px;`,
+		`line-height:${BRAND_NAME_LINE_HEIGHT}px;`,
 		'font-weight:600;',
 		`color:${TEXT_FOOTER};">`,
 		appName,
 		'</p>',
-		'<p style="margin:2px 0 0 0;',
-		'font-size:11px;line-height:16px;',
+		'<p style="margin:1px 0 0 0;',
+		`font-size:${BRAND_TAGLINE_FONT_SIZE}px;`,
+		`line-height:${BRAND_TAGLINE_LINE_HEIGHT}px;`,
 		`color:${TEXT_FOOTER};">`,
 		brandTagline,
 		'</p>',
