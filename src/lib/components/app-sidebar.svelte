@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import UrixoftLogo from '$lib/components/urixoft-logo.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import ActivityIcon from '@lucide/svelte/icons/activity';
 	import BookOpenIcon from '@lucide/svelte/icons/book-open';
 	import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
-	import ServerIcon from '@lucide/svelte/icons/server';
 
 	const navItems = [
 		{ title: 'Dashboard', href: '/', icon: LayoutDashboardIcon },
@@ -20,14 +20,10 @@
 				<Sidebar.MenuButton size="lg">
 					{#snippet child({ props })}
 						<a href="/" {...props}>
-							<div
-								class="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-lg"
-							>
-								<ServerIcon class="size-4" />
-							</div>
+							<UrixoftLogo class="size-8 shrink-0 rounded-lg" />
 							<div class="grid flex-1 text-left text-sm leading-tight">
-								<span class="truncate font-medium">URX Workspace</span>
-								<span class="truncate text-xs text-muted-foreground">SvelteKit + MongoDB</span>
+								<span class="truncate font-medium">Urixoft</span>
+								<span class="truncate text-xs text-muted-foreground">Workspace</span>
 							</div>
 						</a>
 					{/snippet}
