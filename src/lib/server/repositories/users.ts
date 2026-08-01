@@ -76,13 +76,13 @@ export async function createUser(input: {
 
 	const result = await users.insertOne({
 		email,
-		passwordHash: input.passwordHash,
-		googleId: input.googleId,
+		...(input.passwordHash ? { passwordHash: input.passwordHash } : {}),
+		...(input.googleId ? { googleId: input.googleId } : {}),
 		firstName,
 		lastName,
-		avatarUrl: input.avatarUrl,
-		emailVerifiedAt: input.emailVerifiedAt,
-		termsConsent: input.termsConsent,
+		...(input.avatarUrl ? { avatarUrl: input.avatarUrl } : {}),
+		...(input.emailVerifiedAt ? { emailVerifiedAt: input.emailVerifiedAt } : {}),
+		...(input.termsConsent ? { termsConsent: input.termsConsent } : {}),
 		createdAt: now,
 		updatedAt: now
 	} as UserDocument);

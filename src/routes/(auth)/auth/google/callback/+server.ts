@@ -12,13 +12,7 @@ import {
 	isGoogleAuthConfigured
 } from '$lib/server/auth/google-oauth';
 import { getSessionCookieOptions, SESSION_COOKIE_NAME } from '$lib/server/auth/session';
-import { recordConsentEvent } from '$lib/server/repositories/consent-events';
-import { LEGAL_POLICY_VERSION } from '$lib/shared/legal';
-import {
-	CONSENT_CONTEXTS,
-	CONSENT_EVENT_TYPES,
-	type ConsentContext
-} from '$lib/shared/models/consent-event';
+import { CONSENT_CONTEXTS, type ConsentContext } from '$lib/shared/models/consent-event';
 
 function safeRedirectPath(value: string | null | undefined): string {
 	if (!value || !value.startsWith('/') || value.startsWith('//')) {
@@ -43,7 +37,7 @@ function authErrorRedirect(context: ConsentContext, code: string): never {
 	redirect(303, `${returnPath}?error=${encodeURIComponent(code)}`);
 }
 
-export const GET: RequestHandler = async ({ url, cookies, getClientAddress, request }) => {
+export const GET: RequestHandler = async ({ url, cookies }) => {
 	const context =
 		cookies.get(GOOGLE_OAUTH_CONTEXT_COOKIE) === CONSENT_CONTEXTS.SIGNUP
 			? CONSENT_CONTEXTS.SIGNUP
@@ -87,18 +81,6 @@ export const GET: RequestHandler = async ({ url, cookies, getClientAddress, requ
 
 			authErrorRedirect(context, 'google_account_conflict');
 		}
-
-		const ipAddress = getClientAddress();
-
-		await recordConsentEvent({
-			type: CONSENT_EVENT_TYPES.SOCIAL_LOGIN_GOOGLE,
-			context,
-			ipAddress,
-			userAgent: request.headers.get('user-agent') ?? undefined,
-			email: result.user.email,
-			userId: result.user.id,
-			policyVersion: LEGAL_POLICY_VERSION
-		});
 
 		cookies.set(SESSION_COOKIE_NAME, result.accessToken, getSessionCookieOptions());
 

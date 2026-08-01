@@ -18,7 +18,7 @@ export async function sendWorkspaceApprovedEmail(input: {
 		greeting,
 		logoUrl: `${input.origin}/email/urixoft-logo.png`,
 		illustrationUrl: `${input.origin}/email/workspace-approved.png`,
-		illustrationAlt: 'Welcome illustration',
+		illustrationAlt: 'Workspace approved welcome illustration',
 		preheader: `${input.workspaceName} is ready. Sign in to open your dashboard.`,
 		paragraphs: [
 			`Great news — your workspace ${input.workspaceName} has been approved.`,

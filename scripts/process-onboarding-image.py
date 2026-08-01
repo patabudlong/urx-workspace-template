@@ -49,9 +49,56 @@ def flood_remove_black(img: Image.Image, tolerance: int = 50) -> None:
             push(x, y + 1)
 
 
+def remove_large_dark_islands(img: Image.Image, tolerance: int = 50, min_area: int = 10_000) -> None:
+    """Remove enclosed background holes left after edge flood-fill."""
+    w, h = img.size
+    pixels = img.load()
+    visited = bytearray(w * h)
+
+    for start_x in range(w):
+        for start_y in range(h):
+            index = start_y * w + start_x
+            if visited[index]:
+                continue
+
+            r, g, b, a = pixels[start_x, start_y]
+            if a == 0 or not is_background(r, g, b, tolerance):
+                visited[index] = 1
+                continue
+
+            queue: deque[tuple[int, int]] = deque([(start_x, start_y)])
+            component: list[tuple[int, int]] = []
+            visited[index] = 1
+
+            while queue:
+                x, y = queue.popleft()
+                component.append((x, y))
+
+                for next_x, next_y in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+                    if next_x < 0 or next_x >= w or next_y < 0 or next_y >= h:
+                        continue
+
+                    next_index = next_y * w + next_x
+                    if visited[next_index]:
+                        continue
+
+                    next_r, next_g, next_b, next_a = pixels[next_x, next_y]
+                    if next_a == 0 or not is_background(next_r, next_g, next_b, tolerance):
+                        visited[next_index] = 1
+                        continue
+
+                    visited[next_index] = 1
+                    queue.append((next_x, next_y))
+
+            if len(component) >= min_area:
+                for x, y in component:
+                    pixels[x, y] = (0, 0, 0, 0)
+
+
 def process_image(src: Path, dst: Path) -> None:
     img = Image.open(src).convert("RGBA")
     flood_remove_black(img)
+    remove_large_dark_islands(img)
     dst.parent.mkdir(parents=True, exist_ok=True)
     img.save(dst, optimize=True)
 

@@ -11,7 +11,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 	const user = await findUserById(locals.user.id);
 
 	if (!user || !isSuperadminUser(user)) {
-		error(403, 'Forbidden');
+		error(403, 'You need platform admin access to view this page.');
 	}
 
 	return {
