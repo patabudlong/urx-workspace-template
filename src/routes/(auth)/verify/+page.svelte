@@ -153,7 +153,15 @@
 	</div>
 
 	{#snippet footer()}
-		{#if !verified}
+		{#if verified}
+			<p class="text-center text-sm">
+				<a href="/login" class="hover:text-foreground hover:underline">Back to sign in</a>
+				<span class="text-muted-foreground px-2" aria-hidden="true">|</span>
+				<a href="/verify/resend" class="hover:text-foreground hover:underline">
+					Resend verification email
+				</a>
+			</p>
+		{:else}
 			<div class="space-y-3 text-center">
 				<p class="text-sm">Didn't get a code?</p>
 				<p class="text-sm">

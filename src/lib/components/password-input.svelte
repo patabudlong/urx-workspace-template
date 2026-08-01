@@ -35,7 +35,7 @@
 			<InputGroup.Button
 				type="button"
 				size="icon-sm"
-				class="active:translate-y-0 hover:bg-transparent dark:hover:bg-transparent"
+				class="active:translate-y-0 rounded-none hover:bg-transparent focus-visible:ring-0 dark:hover:bg-transparent"
 				onclick={() => (visible = !visible)}
 				aria-label={visible ? 'Hide password' : 'Show password'}
 			>
