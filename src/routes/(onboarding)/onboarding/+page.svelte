@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
 	import { invalidateAll } from '$app/navigation';
-	import FormAlert from '$lib/components/auth/form-alert.svelte';
+	import AuthFormMessageAlert from '$lib/components/auth/auth-form-message-alert.svelte';
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
 	import OnboardingElementTour, {
 		type ElementTourStep
@@ -570,15 +570,15 @@
 		<SubmitProgressBar active={$ownerSubmitting || $memberSubmitting} label="Submitting…" />
 
 		{#if stepError && isOwnerWizardStep}
-			<StatusAlert variant="danger">{stepError}</StatusAlert>
+			<AuthFormMessageAlert message={stepError} />
 		{/if}
 
 		{#if $ownerMessage && isOwnerWizardStep}
-			<FormAlert>{$ownerMessage}</FormAlert>
+			<AuthFormMessageAlert message={$ownerMessage} />
 		{/if}
 
 		{#if $memberMessage && wizardStep === 'join'}
-			<FormAlert>{$memberMessage}</FormAlert>
+			<AuthFormMessageAlert message={$memberMessage} />
 		{/if}
 
 		<div class="flex items-center justify-between gap-3">
@@ -710,17 +710,18 @@
 					</p>
 				</div>
 
-				<StatusAlert variant="info" title="You can come back later">
-					You can sign out and return later. Dashboard access unlocks after workspace approval.
-				</StatusAlert>
+				<StatusAlert
+					variant="info"
+					title="You can come back later"
+					description="You can sign out and return later. Dashboard access unlocks after workspace approval."
+				/>
 
 				{#if data.isSuperadmin}
-					<StatusAlert variant="plain" title="Platform admin">
-						Review pending workspace requests at
-						<a href="/admin/workspace-requests" class="text-primary font-medium hover:underline">
-							/admin/workspace-requests
-						</a>.
-					</StatusAlert>
+					<StatusAlert
+						variant="plain"
+						title="Platform admin"
+						description="Review pending workspace requests at /admin/workspace-requests."
+					/>
 				{/if}
 			</div>
 		{:else if wizardStep === 'join'}
@@ -1071,10 +1072,11 @@
 								{/if}
 							</dl>
 
-							<StatusAlert variant="info">
-								After submission, your workspace will be reviewed by our team. You'll receive an email once
-								approved.
-							</StatusAlert>
+							<StatusAlert
+								variant="info"
+								title="Review in progress"
+								description="After submission, your workspace will be reviewed by our team. You'll receive an email once approved."
+							/>
 						</div>
 
 						<input type="hidden" name="name" value={$ownerForm.name} />

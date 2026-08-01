@@ -3,7 +3,6 @@
 	import { createAuthLoadingState } from '$lib/auth/loading.svelte';
 	import AuthFormMessageAlert from '$lib/components/auth/auth-form-message-alert.svelte';
 	import AuthFormPanel from '$lib/components/auth/auth-form-panel.svelte';
-	import FormAlert from '$lib/components/auth/form-alert.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import RecaptchaNotice from '$lib/components/auth/recaptcha-notice.svelte';
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
@@ -98,9 +97,13 @@
 			/>
 			<Button href="/login" class={AUTH_ACTION_BUTTON_CLASS}>Sign in</Button>
 		{:else}
-			{#if data.codeSent}
+			{#if recaptchaError}
+				<AuthFormMessageAlert message={recaptchaError} />
+			{:else if $formMessage && $formMessage !== 'verified'}
+				<AuthFormMessageAlert message={$formMessage} bind:limited={formRateLimited} />
+			{:else if data.codeSent}
 				<StatusAlert
-					variant="success"
+					variant="info"
 					title="Check your email"
 					description={data.codeSentMessage}
 				/>
@@ -108,14 +111,6 @@
 
 			<form method="POST" use:enhance class="space-y-5" novalidate>
 				<div class="space-y-5">
-					{#if recaptchaError}
-						<FormAlert title="Verification failed">{recaptchaError}</FormAlert>
-					{/if}
-
-					{#if $formMessage && $formMessage !== 'verified'}
-						<AuthFormMessageAlert message={$formMessage} bind:limited={formRateLimited} />
-					{/if}
-
 					<input type="hidden" name="email" bind:value={$form.email} />
 
 					<Form.Field form={superform} name="code">

@@ -107,11 +107,7 @@
 				{/if}
 
 				{#if recaptchaError}
-					<StatusAlert
-						variant="danger"
-						title="Verification failed"
-						description={recaptchaError}
-					/>
+					<AuthFormMessageAlert message={recaptchaError} />
 				{/if}
 
 				{#if $formMessage}

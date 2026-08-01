@@ -3,7 +3,6 @@
 	import { createAuthLoadingState } from '$lib/auth/loading.svelte';
 	import AuthFormMessageAlert from '$lib/components/auth/auth-form-message-alert.svelte';
 	import AuthFormPanel from '$lib/components/auth/auth-form-panel.svelte';
-	import FormAlert from '$lib/components/auth/form-alert.svelte';
 	import RecaptchaNotice from '$lib/components/auth/recaptcha-notice.svelte';
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -83,9 +82,9 @@
 	<div class="space-y-6">
 		<form method="POST" use:enhance class="space-y-5" novalidate>
 			<div class="space-y-5">
-				{#if recaptchaError}
-					<FormAlert title="Verification failed">{recaptchaError}</FormAlert>
-				{/if}
+					{#if recaptchaError}
+						<AuthFormMessageAlert message={recaptchaError} />
+					{/if}
 
 				{#if $formMessage}
 					<AuthFormMessageAlert message={$formMessage} bind:limited={formRateLimited} />

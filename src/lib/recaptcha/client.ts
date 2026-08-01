@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 import { env } from '$env/dynamic/public';
 import type { RecaptchaAction } from '$lib/shared/recaptcha';
+import { SECURITY_VERIFICATION_FAILED_CLIENT_MESSAGE } from '$lib/shared/auth-messages';
 
 declare global {
 	interface Window {
@@ -216,8 +217,7 @@ export async function executeRecaptcha(action: RecaptchaAction): Promise<string>
 	return token;
 }
 
-export const RECAPTCHA_CLIENT_ERROR =
-	'Security verification failed. Please refresh the page and try again.';
+export const RECAPTCHA_CLIENT_ERROR = SECURITY_VERIFICATION_FAILED_CLIENT_MESSAGE;
 
 export function createRecaptchaSubmitHandler(
 	action: RecaptchaAction,

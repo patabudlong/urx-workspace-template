@@ -9,6 +9,8 @@ import { assertAuthRecaptcha } from '$lib/server/security/recaptcha';
 import { verifyEmailSchema } from '$lib/shared/schemas/auth';
 import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 import {
+	INVALID_VERIFICATION_CODE_MESSAGE,
+	EMAIL_ALREADY_VERIFIED_MESSAGE,
 	RESEND_VERIFICATION_SUCCESS_MESSAGE,
 	SIGNUP_VERIFICATION_SENT_MESSAGE
 } from '$lib/shared/auth-messages';
@@ -85,10 +87,10 @@ export const actions: Actions = {
 
 		if (!result.ok) {
 			if (result.reason === 'ALREADY_VERIFIED') {
-				return message(form, 'This email is already verified. You can sign in.', { status: 409 });
+				return message(form, EMAIL_ALREADY_VERIFIED_MESSAGE, { status: 409 });
 			}
 
-			return message(form, 'That verification code is invalid or has expired.', { status: 400 });
+			return message(form, INVALID_VERIFICATION_CODE_MESSAGE, { status: 400 });
 		}
 
 		return message(form, 'verified');

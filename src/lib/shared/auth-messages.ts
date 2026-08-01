@@ -20,9 +20,28 @@ export const AUTH_RATE_LIMIT_MESSAGE =
 
 export const INVALID_CREDENTIALS_MESSAGE = 'Invalid email or password.';
 
+export const INVALID_VERIFICATION_CODE_MESSAGE =
+	'That verification code is invalid or has expired.';
+
+export const EMAIL_ALREADY_VERIFIED_MESSAGE =
+	'This email is already verified. You can sign in.';
+
+export const SECURITY_VERIFICATION_FAILED_MESSAGE =
+	'Security verification failed. Please try again.';
+
+export const SECURITY_VERIFICATION_FAILED_CLIENT_MESSAGE =
+	'Security verification failed. Please refresh the page and try again.';
+
+export const RESET_LINK_INVALID_MESSAGE = 'This reset link is invalid or has expired.';
+
+export const AUTH_ALERT_FALLBACK_TITLE = 'Something went wrong';
+
+export type AuthAlertVariant = 'info' | 'warning' | 'danger' | 'success' | 'plain';
+
 export type AuthAlertPresentation = {
 	title: string;
-	description?: string;
+	description: string;
+	variant?: AuthAlertVariant;
 };
 
 const AUTH_FORM_ALERT_PRESENTATIONS: Record<string, AuthAlertPresentation> = {
@@ -30,17 +49,70 @@ const AUTH_FORM_ALERT_PRESENTATIONS: Record<string, AuthAlertPresentation> = {
 		title: 'Invalid email or password',
 		description: 'Check your credentials and try again.'
 	},
+	[INVALID_VERIFICATION_CODE_MESSAGE]: {
+		title: 'Verification failed',
+		description: INVALID_VERIFICATION_CODE_MESSAGE
+	},
+	[EMAIL_ALREADY_VERIFIED_MESSAGE]: {
+		title: 'Email already verified',
+		description: EMAIL_ALREADY_VERIFIED_MESSAGE
+	},
 	[EMAIL_NOT_VERIFIED_MESSAGE]: {
 		title: 'Email not verified',
 		description: EMAIL_NOT_VERIFIED_MESSAGE
 	},
 	[AUTH_RATE_LIMIT_MESSAGE]: {
-		title: 'Too many attempts'
+		title: 'Too many attempts',
+		description: 'Please wait a few minutes and try again.'
+	},
+	[SECURITY_VERIFICATION_FAILED_MESSAGE]: {
+		title: 'Security verification failed',
+		description: 'Please try again.'
+	},
+	[SECURITY_VERIFICATION_FAILED_CLIENT_MESSAGE]: {
+		title: 'Security verification failed',
+		description: 'Please refresh the page and try again.'
+	},
+	[PASSWORD_REUSE_MESSAGE]: {
+		title: 'Password not allowed',
+		description: PASSWORD_REUSE_MESSAGE
+	},
+	[PASSWORD_WEAK_MESSAGE]: {
+		title: 'Password too weak',
+		description: PASSWORD_WEAK_MESSAGE
+	},
+	[RESET_LINK_INVALID_MESSAGE]: {
+		title: 'Link expired',
+		description: RESET_LINK_INVALID_MESSAGE
+	},
+	[FORGOT_PASSWORD_SUCCESS_MESSAGE]: {
+		title: 'Check your email',
+		description: FORGOT_PASSWORD_SUCCESS_MESSAGE,
+		variant: 'info'
+	},
+	[SIGNUP_VERIFICATION_SENT_MESSAGE]: {
+		title: 'Check your email',
+		description: SIGNUP_VERIFICATION_SENT_MESSAGE,
+		variant: 'info'
+	},
+	[RESEND_VERIFICATION_SUCCESS_MESSAGE]: {
+		title: 'Check your email',
+		description: RESEND_VERIFICATION_SUCCESS_MESSAGE,
+		variant: 'info'
 	}
 };
 
 export function getAuthFormAlertPresentation(message: string): AuthAlertPresentation | null {
 	return AUTH_FORM_ALERT_PRESENTATIONS[message] ?? null;
+}
+
+export function resolveAuthFormAlertPresentation(message: string): AuthAlertPresentation {
+	return (
+		AUTH_FORM_ALERT_PRESENTATIONS[message] ?? {
+			title: AUTH_ALERT_FALLBACK_TITLE,
+			description: message
+		}
+	);
 }
 
 export type AuthRateLimitMessage = {
@@ -89,10 +161,10 @@ export function formatRateLimitCountdown(seconds: number): string {
 
 export function formatAuthRateLimitMessage(retryAfterSeconds: number): string {
 	if (retryAfterSeconds <= 0) {
-		return 'Too many attempts. You can try again now.';
+		return 'You can try again now.';
 	}
 
-	return `Too many attempts. Try again in ${formatRateLimitCountdown(retryAfterSeconds)}.`;
+	return `Try again in ${formatRateLimitCountdown(retryAfterSeconds)}.`;
 }
 
 export function parseRateLimitRetryAfter(value: string | null | undefined): number | null {

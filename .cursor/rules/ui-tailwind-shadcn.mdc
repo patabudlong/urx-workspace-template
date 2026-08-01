@@ -156,27 +156,49 @@ import { AUTH_ACTION_BUTTON_CLASS, AUTH_INLINE_LINK_CLASS } from '$lib/auth/ui';
 
 **Every inline status message must include an icon.** Use **`StatusAlert`** from `$lib/components/status-alert.svelte` — never hand-roll colored `div`s for feedback.
 
+**Every alert must have both a title and subtext (`description`).** Never show a single-line alert body without a headline. Map shared copy in `$lib/shared/auth-messages.ts` via `resolveAuthFormAlertPresentation()`.
+
 | Variant | Use for | Icon (`@lucide/svelte`) |
 |--------|---------|-------------------------|
-| `info` | Neutral guidance, “check your email”, tips | `info` |
+| `info` | Neutral guidance, **“Check your email”**, tips | `info` (blue / `text-primary`) |
 | `warning` | Rate limits, caution, recoverable issues | `triangle-alert` |
-| `danger` | Errors, invalid input, failed actions | `circle-alert` |
-| `success` | Confirmed actions (password updated, saved) | `circle-check` |
+| `danger` | Errors, invalid input, failed actions | `triangle-alert` (red / `text-destructive`) |
+| `success` | Confirmed actions (password updated, email verified) | `circle-check` |
 | `plain` | Low-emphasis notes without semantic color | `info` (muted) |
+
+**Icon rules (non-negotiable):**
+- **“Check your email”** and similar inbox-guidance alerts → always `variant="info"` (blue, `info` icon) — never `success`/green.
+- **Errors and danger** → always `triangle-alert` — never `circle-alert`.
 
 ```svelte
 import StatusAlert from '$lib/components/status-alert.svelte';
 
-<StatusAlert variant="success">Your password has been updated.</StatusAlert>
-<StatusAlert variant="warning">Too many attempts. Try again in 2:00.</StatusAlert>
-<StatusAlert variant="danger">Invalid email or password.</StatusAlert>
-<StatusAlert variant="info">We sent a verification code to your email.</StatusAlert>
-<StatusAlert variant="plain">Optional helper note.</StatusAlert>
+<StatusAlert
+	variant="success"
+	title="Password updated"
+	description="Sign in with your new password."
+/>
+<StatusAlert
+	variant="warning"
+	title="Too many attempts"
+	description="Try again in 2:00."
+/>
+<StatusAlert
+	variant="danger"
+	title="Verification failed"
+	description="That verification code is invalid or has expired."
+/>
+<StatusAlert
+	variant="info"
+	title="Check your email"
+	description="We sent a verification code to your email."
+/>
 ```
 
-- **`FormAlert`** (`$lib/components/auth/form-alert.svelte`) — shorthand for `variant="danger"` on auth forms; prefer `StatusAlert` when the variant is not danger.
-- **`AuthFormMessageAlert`** — wraps `StatusAlert`; passes `variant` (default `danger`); auto-uses `warning` for rate-limit countdowns.
-- Large **hero panels** (centered illustration + copy, e.g. email sent) may keep a decorative icon in the panel — inline banners above forms must still use `StatusAlert`.
+- **`FormAlert`** (`$lib/components/auth/form-alert.svelte`) — shorthand for `variant="danger"`; requires `title` + `description`.
+- **`AuthFormMessageAlert`** — wraps `StatusAlert`; resolves `title` + `description` from `resolveAuthFormAlertPresentation()`; auto-uses `warning` for rate-limit countdowns.
+- **One alert at a time** — show a single alert per form or page section. When a new status appears, **replace** the previous alert — never stack two banners. Use a mutually exclusive `{#if}` / `{:else if}` chain ordered by priority (e.g. client error → server error → success/info).
+- **Alert copy** — prefer structured `title` + `description` mappings in `$lib/shared/auth-messages.ts`. Title = short headline; description = supporting detail or next step. Unmapped messages fall back to `AUTH_ALERT_FALLBACK_TITLE` + message as description.
 - Icons: `class="size-4 shrink-0"` in the component; `aria-hidden="true"` on decorative icons. `role="alert"` for danger/warning; `role="status"` for info/success/plain.
 
 ## Red flags (reject in review)
@@ -187,6 +209,11 @@ import StatusAlert from '$lib/components/status-alert.svelte';
 - Duplicate button/input styles
 - Auth `Button` with only `w-full` (missing `h-10` via `AUTH_ACTION_BUTTON_CLASS`)
 - Inline status `div` with only background/border colors and no icon — use `StatusAlert`
+- Stacked status alerts on the same form (success + error visible together) — use one mutually exclusive alert slot
+- `StatusAlert` with only a title or only body text — always pass both `title` and `description`
+- Auth alerts with unmapped copy and no entry in `$lib/shared/auth-messages.ts` when the message is reused
+- “Check your email” alerts using `variant="success"` or green styling — use `variant="info"`
+- Danger/error alerts using `circle-alert` — use `triangle-alert`
 - `placeholder` on labeled `Input` / `Textarea` fields (use labels + helper text instead)
 - Multiple competing layout roots (second sidebar, second header provider)
 - `!` important utilities on shadcn components

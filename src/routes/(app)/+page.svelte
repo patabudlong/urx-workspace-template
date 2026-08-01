@@ -126,8 +126,9 @@
 		</Card.Root>
 	</div>
 
-	<StatusAlert variant="info" title="Workspace modules are coming next">
-		Team management, settings, and operational tools will appear here as modules are added to the
-		template.
-	</StatusAlert>
+	<StatusAlert
+		variant="info"
+		title="Workspace modules are coming next"
+		description="Team management, settings, and operational tools will appear here as modules are added to the template."
+	/>
 </div>

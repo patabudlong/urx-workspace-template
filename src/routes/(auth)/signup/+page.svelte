@@ -3,7 +3,6 @@
 	import { createAuthLoadingState } from '$lib/auth/loading.svelte';
 	import AuthFormMessageAlert from '$lib/components/auth/auth-form-message-alert.svelte';
 	import AuthFormPanel from '$lib/components/auth/auth-form-panel.svelte';
-	import FormAlert from '$lib/components/auth/form-alert.svelte';
 	import GoogleSignInButton from '$lib/components/auth/google-sign-in-button.svelte';
 	import RecaptchaNotice from '$lib/components/auth/recaptcha-notice.svelte';
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
@@ -103,7 +102,7 @@
 				{/if}
 
 				{#if recaptchaError}
-					<FormAlert title="Verification failed">{recaptchaError}</FormAlert>
+					<AuthFormMessageAlert message={recaptchaError} />
 				{/if}
 
 				{#if $formMessage}

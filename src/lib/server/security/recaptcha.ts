@@ -4,6 +4,7 @@ import {
 	DEFAULT_RECAPTCHA_MIN_SCORE,
 	type RecaptchaAction
 } from '$lib/shared/recaptcha';
+import { SECURITY_VERIFICATION_FAILED_MESSAGE } from '$lib/shared/auth-messages';
 
 const VERIFY_URL = 'https://www.google.com/recaptcha/api/siteverify';
 
@@ -122,6 +123,6 @@ export async function assertAuthRecaptcha(input: {
 
 	return {
 		ok: false,
-		message: 'Security verification failed. Please try again.'
+		message: SECURITY_VERIFICATION_FAILED_MESSAGE
 	};
 }

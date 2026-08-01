@@ -1,14 +1,11 @@
 <script lang="ts">
-	import StatusAlert, {
-		STATUS_ALERT_DEFAULT_TITLES,
-		type StatusAlertVariant
-	} from '$lib/components/status-alert.svelte';
-import {
-	formatAuthRateLimitMessage,
-	getAuthFormAlertPresentation,
-	isAuthRateLimitMessage,
-	type AuthFormMessage
-} from '$lib/shared/auth-messages';
+	import StatusAlert, { type StatusAlertVariant } from '$lib/components/status-alert.svelte';
+	import {
+		formatAuthRateLimitMessage,
+		isAuthRateLimitMessage,
+		resolveAuthFormAlertPresentation,
+		type AuthFormMessage
+	} from '$lib/shared/auth-messages';
 
 	let {
 		message,
@@ -63,39 +60,36 @@ import {
 		return () => clearInterval(timer);
 	});
 
-	const displayMessage = $derived(
-		initialRetryAfter && initialRetryAfter > 0
-			? formatAuthRateLimitMessage(remaining)
-			: alertText
-	);
+	const presentation = $derived.by(() => {
+		if (!alertText) {
+			return null;
+		}
+
+		if (initialRetryAfter && initialRetryAfter > 0) {
+			return {
+				title: 'Too many attempts',
+				description: formatAuthRateLimitMessage(remaining),
+				variant: 'warning' as const
+			};
+		}
+
+		return resolveAuthFormAlertPresentation(alertText);
+	});
 
 	const resolvedVariant = $derived<StatusAlertVariant>(
-		initialRetryAfter && initialRetryAfter > 0 ? 'warning' : variant
+		initialRetryAfter && initialRetryAfter > 0
+			? 'warning'
+			: (presentation?.variant ?? variant)
 	);
 
-	const resolvedTitle = $derived(
-		title ??
-			(initialRetryAfter && initialRetryAfter > 0
-				? 'Too many attempts'
-				: displayMessage
-					? (getAuthFormAlertPresentation(displayMessage)?.title ??
-						STATUS_ALERT_DEFAULT_TITLES[resolvedVariant])
-					: STATUS_ALERT_DEFAULT_TITLES[resolvedVariant])
-	);
-
-	const resolvedDescription = $derived(
-		displayMessage ? getAuthFormAlertPresentation(displayMessage)?.description : undefined
-	);
-
-	const showMessageBody = $derived(
-		Boolean(displayMessage) && !resolvedDescription
-	);
+	const resolvedTitle = $derived(title ?? presentation?.title ?? '');
+	const resolvedDescription = $derived(presentation?.description ?? '');
 </script>
 
-{#if displayMessage}
-	<StatusAlert variant={resolvedVariant} title={resolvedTitle} description={resolvedDescription}>
-		{#if showMessageBody}
-			{displayMessage}
-		{/if}
-	</StatusAlert>
+{#if presentation}
+	<StatusAlert
+		variant={resolvedVariant}
+		title={resolvedTitle}
+		description={resolvedDescription}
+	/>
 {/if}
