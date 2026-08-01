@@ -1,4 +1,6 @@
 export const APP_NAME = 'Urixoft Workspace';
+export const BRAND_NAME = 'Urixoft';
+export const PRODUCT_NAME = 'Workspace';
 
 export const URIXOFT_WEBSITE = 'https://urixoft.com';
 

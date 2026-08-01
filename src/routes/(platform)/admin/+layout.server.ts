@@ -2,6 +2,7 @@ import { error, redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
 import { isSuperadminUser } from '$lib/server/auth/platform-admin';
 import { findUserById } from '$lib/server/repositories/users';
+import { buildUserDisplay } from '$lib/shared/user-display';
 
 export const load: LayoutServerLoad = async ({ locals }) => {
 	if (!locals.user) {
@@ -15,6 +16,12 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 	}
 
 	return {
-		user: locals.user
+		user: locals.user,
+		userDisplay: buildUserDisplay({
+			email: user.email ?? locals.user.email,
+			firstName: user.firstName,
+			lastName: user.lastName,
+			avatarUrl: user.avatarUrl
+		})
 	};
 };

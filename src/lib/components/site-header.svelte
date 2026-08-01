@@ -1,8 +1,7 @@
 <script lang="ts">
 	import ActionProgressBar from '$lib/components/action-progress-bar.svelte';
-	import LogoutDialog from '$lib/components/logout-dialog.svelte';
+	import SiteChromeUserActions from '$lib/components/site-chrome-user-actions.svelte';
 	import ThemeToggle from '$lib/components/theme-toggle.svelte';
-	import UserAvatar from '$lib/components/user-avatar.svelte';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
@@ -47,13 +46,7 @@
 			</Badge>
 		{/if}
 		{#if userDisplay}
-			<div class="flex items-center gap-2 sm:gap-3">
-				<UserAvatar avatarUrl={userDisplay.avatarUrl} initials={userDisplay.initials} />
-				<span class="text-muted-foreground hidden max-w-[12rem] truncate text-sm md:inline">
-					{userDisplay.email}
-				</span>
-				<LogoutDialog />
-			</div>
+			<SiteChromeUserActions {userDisplay} />
 		{/if}
 		<ThemeToggle />
 	</div>

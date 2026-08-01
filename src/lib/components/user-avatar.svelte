@@ -36,7 +36,7 @@
 {:else}
 	<span
 		class={cn(
-			'bg-muted text-muted-foreground ring-border flex shrink-0 items-center justify-center rounded-full text-xs font-semibold ring-1',
+			'bg-primary text-primary-foreground flex shrink-0 items-center justify-center rounded-full text-xs font-semibold',
 			className
 		)}
 		aria-hidden="true"

@@ -1,6 +1,6 @@
 <script lang="ts">
+	import SiteBrandMark from '$lib/components/site-brand-mark.svelte';
 	import ThemeToggle from '$lib/components/theme-toggle.svelte';
-	import UrixoftLogo from '$lib/components/urixoft-logo.svelte';
 	import type { Snippet } from 'svelte';
 
 	let {
@@ -21,11 +21,7 @@
 		class="relative flex shrink-0 items-center justify-between gap-4 border-b px-4 py-4 sm:px-6 lg:border-b-0 lg:px-10 lg:pt-8"
 	>
 		<div class="flex items-center gap-3 lg:hidden">
-			<UrixoftLogo class="size-8 shrink-0 rounded-sm" />
-			<div class="min-w-0">
-				<p class="truncate text-sm font-medium">Urixoft Workspace</p>
-				<p class="text-muted-foreground truncate text-xs">Secure sign-in</p>
-			</div>
+			<SiteBrandMark />
 		</div>
 		<ThemeToggle class="ml-auto" iconClass="size-5" />
 	</header>

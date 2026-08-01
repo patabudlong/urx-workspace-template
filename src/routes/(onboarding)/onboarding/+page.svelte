@@ -35,6 +35,10 @@
 		isWorkspaceSlugReadyForAvailabilityCheck
 	} from '$lib/shared/schemas/workspace-availability';
 	import { slugifyWorkspaceName } from '$lib/shared/workspace-slug';
+	import {
+		isWorkspaceLogoMimeType,
+		WORKSPACE_LOGO_MAX_BYTES
+	} from '$lib/shared/workspace-branding';
 	import { cn } from '$lib/utils.js';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import CircleHelpIcon from '@lucide/svelte/icons/circle-help';
@@ -74,10 +78,6 @@
 		{ id: 'join', title: 'Join workspace', description: 'Enter the invite code from your admin.' }
 	];
 
-	const pendingSteps: WalkthroughStep[] = [
-		{ id: 'pending', title: 'Awaiting approval', description: 'Your workspace request is under review.' }
-	];
-
 	type OwnerField = FormPathLeaves<OwnerOnboardingInput>;
 
 	const OWNER_STEP_FIELDS: Partial<Record<WizardStepId, OwnerField[]>> = {
@@ -102,10 +102,7 @@
 	let brandLogoFile = $state<File | null>(null);
 	let brandLogoPreview = $state<string | null>(null);
 
-	import {
-		isWorkspaceLogoMimeType,
-		WORKSPACE_LOGO_MAX_BYTES
-	} from '$lib/shared/workspace-branding';
+	const walkthroughSteps = $derived(mode === 'create' ? createSteps : joinSteps);
 
 	const ownerSuperform = superForm(untrack(() => data.ownerForm), {
 		validators: zod4Client(ownerOnboardingClientSchema),
@@ -162,14 +159,6 @@
 		message: memberMessage,
 		submitting: memberSubmitting
 	} = memberSuperform;
-
-	const walkthroughSteps = $derived(
-		wizardStep === 'pending'
-			? pendingSteps
-			: mode === 'create'
-				? createSteps
-				: joinSteps
-	);
 
 	const completedStepIds = $derived.by(() => {
 		const order = walkthroughSteps.map((step) => step.id);
@@ -635,20 +624,22 @@
 <OnboardingWelcomeModal bind:open={welcomeOpen} firstName={data.firstName} />
 
 <main class="onboarding-page mx-auto flex w-full max-w-xl flex-col items-center gap-8 p-4 sm:p-6 lg:max-w-5xl lg:gap-10">
-	<OnboardingWalkthrough
-		steps={walkthroughSteps}
-		currentStepId={wizardStep}
-		completedStepIds={completedStepIds}
-	>
-		{#snippet headerActions()}
-			{#if tourReady && !tourActive && wizardStep !== 'pending'}
-				<Button type="button" variant="outline" size="sm" onclick={showElementTour}>
-					<CircleHelpIcon class="size-4" />
-					Show tour
-				</Button>
-			{/if}
-		{/snippet}
-	</OnboardingWalkthrough>
+	{#if wizardStep !== 'pending'}
+		<OnboardingWalkthrough
+			steps={walkthroughSteps}
+			currentStepId={wizardStep}
+			completedStepIds={completedStepIds}
+		>
+			{#snippet headerActions()}
+				{#if tourReady && !tourActive}
+					<Button type="button" variant="outline" size="sm" onclick={showElementTour}>
+						<CircleHelpIcon class="size-4" />
+						Show tour
+					</Button>
+				{/if}
+			{/snippet}
+		</OnboardingWalkthrough>
+	{/if}
 
 	<section
 		class={cn(
@@ -780,15 +771,6 @@
 						</li>
 					{/each}
 				</ol>
-
-				<div
-					class="bg-muted/40 border-border flex items-center justify-center gap-2.5 rounded-lg border px-4 py-3"
-				>
-					<span class="bg-primary size-2.5 animate-pulse rounded-full" aria-hidden="true"></span>
-					<p class="text-muted-foreground m-0 text-sm font-medium">
-						Checking approval status every few seconds…
-					</p>
-				</div>
 
 				<StatusAlert
 					variant="info"

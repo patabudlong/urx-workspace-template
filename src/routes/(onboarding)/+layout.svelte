@@ -4,10 +4,6 @@
 	let { data, children } = $props();
 </script>
 
-<OnboardingShell
-	userEmail={data.userDisplay.email}
-	userAvatarUrl={data.userDisplay.avatarUrl}
-	userInitials={data.userDisplay.initials}
->
+<OnboardingShell userDisplay={data.userDisplay}>
 	{@render children?.()}
 </OnboardingShell>

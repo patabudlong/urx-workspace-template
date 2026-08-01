@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import UrixoftLogo from '$lib/components/urixoft-logo.svelte';
+	import SiteBrandMark from '$lib/components/site-brand-mark.svelte';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import {
@@ -34,14 +34,7 @@
 			<Sidebar.MenuItem>
 				<Sidebar.MenuButton size="lg">
 					{#snippet child({ props })}
-						<a href="/" {...props}>
-							<UrixoftLogo class="size-8 shrink-0 rounded-sm dark:hidden" />
-							<UrixoftLogo variant="white" class="hidden size-8 shrink-0 rounded-sm dark:block" />
-							<div class="grid min-w-0 flex-1 text-left text-sm leading-tight">
-								<span class="truncate font-semibold">Urixoft</span>
-								<span class="text-muted-foreground truncate text-xs">Workspace</span>
-							</div>
-						</a>
+						<SiteBrandMark href="/" adaptiveLogo {...props} />
 					{/snippet}
 				</Sidebar.MenuButton>
 			</Sidebar.MenuItem>
