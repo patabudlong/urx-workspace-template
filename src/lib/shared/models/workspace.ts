@@ -25,6 +25,7 @@ export type WorkspaceDocument = {
 	teamSize: string;
 	address: WorkspaceAddress;
 	website?: string;
+	brandLogoUrl?: string;
 	status: WorkspaceStatus;
 	requestedByUserId: ObjectId;
 	reviewedAt?: Date;

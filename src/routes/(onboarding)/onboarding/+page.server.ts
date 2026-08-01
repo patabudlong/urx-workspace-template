@@ -62,16 +62,22 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 
 export const actions: Actions = {
 	owner: async ({ request, locals, url }) => {
-		const form = await superValidate(request, zod4(ownerOnboardingSchema));
+		const formData = await request.formData();
+		const form = await superValidate(formData, zod4(ownerOnboardingSchema));
 
 		if (!form.valid) {
 			return fail(400, { ownerForm: form });
 		}
 
+		const brandLogoEntry = formData.get('brandLogo');
+		const brandLogo =
+			brandLogoEntry instanceof File && brandLogoEntry.size > 0 ? brandLogoEntry : undefined;
+
 		const result = await submitOwnerWorkspaceRequest({
 			userId: locals.user!.id,
 			origin: url.origin,
-			data: form.data
+			data: form.data,
+			brandLogo
 		});
 
 		if (!result.ok) {
@@ -83,7 +89,9 @@ export const actions: Actions = {
 				MAIL_NOT_CONFIGURED:
 					'Email is not configured. Set SMTP_HOST, SMTP_PORT, and SMTP_FROM in your environment.',
 				TEAM_EMAIL_NOT_CONFIGURED:
-					'Workspace review email is not configured. Set WORKSPACE_REVIEW_TEAM_EMAIL in your environment.'
+					'Workspace review email is not configured. Set WORKSPACE_REVIEW_TEAM_EMAIL in your environment.',
+				BRAND_LOGO_INVALID: 'Upload a PNG, JPG, WebP, or SVG logo up to 2 MB.',
+				BRAND_LOGO_TOO_LARGE: 'Logo must be 2 MB or smaller.'
 			};
 
 			return message(form, messages[result.reason], { status: 400 });

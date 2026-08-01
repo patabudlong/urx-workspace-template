@@ -209,7 +209,7 @@
 					Skip tour
 				</button>
 				<div class="ml-auto flex items-center gap-2">
-					{#if currentIndex > 0}
+					{#if currentIndex > 0 && !isLast}
 						<Button type="button" variant="outline" size="sm" onclick={back}>Back</Button>
 					{/if}
 					<Button type="button" size="sm" onclick={next}>

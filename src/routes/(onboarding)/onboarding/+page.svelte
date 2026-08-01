@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, untrack } from 'svelte';
+	import { onDestroy, onMount, tick, untrack } from 'svelte';
 	import { invalidateAll } from '$app/navigation';
 	import AuthFormMessageAlert from '$lib/components/auth/auth-form-message-alert.svelte';
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
@@ -12,6 +12,7 @@
 	import OnboardingWelcomeModal from '$lib/components/onboarding/onboarding-welcome-modal.svelte';
 	import PhoneCountryInput from '$lib/components/onboarding/phone-country-input.svelte';
 	import SubmitProgressBar from '$lib/components/onboarding/submit-progress-bar.svelte';
+	import WorkspaceBrandLogoUpload from '$lib/components/onboarding/workspace-brand-logo-upload.svelte';
 	import WorkspaceCountryCombobox from '$lib/components/onboarding/workspace-country-combobox.svelte';
 	import WorkspaceFieldAvailability, {
 		type WorkspaceAvailabilityStatus
@@ -44,7 +45,15 @@
 
 	let { data } = $props();
 
-	type WizardStepId = 'choose' | 'workspace' | 'location' | 'contact' | 'review' | 'join' | 'pending';
+	type WizardStepId =
+		| 'choose'
+		| 'workspace'
+		| 'location'
+		| 'contact'
+		| 'brand'
+		| 'review'
+		| 'join'
+		| 'pending';
 	type OnboardingMode = 'create' | 'join';
 
 	const createSteps: WalkthroughStep[] = [
@@ -56,6 +65,7 @@
 		},
 		{ id: 'location', title: 'Location', description: 'Where your organization is based.' },
 		{ id: 'contact', title: 'Contact details', description: 'How we can reach you for verification.' },
+		{ id: 'brand', title: 'Brand & logo', description: 'Add your company logo (optional).' },
 		{ id: 'review', title: 'Review & submit', description: 'Confirm everything looks right.' }
 	];
 
@@ -89,12 +99,21 @@
 	let availabilityRequestId = 0;
 	let nameAvailability = $state<WorkspaceAvailabilityStatus>('idle');
 	let slugAvailability = $state<WorkspaceAvailabilityStatus>('idle');
+	let brandLogoFile = $state<File | null>(null);
+	let brandLogoPreview = $state<string | null>(null);
+
+	const MAX_BRAND_LOGO_BYTES = 2 * 1024 * 1024;
+	const ALLOWED_BRAND_LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
 
 	const ownerSuperform = superForm(untrack(() => data.ownerForm), {
 		validators: zod4Client(ownerOnboardingClientSchema),
 		resetForm: false,
-		onSubmit: ({ validators }) => {
+		onSubmit: ({ formData, validators }) => {
 			validators(false);
+
+			if (brandLogoFile) {
+				formData.set('brandLogo', brandLogoFile);
+			}
 		},
 		onResult: async ({ result }) => {
 			if (result.type === 'redirect') {
@@ -174,7 +193,8 @@
 	);
 
 	const isOwnerWizardStep = $derived(
-		mode === 'create' && ['workspace', 'location', 'contact', 'review'].includes(wizardStep)
+		mode === 'create' &&
+			['workspace', 'location', 'contact', 'brand', 'review'].includes(wizardStep)
 	);
 
 	const elementTourSteps = $derived.by((): ElementTourStep[] => {
@@ -196,8 +216,8 @@
 				{
 					target: '[data-tour="progress-guide"]',
 					title: 'Follow the setup guide',
-					description: 'This panel tracks where you are in onboarding and what comes next.',
-					placement: 'right'
+					description: 'This bar tracks where you are in onboarding and what comes next.',
+					placement: 'bottom'
 				},
 				closeStep
 			];
@@ -263,6 +283,12 @@
 		}
 	});
 
+	onDestroy(() => {
+		if (brandLogoPreview) {
+			URL.revokeObjectURL(brandLogoPreview);
+		}
+	});
+
 	onMount(() => {
 		if (data.access.status !== 'pending_review' && !hasDismissedOnboardingWelcome()) {
 			welcomeOpen = true;
@@ -302,10 +328,60 @@
 		tourRunId += 1;
 	}
 
+	async function focusWizardStepInput(step: WizardStepId) {
+		await tick();
+
+		const inputId =
+			step === 'workspace'
+				? 'workspace-name'
+				: step === 'join'
+					? 'workspace-ref'
+					: step === 'brand'
+						? 'workspace-brand-logo'
+						: null;
+
+		if (!inputId) {
+			return;
+		}
+
+		document.getElementById(inputId)?.focus();
+	}
+
+	function setBrandLogo(file: File | null) {
+		if (brandLogoPreview) {
+			URL.revokeObjectURL(brandLogoPreview);
+		}
+
+		if (!file) {
+			brandLogoFile = null;
+			brandLogoPreview = null;
+			return;
+		}
+
+		if (!ALLOWED_BRAND_LOGO_TYPES.includes(file.type)) {
+			stepError = 'Upload a PNG, JPG, WebP, or SVG logo up to 2 MB.';
+			return;
+		}
+
+		if (file.size > MAX_BRAND_LOGO_BYTES) {
+			stepError = 'Logo must be 2 MB or smaller.';
+			return;
+		}
+
+		stepError = '';
+		brandLogoFile = file;
+		brandLogoPreview = URL.createObjectURL(file);
+	}
+
+	function clearBrandLogo() {
+		setBrandLogo(null);
+	}
+
 	function selectMode(next: OnboardingMode) {
 		mode = next;
 		stepError = '';
 		wizardStep = next === 'create' ? 'workspace' : 'join';
+		void focusWizardStepInput(wizardStep);
 	}
 
 	function goBack() {
@@ -317,7 +393,7 @@
 
 		const order: WizardStepId[] =
 			mode === 'create'
-				? ['choose', 'workspace', 'location', 'contact', 'review']
+				? ['choose', 'workspace', 'location', 'contact', 'brand', 'review']
 				: ['choose', 'join'];
 		const index = order.indexOf(wizardStep);
 		if (index > 0) wizardStep = order[index - 1];
@@ -505,7 +581,7 @@
 			}
 		}
 
-		const order: WizardStepId[] = ['choose', 'workspace', 'location', 'contact', 'review'];
+		const order: WizardStepId[] = ['choose', 'workspace', 'location', 'contact', 'brand', 'review'];
 		const index = order.indexOf(wizardStep);
 		if (index >= 0 && index < order.length - 1) {
 			wizardStep = order[index + 1];
@@ -552,18 +628,25 @@
 
 <OnboardingWelcomeModal bind:open={welcomeOpen} firstName={data.firstName} />
 
-<main
-	class="onboarding-page mx-auto grid w-full max-w-[120rem] items-center gap-0 p-4 sm:p-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]"
->
+<main class="onboarding-page mx-auto flex w-full max-w-xl flex-col items-center gap-8 p-4 sm:p-6 lg:max-w-5xl lg:gap-10">
 	<OnboardingWalkthrough
 		steps={walkthroughSteps}
 		currentStepId={wizardStep}
 		completedStepIds={completedStepIds}
-	/>
+	>
+		{#snippet headerActions()}
+			{#if tourReady && !tourActive && wizardStep !== 'pending'}
+				<Button type="button" variant="outline" size="sm" onclick={showElementTour}>
+					<CircleHelpIcon class="size-4" />
+					Show tour
+				</Button>
+			{/if}
+		{/snippet}
+	</OnboardingWalkthrough>
 
 	<section
 		class={cn(
-			'bg-card border-border relative mx-auto grid w-full max-w-[42rem] content-start gap-7 rounded-2xl border p-6 shadow-lg sm:p-8 lg:p-10',
+			'relative mx-auto grid w-full max-w-xl content-start gap-6',
 			($ownerSubmitting || $memberSubmitting) && 'opacity-95'
 		)}
 	>
@@ -581,54 +664,45 @@
 			<AuthFormMessageAlert message={$memberMessage} />
 		{/if}
 
-		<div class="flex items-center justify-between gap-3">
-			<div class="min-w-0">
-				{#if wizardStep !== 'choose' && wizardStep !== 'pending'}
-					<Button type="button" variant="ghost" size="sm" class="w-fit px-2" onclick={goBack}>
-						<ArrowLeftIcon class="size-4" />
-						Back
-					</Button>
-				{/if}
-			</div>
-
-			{#if tourReady && !tourActive && wizardStep !== 'pending'}
-				<Button type="button" variant="outline" size="sm" onclick={showElementTour}>
-					<CircleHelpIcon class="size-4" />
-					Show tour
-				</Button>
-			{/if}
-		</div>
+		{#if wizardStep !== 'choose' && wizardStep !== 'pending'}
+			<Button type="button" variant="ghost" size="sm" class="w-fit px-2" onclick={goBack}>
+				<ArrowLeftIcon class="size-4" />
+				Back
+			</Button>
+		{/if}
 
 		{#if wizardStep === 'choose'}
-			<div class="choose-panel" data-tour="selection">
-				<div class="space-y-2">
+			<div class="grid gap-6" data-tour="selection">
+				<div class="space-y-2 text-center">
 					<p class="text-primary text-sm font-semibold">
 						Welcome{data.firstName ? `, ${data.firstName}` : ''}
 					</p>
-					<h1 class="text-foreground text-[1.75rem] leading-tight font-semibold">
+					<h1 class="text-foreground text-3xl leading-tight font-semibold tracking-tight">
 						Let's set up your workspace
 					</h1>
-					<p class="text-muted-foreground m-0 text-sm leading-relaxed">
+					<p class="text-muted-foreground m-0 text-sm leading-relaxed sm:text-base">
 						Choose how you'd like to get started on the Urixoft Workspace platform.
 					</p>
 				</div>
 
-				<div class="grid gap-3.5 pl-7">
+				<div
+					class="bg-card border-border divide-border overflow-hidden rounded-xl border shadow-sm divide-y"
+				>
 					<button
 						type="button"
-						class="hover:border-primary hover:bg-muted/40 bg-card flex items-center gap-4 overflow-visible rounded-lg border p-5 text-left transition-colors"
+						class="hover:bg-muted/50 group flex w-full items-center gap-4 p-5 text-left transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 						onclick={() => selectMode('create')}
 					>
 						<img
 							src="/onboarding/workspace-owner.png?v=4"
 							alt=""
-							class="pointer-events-none -ml-12 size-[6.25rem] shrink-0 object-contain"
-							width="100"
-							height="100"
+							class="pointer-events-none size-[5.5rem] shrink-0 object-contain transition-transform group-hover:scale-105"
+							width="88"
+							height="88"
 							aria-hidden="true"
 						/>
 						<div class="min-w-0">
-							<strong class="text-foreground block text-sm font-semibold">Create a workspace</strong>
+							<strong class="text-foreground block text-base font-semibold">Create a workspace</strong>
 							<span class="text-muted-foreground mt-1 block text-sm leading-relaxed">
 								Start fresh as the owner. Ideal for new companies or teams.
 							</span>
@@ -637,19 +711,19 @@
 
 					<button
 						type="button"
-						class="hover:border-primary hover:bg-muted/40 bg-card flex items-center gap-4 overflow-visible rounded-lg border p-5 text-left transition-colors"
+						class="hover:bg-muted/50 group flex w-full items-center gap-4 p-5 text-left transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
 						onclick={() => selectMode('join')}
 					>
 						<img
 							src="/onboarding/team-member.png?v=2"
 							alt=""
-							class="pointer-events-none -ml-12 size-[6.25rem] shrink-0 object-contain"
-							width="100"
-							height="100"
+							class="pointer-events-none size-[5.5rem] shrink-0 object-contain transition-transform group-hover:scale-105"
+							width="88"
+							height="88"
 							aria-hidden="true"
 						/>
 						<div class="min-w-0">
-							<strong class="text-foreground block text-sm font-semibold">Join a team</strong>
+							<strong class="text-foreground block text-base font-semibold">Join a team</strong>
 							<span class="text-muted-foreground mt-1 block text-sm leading-relaxed">
 								Use an invite code or workspace slug from your administrator.
 							</span>
@@ -725,7 +799,7 @@
 				{/if}
 			</div>
 		{:else if wizardStep === 'join'}
-			<div class="space-y-2">
+			<div class="space-y-2 text-center">
 				<p class="text-primary text-sm font-semibold">Join team</p>
 				<h1 class="text-foreground text-[1.75rem] leading-tight font-semibold">Enter your invite</h1>
 				<p class="text-muted-foreground m-0 text-sm leading-relaxed">
@@ -735,7 +809,7 @@
 			</div>
 
 			<form method="POST" action="?/member" use:enhanceMember class="grid gap-4">
-				<div class="form-panel" data-tour="selection">
+				<div data-tour="selection">
 					<Form.Field form={memberSuperform} name="workspaceRef">
 						<Form.Control>
 							{#snippet children({ props })}
@@ -770,9 +844,9 @@
 		{:else}
 			<div class="grid gap-4">
 				{#if wizardStep === 'workspace'}
-					<div class="form-panel grid gap-5" data-tour="selection">
-						<div class="space-y-2">
-							<p class="text-primary text-sm font-semibold">Step 1 of 4</p>
+					<div class="grid gap-5" data-tour="selection">
+						<div class="space-y-2 text-center">
+							<p class="text-primary text-sm font-semibold">Step 1 of 5</p>
 							<h1 class="text-foreground text-[1.75rem] leading-tight font-semibold">
 								Workspace profile
 							</h1>
@@ -795,11 +869,6 @@
 								{/snippet}
 							</Form.Control>
 							<SingleFieldErrors />
-							{#if workspaceSlug}
-								<p class="text-muted-foreground text-xs">
-									Your URL: <strong class="text-primary">{workspaceSlug}</strong>.workspace.urixoft.com
-								</p>
-							{/if}
 							<WorkspaceFieldAvailability
 								status={nameAvailability}
 								takenMessage="This workspace name is already taken."
@@ -825,6 +894,9 @@
 								{/snippet}
 							</Form.Control>
 							<SingleFieldErrors />
+							<p class="text-muted-foreground text-xs">
+								Choose carefully — you won't be able to change this URL after your workspace is set up.
+							</p>
 							<WorkspaceFieldAvailability
 								status={slugAvailability}
 								takenMessage="This workspace URL is already taken."
@@ -865,9 +937,9 @@
 						</Form.Field>
 					</div>
 				{:else if wizardStep === 'location'}
-					<div class="form-panel grid gap-5" data-tour="selection">
-						<div class="space-y-2">
-							<p class="text-primary text-sm font-semibold">Step 2 of 4</p>
+					<div class="grid gap-5" data-tour="selection">
+						<div class="space-y-2 text-center">
+							<p class="text-primary text-sm font-semibold">Step 2 of 5</p>
 							<h1 class="text-foreground text-[1.75rem] leading-tight font-semibold">Location</h1>
 							<p class="text-muted-foreground m-0 text-sm leading-relaxed">
 								Where is your organization based?
@@ -961,12 +1033,12 @@
 						</Form.Field>
 					</div>
 				{:else if wizardStep === 'contact'}
-					<div class="form-panel grid gap-5" data-tour="selection">
-						<div class="space-y-2">
-							<p class="text-primary text-sm font-semibold">Step 3 of 4</p>
+					<div class="grid gap-5" data-tour="selection">
+						<div class="space-y-2 text-center">
+							<p class="text-primary text-sm font-semibold">Step 3 of 5</p>
 							<h1 class="text-foreground text-[1.75rem] leading-tight font-semibold">Contact details</h1>
 							<p class="text-muted-foreground m-0 text-sm leading-relaxed">
-								We'll use these for verification and workspace notifications.
+								We'll use your contact number for verification and workspace updates.
 							</p>
 						</div>
 
@@ -985,21 +1057,6 @@
 							</Form.Control>
 							<SingleFieldErrors />
 						</Form.Field>
-
-						<div class="grid gap-2">
-							<label class="text-sm font-medium" for="company-email">Company email</label>
-							<Input
-								id="company-email"
-								type="email"
-								value={data.userEmail}
-								readonly
-								class="bg-muted/30 cursor-not-allowed"
-								autocomplete="email"
-							/>
-							<p class="text-muted-foreground text-xs">
-								This is the email you used to register your account.
-							</p>
-						</div>
 
 						<Form.Field form={ownerSuperform} name="website">
 							<Form.Control>
@@ -1022,11 +1079,41 @@
 							<SingleFieldErrors />
 						</Form.Field>
 					</div>
+				{:else if wizardStep === 'brand'}
+					<div class="grid gap-5" data-tour="selection">
+						<div class="space-y-2 text-center">
+							<p class="text-primary text-sm font-semibold">Step 4 of 5</p>
+							<h1 class="text-foreground text-[1.75rem] leading-tight font-semibold">Brand & logo</h1>
+							<p class="text-muted-foreground m-0 text-sm leading-relaxed">
+								Add your company logo so your workspace feels like home.
+							</p>
+						</div>
+
+						<div class="grid gap-2">
+							<label class="text-sm font-medium" for="workspace-brand-logo">Company logo</label>
+							<WorkspaceBrandLogoUpload
+								previewUrl={brandLogoPreview}
+								fileName={brandLogoFile?.name ?? null}
+								onchange={setBrandLogo}
+								onclear={clearBrandLogo}
+							/>
+							<p class="text-muted-foreground text-xs">
+								Optional — you can skip this for now and add or change your logo later in workspace
+								settings.
+							</p>
+						</div>
+					</div>
 				{:else if wizardStep === 'review'}
-					<form method="POST" action="?/owner" use:enhanceOwner class="grid gap-4">
-						<div class="form-panel grid gap-5" data-tour="selection">
-							<div class="space-y-2">
-								<p class="text-primary text-sm font-semibold">Step 4 of 4</p>
+					<form
+						method="POST"
+						action="?/owner"
+						enctype="multipart/form-data"
+						use:enhanceOwner
+						class="grid gap-4"
+					>
+						<div class="grid gap-5" data-tour="selection">
+							<div class="space-y-2 text-center">
+								<p class="text-primary text-sm font-semibold">Step 5 of 5</p>
 								<h1 class="text-foreground text-[1.75rem] leading-tight font-semibold">
 									Review & submit
 								</h1>
@@ -1061,8 +1148,18 @@
 									<dd class="text-foreground m-0 text-sm font-medium">{$ownerForm.contactPhone || '—'}</dd>
 								</div>
 								<div class="grid gap-0.5">
-									<dt class="text-muted-foreground text-xs font-semibold">Email</dt>
-									<dd class="text-foreground m-0 text-sm font-medium">{data.userEmail || '—'}</dd>
+									<dt class="text-muted-foreground text-xs font-semibold">Company logo</dt>
+									<dd class="text-foreground m-0 text-sm font-medium">
+										{#if brandLogoPreview}
+											<img
+												src={brandLogoPreview}
+												alt="Company logo preview"
+												class="bg-background mt-1 size-12 rounded-md border object-contain p-1"
+											/>
+										{:else}
+											Not added
+										{/if}
+									</dd>
 								</div>
 								{#if $ownerForm.website}
 									<div class="grid gap-0.5">
@@ -1125,23 +1222,3 @@
 		/>
 	{/key}
 {/if}
-
-<style>
-	.choose-panel,
-	.form-panel {
-		display: grid;
-		gap: 1.25rem;
-		padding: 1.5rem 1.625rem;
-		border-radius: calc(var(--radius) + 2px);
-		background: var(--card);
-		border: 1px solid var(--border);
-		overflow: visible;
-	}
-
-	@media (max-width: 520px) {
-		.choose-panel,
-		.form-panel {
-			padding: 1.25rem;
-		}
-	}
-</style>

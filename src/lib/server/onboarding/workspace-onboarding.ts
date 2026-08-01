@@ -3,10 +3,11 @@ import {
 	findPendingWorkspaceByUserId,
 	findWorkspaceByName,
 	findWorkspaceBySlug,
-	findWorkspaceBySlugOrId
+	findWorkspaceBySlugOrId,
+	createWorkspaceRequest,
+	ensureWorkspaceIndexes
 } from '$lib/server/repositories/workspaces';
 import { findWorkspaceMemberByUserId, createWorkspaceMember } from '$lib/server/repositories/workspace-members';
-import { ensureWorkspaceIndexes } from '$lib/server/repositories/workspaces';
 import { ensureWorkspaceMemberIndexes } from '$lib/server/repositories/workspace-members';
 import { sendWorkspaceRequestReceivedEmail } from '$lib/server/mail/workspace-request-received';
 import { sendWorkspaceRequestTeamEmail } from '$lib/server/mail/workspace-request-team';
@@ -15,7 +16,7 @@ import { getWorkspaceReviewTeamEmail } from '$lib/server/auth/platform-admin';
 import type { OwnerOnboardingInput, MemberOnboardingInput } from '$lib/shared/schemas/onboarding';
 import { WORKSPACE_STATUSES } from '$lib/shared/models/workspace';
 import { WORKSPACE_MEMBER_ROLES } from '$lib/shared/models/workspace-member';
-import { createWorkspaceRequest } from '$lib/server/repositories/workspaces';
+import { saveWorkspaceBrandLogo } from '$lib/server/workspace-branding';
 
 export type OnboardingAccessState =
 	| { status: 'needs_onboarding' }
@@ -57,6 +58,7 @@ export async function submitOwnerWorkspaceRequest(input: {
 	userId: string;
 	origin: string;
 	data: OwnerOnboardingInput;
+	brandLogo?: File;
 }): Promise<
 	| { ok: true; workspaceSlug: string }
 	| {
@@ -67,7 +69,9 @@ export async function submitOwnerWorkspaceRequest(input: {
 				| 'NAME_TAKEN'
 				| 'SLUG_TAKEN'
 				| 'MAIL_NOT_CONFIGURED'
-				| 'TEAM_EMAIL_NOT_CONFIGURED';
+				| 'TEAM_EMAIL_NOT_CONFIGURED'
+				| 'BRAND_LOGO_INVALID'
+				| 'BRAND_LOGO_TOO_LARGE';
 	  }
 > {
 	const access = await getOnboardingAccessState(input.userId);
@@ -108,12 +112,32 @@ export async function submitOwnerWorkspaceRequest(input: {
 		return { ok: false, reason: 'ALREADY_HAS_WORKSPACE' };
 	}
 
+	let brandLogoUrl: string | undefined;
+
+	if (input.brandLogo && input.brandLogo.size > 0) {
+		const saved = await saveWorkspaceBrandLogo({
+			slug: input.data.slug,
+			file: input.brandLogo
+		});
+
+		if (!saved.ok) {
+			if (saved.reason === 'FILE_TOO_LARGE') {
+				return { ok: false, reason: 'BRAND_LOGO_TOO_LARGE' };
+			}
+
+			return { ok: false, reason: 'BRAND_LOGO_INVALID' };
+		}
+
+		brandLogoUrl = saved.url;
+	}
+
 	const workspace = await createWorkspaceRequest({
 		slug: input.data.slug,
 		name: input.data.name,
 		contactPhone: input.data.contactPhone,
 		teamSize: input.data.teamSize,
 		website: input.data.website,
+		brandLogoUrl,
 		requestedByUserId: input.userId,
 		address: {
 			line1: input.data.addressLine1,

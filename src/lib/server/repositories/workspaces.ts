@@ -33,6 +33,7 @@ const workspaceProjection = {
 	teamSize: 1,
 	address: 1,
 	website: 1,
+	brandLogoUrl: 1,
 	status: 1,
 	requestedByUserId: 1,
 	reviewedAt: 1,
@@ -120,6 +121,7 @@ export async function createWorkspaceRequest(input: {
 	teamSize: string;
 	address: WorkspaceDocument['address'];
 	website?: string;
+	brandLogoUrl?: string;
 	requestedByUserId: string;
 }): Promise<WorkspaceDocument> {
 	const workspaces = await getWorkspacesCollection<WorkspaceDocument>();
@@ -133,6 +135,7 @@ export async function createWorkspaceRequest(input: {
 		teamSize: input.teamSize,
 		address: input.address,
 		website: input.website,
+		brandLogoUrl: input.brandLogoUrl,
 		status: WORKSPACE_STATUSES.PENDING_REVIEW,
 		requestedByUserId: new ObjectId(input.requestedByUserId),
 		createdAt: now,
