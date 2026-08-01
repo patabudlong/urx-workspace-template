@@ -233,7 +233,7 @@ export function buildPasswordResetEmailHtml(content: PasswordResetEmailContent):
 		'style="font-family:Arial,Helvetica,sans-serif;">',
 		'<p style="margin:0;font-size:12px;',
 		`line-height:18px;color:${TEXT_FOOTER};">`,
-		`&copy; ${new Date().getFullYear()} Urixoft Platform`,
+		`&copy; ${new Date().getFullYear()} Urixoft Workspace`,
 		'</p>',
 		'<p style="margin:8px 0 0 0;',
 		'font-size:11px;line-height:16px;',

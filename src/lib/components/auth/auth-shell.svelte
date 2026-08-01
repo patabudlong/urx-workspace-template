@@ -61,7 +61,7 @@
 
 		<div class="relative z-10 flex shrink-0 items-center justify-between gap-6">
 			<p class="text-sm text-primary-foreground/60">
-				© {year} Urixoft Platform. All rights reserved.
+				© {year} Urixoft Workspace. All rights reserved.
 			</p>
 			<div class="flex shrink-0 items-center gap-4">
 				<a

@@ -4,7 +4,7 @@ import { zod4 } from 'sveltekit-superforms/adapters';
 import { message } from 'sveltekit-superforms';
 import type { Actions, PageServerLoad } from './$types';
 import { registerWithCredentials } from '$lib/server/auth/signup';
-import { requestVerificationEmail } from '$lib/server/auth/email-verification';
+import { queueVerificationEmailForWeb } from '$lib/server/auth/email-verification';
 import { recordEmailSignupConsent } from '$lib/server/repositories/consent-events';
 import { getAuthRateLimitFormFailure } from '$lib/server/security/auth-rate-limit-form';
 import { assertAuthRecaptcha } from '$lib/server/security/recaptcha';
@@ -98,31 +98,24 @@ export const actions: Actions = {
 			return message(form, 'An account with this email already exists.', { status: 409 });
 		}
 
-		await recordEmailSignupConsent({
-			userId: result.user.id,
-			email: form.data.email,
-			ipAddress,
-			userAgent: request.headers.get('user-agent') ?? undefined,
-			policyVersion: LEGAL_POLICY_VERSION
-		});
-
-		const emailResult = await requestVerificationEmail({
-			email: form.data.email,
-			origin: url.origin
-		});
+		const [, emailResult] = await Promise.all([
+			recordEmailSignupConsent({
+				userId: result.user.id,
+				email: form.data.email,
+				ipAddress,
+				userAgent: request.headers.get('user-agent') ?? undefined,
+				policyVersion: LEGAL_POLICY_VERSION
+			}),
+			queueVerificationEmailForWeb(event, {
+				email: form.data.email,
+				origin: url.origin
+			})
+		]);
 
 		if (!emailResult.ok) {
-			if (emailResult.reason === 'MAIL_NOT_CONFIGURED') {
-				return message(
-					form,
-					'Your account was created, but email is not configured. Set SMTP_HOST, SMTP_PORT, and SMTP_FROM in your environment.',
-					{ status: 503 }
-				);
-			}
-
 			return message(
 				form,
-				'Your account was created, but we could not send the verification email. Try resending from the verification page.',
+				'Your account was created, but email is not configured. Set SMTP_HOST, SMTP_PORT, and SMTP_FROM in your environment.',
 				{ status: 503 }
 			);
 		}

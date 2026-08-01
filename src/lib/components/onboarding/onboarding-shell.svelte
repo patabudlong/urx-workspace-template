@@ -49,7 +49,7 @@
 
 	<footer class="border-border/60 shrink-0 border-t px-4 py-3 sm:px-6">
 		<p class="text-muted-foreground text-center text-xs sm:text-sm">
-			© 2026 Urixoft Platform. All rights reserved.
+			© 2026 Urixoft Workspace. All rights reserved.
 		</p>
 	</footer>
 </div>
