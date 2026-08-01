@@ -102,8 +102,10 @@
 	let brandLogoFile = $state<File | null>(null);
 	let brandLogoPreview = $state<string | null>(null);
 
-	const MAX_BRAND_LOGO_BYTES = 2 * 1024 * 1024;
-	const ALLOWED_BRAND_LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
+	import {
+		isWorkspaceLogoMimeType,
+		WORKSPACE_LOGO_MAX_BYTES
+	} from '$lib/shared/workspace-branding';
 
 	const ownerSuperform = superForm(untrack(() => data.ownerForm), {
 		validators: zod4Client(ownerOnboardingClientSchema),
@@ -358,12 +360,12 @@
 			return;
 		}
 
-		if (!ALLOWED_BRAND_LOGO_TYPES.includes(file.type)) {
+		if (!isWorkspaceLogoMimeType(file.type)) {
 			stepError = 'Upload a PNG, JPG, WebP, or SVG logo up to 2 MB.';
 			return;
 		}
 
-		if (file.size > MAX_BRAND_LOGO_BYTES) {
+		if (file.size > WORKSPACE_LOGO_MAX_BYTES) {
 			stepError = 'Logo must be 2 MB or smaller.';
 			return;
 		}
@@ -375,6 +377,10 @@
 
 	function clearBrandLogo() {
 		setBrandLogo(null);
+	}
+
+	function handleBrandLogoError(message: string) {
+		stepError = message;
 	}
 
 	function selectMode(next: OnboardingMode) {
@@ -1096,6 +1102,7 @@
 								fileName={brandLogoFile?.name ?? null}
 								onchange={setBrandLogo}
 								onclear={clearBrandLogo}
+								onerror={handleBrandLogoError}
 							/>
 							<p class="text-muted-foreground text-xs">
 								Optional — you can skip this for now and add or change your logo later in workspace

@@ -91,7 +91,10 @@ export const actions: Actions = {
 				TEAM_EMAIL_NOT_CONFIGURED:
 					'Workspace review email is not configured. Set WORKSPACE_REVIEW_TEAM_EMAIL in your environment.',
 				BRAND_LOGO_INVALID: 'Upload a PNG, JPG, WebP, or SVG logo up to 2 MB.',
-				BRAND_LOGO_TOO_LARGE: 'Logo must be 2 MB or smaller.'
+				BRAND_LOGO_TOO_LARGE: 'Logo must be 2 MB or smaller.',
+				BRAND_LOGO_STORAGE_NOT_CONFIGURED:
+					'Logo storage is not configured. Set Linode Object Storage variables in your environment.',
+				BRAND_LOGO_UPLOAD_FAILED: 'Unable to upload your logo. Try again in a moment.'
 			};
 
 			return message(form, messages[result.reason], { status: 400 });

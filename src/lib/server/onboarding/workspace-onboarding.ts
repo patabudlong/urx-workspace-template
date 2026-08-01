@@ -71,7 +71,9 @@ export async function submitOwnerWorkspaceRequest(input: {
 				| 'MAIL_NOT_CONFIGURED'
 				| 'TEAM_EMAIL_NOT_CONFIGURED'
 				| 'BRAND_LOGO_INVALID'
-				| 'BRAND_LOGO_TOO_LARGE';
+				| 'BRAND_LOGO_TOO_LARGE'
+				| 'BRAND_LOGO_STORAGE_NOT_CONFIGURED'
+				| 'BRAND_LOGO_UPLOAD_FAILED';
 	  }
 > {
 	const access = await getOnboardingAccessState(input.userId);
@@ -123,6 +125,14 @@ export async function submitOwnerWorkspaceRequest(input: {
 		if (!saved.ok) {
 			if (saved.reason === 'FILE_TOO_LARGE') {
 				return { ok: false, reason: 'BRAND_LOGO_TOO_LARGE' };
+			}
+
+			if (saved.reason === 'STORAGE_NOT_CONFIGURED') {
+				return { ok: false, reason: 'BRAND_LOGO_STORAGE_NOT_CONFIGURED' };
+			}
+
+			if (saved.reason === 'UPLOAD_FAILED') {
+				return { ok: false, reason: 'BRAND_LOGO_UPLOAD_FAILED' };
 			}
 
 			return { ok: false, reason: 'BRAND_LOGO_INVALID' };
