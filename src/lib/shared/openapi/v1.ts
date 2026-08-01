@@ -584,6 +584,90 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						}
 					}
 				}
+			},
+			'/onboarding/access': {
+				get: {
+					tags: ['Workspaces'],
+					summary: 'Get onboarding access state',
+					description:
+						'Returns whether the authenticated user needs onboarding, has a pending workspace request, or is ready for dashboard access. Used for approval polling during onboarding.',
+					operationId: 'getOnboardingAccess',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{
+							$ref: '#/components/parameters/XRequestId'
+						}
+					],
+					responses: {
+						'200': {
+							description: 'Current onboarding access state',
+							content: {
+								'application/json': {
+									schema: {
+										type: 'object',
+										required: ['data', 'meta'],
+										properties: {
+											data: {
+												type: 'object',
+												required: ['access'],
+												properties: {
+													access: {
+														oneOf: [
+															{
+																type: 'object',
+																required: ['status'],
+																properties: {
+																	status: { type: 'string', enum: ['needs_onboarding'] }
+																}
+															},
+															{
+																type: 'object',
+																required: ['status', 'workspaceName', 'workspaceSlug'],
+																properties: {
+																	status: { type: 'string', enum: ['pending_review'] },
+																	workspaceName: { type: 'string' },
+																	workspaceSlug: { type: 'string' }
+																}
+															},
+															{
+																type: 'object',
+																required: [
+																	'status',
+																	'workspaceId',
+																	'workspaceName',
+																	'workspaceSlug',
+																	'role'
+																],
+																properties: {
+																	status: { type: 'string', enum: ['ready'] },
+																	workspaceId: { type: 'string' },
+																	workspaceName: { type: 'string' },
+																	workspaceSlug: { type: 'string' },
+																	role: { type: 'string' }
+																}
+															}
+														]
+													}
+												}
+											},
+											meta: { type: 'object' }
+										}
+									}
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ApiErrorResponse'
+									}
+								}
+							}
+						}
+					}
+				}
 			}
 		},
 		components: {

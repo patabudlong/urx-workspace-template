@@ -47,6 +47,7 @@ export const load: PageServerLoad = async ({ locals, parent }) => {
 
 	return {
 		firstName: user?.firstName ?? '',
+		userEmail: user?.email ?? locals.user!.email,
 		access,
 		isSuperadmin,
 		ownerForm,
