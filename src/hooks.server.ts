@@ -2,7 +2,7 @@ import type { Handle } from '@sveltejs/kit';
 import { applyCorsHeaders, getCorsHeaders, isApiRoute } from '$lib/server/api/cors';
 import { jsonError } from '$lib/server/api/response';
 import { verifyAccessToken } from '$lib/server/auth/jwt';
-import { SESSION_COOKIE_NAME } from '$lib/server/auth/session';
+import { clearSessionCookie, SESSION_COOKIE_NAME } from '$lib/server/auth/session';
 import {
 	consumeAuthRateLimit,
 	getAuthRateLimitMessage,
@@ -57,7 +57,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 				email: payload.email
 			};
 		} else {
-			event.cookies.delete(SESSION_COOKIE_NAME, { path: '/' });
+			clearSessionCookie(event.cookies);
 		}
 	}
 

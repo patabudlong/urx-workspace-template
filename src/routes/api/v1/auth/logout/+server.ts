@@ -1,11 +1,11 @@
 import type { RequestHandler } from './$types';
 import { jsonOk } from '$lib/server/api/response';
-import { SESSION_COOKIE_NAME, getSessionCookieOptions } from '$lib/server/auth/session';
+import { clearSessionCookie } from '$lib/server/auth/session';
 
 export const POST: RequestHandler = async ({ cookies, request }) => {
 	const requestId = request.headers.get('x-request-id') ?? undefined;
 
-	cookies.delete(SESSION_COOKIE_NAME, { path: '/' });
+	clearSessionCookie(cookies);
 
 	return jsonOk({ loggedOut: true }, { requestId });
 };
@@ -13,7 +13,7 @@ export const POST: RequestHandler = async ({ cookies, request }) => {
 export const GET: RequestHandler = async ({ cookies, request }) => {
 	const requestId = request.headers.get('x-request-id') ?? undefined;
 
-	cookies.delete(SESSION_COOKIE_NAME, getSessionCookieOptions());
+	clearSessionCookie(cookies);
 
 	return jsonOk({ loggedOut: true }, { requestId });
 };

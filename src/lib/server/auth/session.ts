@@ -1,3 +1,4 @@
+import type { Cookies } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { getSessionCookieDomain } from '$lib/server/workspace-host';
 
@@ -5,14 +6,16 @@ export const SESSION_COOKIE_NAME = 'urx_session';
 export const ACCESS_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
 export const MIN_JWT_SECRET_LENGTH = 32;
 
-export function getSessionCookieOptions(): {
+type SessionCookieOptions = {
 	path: string;
 	httpOnly: boolean;
 	sameSite: 'lax';
 	secure: boolean;
 	maxAge: number;
 	domain?: string;
-} {
+};
+
+function buildSessionCookieOptions(maxAge: number): SessionCookieOptions {
 	const domain = getSessionCookieDomain();
 
 	return {
@@ -20,9 +23,33 @@ export function getSessionCookieOptions(): {
 		httpOnly: true,
 		sameSite: 'lax',
 		secure: process.env.NODE_ENV === 'production',
-		maxAge: ACCESS_TOKEN_TTL_SECONDS,
+		maxAge,
 		...(domain ? { domain } : {})
 	};
+}
+
+export function getSessionCookieOptions(): SessionCookieOptions {
+	return buildSessionCookieOptions(ACCESS_TOKEN_TTL_SECONDS);
+}
+
+/** Must match path/domain (and secure) used when the session cookie was set. */
+export function getSessionCookieDeleteOptions(): Pick<
+	SessionCookieOptions,
+	'path' | 'domain' | 'secure'
+> {
+	const { path, domain, secure } = getSessionCookieOptions();
+
+	return {
+		path,
+		secure,
+		...(domain ? { domain } : {})
+	};
+}
+
+export function clearSessionCookie(cookies: Cookies): void {
+	cookies.delete(SESSION_COOKIE_NAME, getSessionCookieDeleteOptions());
+	// Clear legacy host-only cookies set before SESSION_COOKIE_DOMAIN was configured.
+	cookies.delete(SESSION_COOKIE_NAME, { path: '/' });
 }
 
 function isValidJwtSecret(secret: string | undefined): boolean {
