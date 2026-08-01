@@ -215,52 +215,6 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 					}
 				}
 			},
-			'/auth/consent': {
-				post: {
-					tags: ['Auth'],
-					summary: 'Record consent event',
-					description:
-						'Logs terms checkbox or social sign-in interactions with timestamp and client IP for compliance auditing.',
-					operationId: 'recordConsent',
-					parameters: [
-						{
-							$ref: '#/components/parameters/XRequestId'
-						}
-					],
-					requestBody: {
-						required: true,
-						content: {
-							'application/json': {
-								schema: {
-									$ref: '#/components/schemas/RecordConsentRequest'
-								}
-							}
-						}
-					},
-					responses: {
-						'201': {
-							description: 'Consent event recorded',
-							content: {
-								'application/json': {
-									schema: {
-										$ref: '#/components/schemas/RecordConsentSuccessResponse'
-									}
-								}
-							}
-						},
-						'400': {
-							description: 'Invalid request body',
-							content: {
-								'application/json': {
-									schema: {
-										$ref: '#/components/schemas/ApiErrorResponse'
-									}
-								}
-							}
-						}
-					}
-				}
-			},
 			'/auth/logout': {
 				post: {
 					tags: ['Auth'],
@@ -887,55 +841,6 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 							const: true,
 							description:
 								'Must be true to confirm agreement with the Terms of Service and Privacy Notice'
-						}
-					}
-				},
-				RecordConsentRequest: {
-					type: 'object',
-					required: ['type', 'context', 'policyVersion'],
-					properties: {
-						type: {
-							type: 'string',
-							enum: [
-								'terms_submit',
-								'social_login_google',
-								'social_login_apple',
-								'social_login_facebook'
-							]
-						},
-						context: {
-							type: 'string',
-							enum: ['signup', 'login']
-						},
-						policyVersion: {
-							type: 'string',
-							example: '2026-08-01'
-						},
-						email: {
-							type: 'string',
-							format: 'email'
-						}
-					}
-				},
-				RecordConsentSuccessResponse: {
-					type: 'object',
-					required: ['data', 'meta'],
-					properties: {
-						data: {
-							type: 'object',
-							required: ['id', 'recordedAt'],
-							properties: {
-								id: {
-									type: 'string'
-								},
-								recordedAt: {
-									type: 'string',
-									format: 'date-time'
-								}
-							}
-						},
-						meta: {
-							$ref: '#/components/schemas/ApiMeta'
 						}
 					}
 				},

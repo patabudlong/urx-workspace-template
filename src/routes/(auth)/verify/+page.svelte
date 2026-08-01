@@ -4,6 +4,7 @@
 	import AuthFormMessageAlert from '$lib/components/auth/auth-form-message-alert.svelte';
 	import AuthFormPanel from '$lib/components/auth/auth-form-panel.svelte';
 	import FormAlert from '$lib/components/auth/form-alert.svelte';
+	import StatusAlert from '$lib/components/status-alert.svelte';
 	import RecaptchaNotice from '$lib/components/auth/recaptcha-notice.svelte';
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
 	import VerificationCodeInput from '$lib/components/auth/verification-code-input.svelte';
@@ -14,9 +15,7 @@
 	import { warmRecaptcha } from '$lib/recaptcha/client';
 	import { AUTH_ACTION_BUTTON_CLASS, AUTH_INLINE_LINK_CLASS } from '$lib/auth/ui';
 	import { cn } from '$lib/utils.js';
-	import CircleCheckIcon from '@lucide/svelte/icons/circle-check';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
-	import MailCheckIcon from '@lucide/svelte/icons/mail-check';
 	import { get } from 'svelte/store';
 	import { onMount, untrack } from 'svelte';
 	import { superForm, type SuperForm } from 'sveltekit-superforms';
@@ -92,33 +91,19 @@
 >
 	<div class="space-y-6">
 		{#if verified}
-			<div
-				class="flex flex-col items-center gap-6 rounded-xl border border-border/50 bg-muted/30 px-6 py-8 text-center ring-1 ring-foreground/5"
-			>
-				<div
-					class="flex size-28 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-				>
-					<CircleCheckIcon class="size-16" aria-hidden="true" />
-				</div>
-				<p class="text-muted-foreground text-sm leading-relaxed">
-					You're all set. Sign in to continue to Urixoft Workspace.
-				</p>
-			</div>
+			<StatusAlert
+				variant="success"
+				title="You're all set"
+				description="Sign in to continue to Urixoft Workspace."
+			/>
 			<Button href="/login" class={AUTH_ACTION_BUTTON_CLASS}>Sign in</Button>
 		{:else}
 			{#if data.codeSent}
-				<div
-					class="flex flex-col items-center gap-6 rounded-xl border border-border/50 bg-muted/30 px-6 py-8 text-center ring-1 ring-foreground/5"
-				>
-					<div
-						class="bg-primary/10 text-primary flex size-20 items-center justify-center rounded-full"
-					>
-						<MailCheckIcon class="size-10" aria-hidden="true" />
-					</div>
-					<p class="text-muted-foreground text-sm leading-relaxed">
-						{data.codeSentMessage}
-					</p>
-				</div>
+				<StatusAlert
+					variant="success"
+					title="Check your email"
+					description={data.codeSentMessage}
+				/>
 			{/if}
 
 			<form method="POST" use:enhance class="space-y-5" novalidate>
@@ -170,7 +155,7 @@
 				</div>
 			</form>
 
-			<div class="space-y-3 text-center">
+			<div class="mt-25 space-y-3 text-center">
 				<p class="text-muted-foreground text-sm">Didn't get a code?</p>
 				<p class="text-sm">
 					<a href={resendHref} class={AUTH_INLINE_LINK_CLASS}>Resend verification email</a>

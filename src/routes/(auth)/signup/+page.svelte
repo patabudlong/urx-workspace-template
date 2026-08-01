@@ -210,7 +210,6 @@
 		<GoogleSignInButton
 			context={CONSENT_CONTEXTS.SIGNUP}
 			redirectTo={data.redirectTo}
-			email={$form.email}
 			disabled={submitDisabled}
 		/>
 

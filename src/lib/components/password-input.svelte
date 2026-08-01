@@ -1,6 +1,6 @@
 <script lang="ts">
 	import PasswordStrength from '$lib/components/password-strength.svelte';
-	import { Button } from '$lib/components/ui/button/index.js';
+	import * as InputGroup from '$lib/components/ui/input-group/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { cn, type WithElementRef } from '$lib/utils.js';
 	import EyeIcon from '@lucide/svelte/icons/eye';
@@ -24,28 +24,28 @@
 </script>
 
 <div class="space-y-3">
-	<div class="relative">
-		<Input
+	<InputGroup.Root>
+		<InputGroup.Input
 			{...restProps}
 			bind:value
 			type={visible ? 'text' : 'password'}
-			class={cn('pr-9', className)}
+			class={className}
 		/>
-		<Button
-			type="button"
-			variant="ghost"
-			size="icon-sm"
-			class="absolute top-1/2 right-1 -translate-y-1/2"
-			onclick={() => (visible = !visible)}
-			aria-label={visible ? 'Hide password' : 'Show password'}
-		>
-			{#if visible}
-				<EyeOffIcon class="size-4" />
-			{:else}
-				<EyeIcon class="size-4" />
-			{/if}
-		</Button>
-	</div>
+		<InputGroup.Addon align="inline-end">
+			<InputGroup.Button
+				type="button"
+				size="icon-sm"
+				class="active:translate-y-0 hover:bg-transparent dark:hover:bg-transparent"
+				onclick={() => (visible = !visible)}
+				aria-label={visible ? 'Hide password' : 'Show password'}
+			>
+				<span class="grid size-4 place-items-center [&>svg]:col-start-1 [&>svg]:row-start-1" aria-hidden="true">
+					<EyeOffIcon class={cn('size-4', !visible && 'invisible')} />
+					<EyeIcon class={cn('size-4', visible && 'invisible')} />
+				</span>
+			</InputGroup.Button>
+		</InputGroup.Addon>
+	</InputGroup.Root>
 
 	{#if showStrength === true}
 		<PasswordStrength password={value} {showReuseHint} />

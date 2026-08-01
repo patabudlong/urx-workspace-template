@@ -2,26 +2,17 @@
 	import { AUTH_ACTION_BUTTON_CLASS } from '$lib/auth/ui';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { cn } from '$lib/utils.js';
-	import { recordConsentEvent } from '$lib/consent/client';
 	import type { ConsentContext } from '$lib/shared/models/consent-event';
-	import { CONSENT_EVENT_TYPES } from '$lib/shared/models/consent-event';
 
 	type Props = {
 		context: ConsentContext;
 		redirectTo?: string;
-		email?: string;
 		disabled?: boolean;
 	};
 
-	let { context, redirectTo = '/', email, disabled = false }: Props = $props();
+	let { context, redirectTo = '/', disabled = false }: Props = $props();
 
 	function handleClick() {
-		recordConsentEvent({
-			type: CONSENT_EVENT_TYPES.SOCIAL_LOGIN_GOOGLE,
-			context,
-			email
-		});
-
 		const params = new URLSearchParams({
 			context,
 			redirectTo

@@ -188,10 +188,6 @@ function getRateLimitBucket(pathname: string): string {
 		return 'reset-password';
 	}
 
-	if (normalized === '/api/v1/auth/consent') {
-		return 'consent';
-	}
-
 	return 'auth';
 }
 
@@ -245,8 +241,7 @@ const AUTH_API_RESOURCES = [
 	'forgot-password',
 	'reset-password',
 	'resend-verification',
-	'verify-email',
-	'consent'
+	'verify-email'
 ] as const;
 
 export const AUTH_FORM_PATHS = [

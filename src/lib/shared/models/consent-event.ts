@@ -1,10 +1,7 @@
 import type { ObjectId } from 'mongodb';
 
 export const CONSENT_EVENT_TYPES = {
-	TERMS_SUBMIT: 'terms_submit',
-	SOCIAL_LOGIN_GOOGLE: 'social_login_google',
-	SOCIAL_LOGIN_APPLE: 'social_login_apple',
-	SOCIAL_LOGIN_FACEBOOK: 'social_login_facebook'
+	TERMS_SUBMIT: 'terms_submit'
 } as const;
 
 export type ConsentEventType = (typeof CONSENT_EVENT_TYPES)[keyof typeof CONSENT_EVENT_TYPES];
