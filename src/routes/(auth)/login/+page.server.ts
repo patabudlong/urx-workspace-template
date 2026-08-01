@@ -4,6 +4,10 @@ import { zod4 } from 'sveltekit-superforms/adapters';
 import { message } from 'sveltekit-superforms';
 import type { Actions, PageServerLoad } from './$types';
 import { authenticateWithCredentials } from '$lib/server/auth/login';
+import {
+	resolveAuthenticatedLandingPath,
+	safeRedirectPath
+} from '$lib/server/auth/post-auth-navigation';
 import { getSessionCookieOptions, SESSION_COOKIE_NAME } from '$lib/server/auth/session';
 import { getAuthRateLimitFormFailure } from '$lib/server/security/auth-rate-limit-form';
 import { assertAuthRecaptcha } from '$lib/server/security/recaptcha';
@@ -16,17 +20,12 @@ import {
 import { getGoogleAuthErrorMessage } from '$lib/shared/google-auth';
 import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 
-function safeRedirectPath(value: string | null): string {
-	if (!value || !value.startsWith('/') || value.startsWith('//')) {
-		return '/';
-	}
-
-	return value;
-}
-
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (locals.user) {
-		redirect(303, safeRedirectPath(url.searchParams.get('redirectTo')));
+		redirect(
+			303,
+			await resolveAuthenticatedLandingPath(locals.user.id, url.searchParams.get('redirectTo'))
+		);
 	}
 
 	const form = await superValidate(zod4(loginSchema), {
@@ -98,6 +97,9 @@ export const actions: Actions = {
 
 		cookies.set(SESSION_COOKIE_NAME, result.accessToken, getSessionCookieOptions());
 
-		redirect(303, safeRedirectPath(url.searchParams.get('redirectTo')));
+		redirect(
+			303,
+			await resolveAuthenticatedLandingPath(result.user.id, url.searchParams.get('redirectTo'))
+		);
 	}
 };

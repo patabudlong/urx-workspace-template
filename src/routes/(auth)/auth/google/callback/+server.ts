@@ -1,6 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { authenticateWithGoogle } from '$lib/server/auth/google';
+import { resolveAuthenticatedLandingPath } from '$lib/server/auth/post-auth-navigation';
 import {
 	exchangeGoogleAuthorizationCode,
 	fetchGoogleProfile,
@@ -84,7 +85,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 		cookies.set(SESSION_COOKIE_NAME, result.accessToken, getSessionCookieOptions());
 
-		redirect(303, redirectTo);
+		redirect(303, await resolveAuthenticatedLandingPath(result.user.id, redirectTo));
 	} catch {
 		authErrorRedirect(context, 'google_auth_failed');
 	}

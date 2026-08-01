@@ -17,18 +17,17 @@ import {
 import { getGoogleAuthErrorMessage } from '$lib/shared/google-auth';
 import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 import { LEGAL_POLICY_VERSION } from '$lib/shared/legal';
-
-function safeRedirectPath(value: string | null): string {
-	if (!value || !value.startsWith('/') || value.startsWith('//')) {
-		return '/';
-	}
-
-	return value;
-}
+import {
+	resolveAuthenticatedLandingPath,
+	safeRedirectPath
+} from '$lib/server/auth/post-auth-navigation';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (locals.user) {
-		redirect(303, safeRedirectPath(url.searchParams.get('redirectTo')));
+		redirect(
+			303,
+			await resolveAuthenticatedLandingPath(locals.user.id, url.searchParams.get('redirectTo'))
+		);
 	}
 
 	const form = await superValidate(zod4(signupSchema), {
