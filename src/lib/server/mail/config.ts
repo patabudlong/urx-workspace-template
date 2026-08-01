@@ -9,6 +9,11 @@ export function getMailProvider(): MailProvider {
 		return 'postmark';
 	}
 
+	// Accept legacy/local alias used in older .env files.
+	if (value === 'localhost' || value === 'mailhog' || value === 'smtp') {
+		return 'smtp';
+	}
+
 	return 'smtp';
 }
 

@@ -205,6 +205,31 @@ function getPathRateLimitConfig(pathname: string): { maxAttempts: number; window
 	};
 }
 
+function getVerificationEmailRateLimitConfig(): { maxAttempts: number; windowMs: number } {
+	return {
+		maxAttempts: getVerificationEmailMaxAttempts(),
+		windowMs: getVerificationEmailWindowMs()
+	};
+}
+
+function verificationEmailRateLimitKey(email: string): string {
+	return `verify-email:${email.trim().toLowerCase()}`;
+}
+
+function isRateLimitExceeded(
+	key: string,
+	config: { maxAttempts: number; windowMs: number }
+): boolean {
+	const now = Date.now();
+	const entry = store.get(key);
+
+	if (!entry || entry.resetAt <= now) {
+		return false;
+	}
+
+	return entry.count >= config.maxAttempts;
+}
+
 function consumeRateLimit(
 	key: string,
 	config: { maxAttempts: number; windowMs: number }
@@ -322,12 +347,29 @@ export function isVerificationEmailThrottled(email: string): boolean {
 		return false;
 	}
 
-	const result = consumeRateLimit(`verify-email:${normalizedEmail}`, {
-		maxAttempts: getVerificationEmailMaxAttempts(),
-		windowMs: getVerificationEmailWindowMs()
-	});
+	return isRateLimitExceeded(
+		verificationEmailRateLimitKey(normalizedEmail),
+		getVerificationEmailRateLimitConfig()
+	);
+}
 
-	return !result.ok;
+export function consumeVerificationEmailSend(email: string): boolean {
+	if (!isAuthRateLimitEnabled()) {
+		return true;
+	}
+
+	const normalizedEmail = email.trim().toLowerCase();
+
+	if (!normalizedEmail) {
+		return false;
+	}
+
+	const result = consumeRateLimit(
+		verificationEmailRateLimitKey(normalizedEmail),
+		getVerificationEmailRateLimitConfig()
+	);
+
+	return result.ok;
 }
 
 export function getAuthRateLimitMessage(): string {

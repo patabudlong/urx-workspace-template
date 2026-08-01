@@ -57,9 +57,17 @@ export const actions: Actions = {
 		});
 
 		if (!result.ok) {
+			if (result.reason === 'MAIL_NOT_CONFIGURED') {
+				return message(
+					form,
+					'Email is not configured. Set SMTP_HOST, SMTP_PORT, and SMTP_FROM in your environment.',
+					{ status: 503 }
+				);
+			}
+
 			return message(
 				form,
-				'Email is not configured. Set SMTP_HOST, SMTP_PORT, and SMTP_FROM in your environment.',
+				'We could not send the password reset email. Check SMTP settings and MailHog (http://localhost:8025), then try again.',
 				{ status: 503 }
 			);
 		}

@@ -9,7 +9,11 @@ import { recordEmailSignupConsent } from '$lib/server/repositories/consent-event
 import { getAuthRateLimitFormFailure } from '$lib/server/security/auth-rate-limit-form';
 import { assertAuthRecaptcha } from '$lib/server/security/recaptcha';
 import { signupSchema } from '$lib/shared/schemas/auth';
-import { getAuthRedirectAlert } from '$lib/shared/auth-messages';
+import {
+	getAuthRedirectAlert,
+	AUTH_RATE_LIMIT_MESSAGE,
+	EMAIL_ALREADY_EXISTS_MESSAGE
+} from '$lib/shared/auth-messages';
 import { getGoogleAuthErrorMessage } from '$lib/shared/google-auth';
 import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 import { LEGAL_POLICY_VERSION } from '$lib/shared/legal';
@@ -95,7 +99,7 @@ export const actions: Actions = {
 		});
 
 		if (!result.ok) {
-			return message(form, 'An account with this email already exists.', { status: 409 });
+			return message(form, EMAIL_ALREADY_EXISTS_MESSAGE, { status: 409 });
 		}
 
 		const [, emailResult] = await Promise.all([
@@ -113,9 +117,21 @@ export const actions: Actions = {
 		]);
 
 		if (!emailResult.ok) {
+			if (emailResult.reason === 'MAIL_NOT_CONFIGURED') {
+				return message(
+					form,
+					'Your account was created, but email is not configured. Set SMTP_HOST, SMTP_PORT, and SMTP_FROM in your environment.',
+					{ status: 503 }
+				);
+			}
+
+			if (emailResult.reason === 'THROTTLED') {
+				return message(form, AUTH_RATE_LIMIT_MESSAGE, { status: 429 });
+			}
+
 			return message(
 				form,
-				'Your account was created, but email is not configured. Set SMTP_HOST, SMTP_PORT, and SMTP_FROM in your environment.',
+				'Your account was created, but we could not send the verification email. Check SMTP settings and MailHog (http://localhost:8025), then try resending.',
 				{ status: 503 }
 			);
 		}

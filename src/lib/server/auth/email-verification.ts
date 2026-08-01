@@ -1,9 +1,11 @@
 import { createHash, randomInt } from 'node:crypto';
 import type { RequestEvent } from '@sveltejs/kit';
-import { isVerificationEmailThrottled } from '$lib/server/security/auth-rate-limit';
+import {
+	consumeVerificationEmailSend,
+	isVerificationEmailThrottled
+} from '$lib/server/security/auth-rate-limit';
 import { isMailConfigured } from '$lib/server/mail/index';
 import { sendVerifyEmail } from '$lib/server/mail/verify-email';
-import { runInBackground } from '$lib/server/runtime/background-task';
 import {
 	createEmailVerificationToken,
 	ensureEmailVerificationTokenIndexes,
@@ -29,6 +31,7 @@ export type VerificationEmailPayload = {
 export type PrepareVerificationEmailResult =
 	| { ok: true; status: 'send_pending'; payload: VerificationEmailPayload }
 	| { ok: true; status: 'skipped' }
+	| { ok: true; status: 'throttled' }
 	| { ok: false; reason: 'MAIL_NOT_CONFIGURED' };
 
 function hashVerificationCode(code: string): string {
@@ -49,14 +52,15 @@ export async function prepareVerificationEmail(input: {
 		return { ok: false, reason: 'MAIL_NOT_CONFIGURED' };
 	}
 
-	if (isVerificationEmailThrottled(input.email)) {
-		return { ok: true, status: 'skipped' };
-	}
-
-	const user = await findUserByEmail(input.email);
+	const email = input.email.trim().toLowerCase();
+	const user = await findUserByEmail(email);
 
 	if (!user || isUserEmailVerified(user)) {
 		return { ok: true, status: 'skipped' };
+	}
+
+	if (isVerificationEmailThrottled(email)) {
+		return { ok: true, status: 'throttled' };
 	}
 
 	const code = createVerificationCode();
@@ -67,6 +71,10 @@ export async function prepareVerificationEmail(input: {
 		tokenHash: hashVerificationCode(code),
 		expiresAt
 	});
+
+	if (!consumeVerificationEmailSend(email)) {
+		return { ok: true, status: 'throttled' };
+	}
 
 	return {
 		ok: true,
@@ -93,31 +101,34 @@ export async function sendPreparedVerificationEmail(
 	return { ok: true };
 }
 
-/**
- * Web forms: create the token synchronously, then send mail in the background
- * so redirects are not blocked on SMTP.
- */
+/** Web forms: create the token, then send mail before redirecting. */
 export async function queueVerificationEmailForWeb(
-	event: Pick<RequestEvent, 'platform'>,
+	_event: Pick<RequestEvent, 'platform'>,
 	input: {
 		email: string;
 		origin: string;
 	}
-): Promise<{ ok: true } | { ok: false; reason: 'MAIL_NOT_CONFIGURED' }> {
+): Promise<
+	| { ok: true }
+	| { ok: false; reason: 'MAIL_NOT_CONFIGURED' }
+	| { ok: false; reason: 'SEND_FAILED' }
+	| { ok: false; reason: 'THROTTLED' }
+> {
 	const prepared = await prepareVerificationEmail(input);
 
 	if (!prepared.ok) {
 		return prepared;
 	}
 
-	if (prepared.status === 'send_pending') {
-		const payload = prepared.payload;
-		runInBackground(event, async () => {
-			await sendPreparedVerificationEmail(payload);
-		});
+	if (prepared.status === 'skipped') {
+		return { ok: true };
 	}
 
-	return { ok: true };
+	if (prepared.status === 'throttled') {
+		return { ok: false, reason: 'THROTTLED' };
+	}
+
+	return sendPreparedVerificationEmail(prepared.payload);
 }
 
 /** API and other callers that need a definitive send result. */
@@ -128,6 +139,7 @@ export async function requestVerificationEmail(input: {
 	| { ok: true }
 	| { ok: false; reason: 'MAIL_NOT_CONFIGURED' }
 	| { ok: false; reason: 'SEND_FAILED' }
+	| { ok: false; reason: 'THROTTLED' }
 > {
 	const prepared = await prepareVerificationEmail(input);
 
@@ -137,6 +149,10 @@ export async function requestVerificationEmail(input: {
 
 	if (prepared.status === 'skipped') {
 		return { ok: true };
+	}
+
+	if (prepared.status === 'throttled') {
+		return { ok: false, reason: 'THROTTLED' };
 	}
 
 	return sendPreparedVerificationEmail(prepared.payload);

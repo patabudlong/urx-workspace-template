@@ -8,6 +8,7 @@ import { getAuthRateLimitFormFailure } from '$lib/server/security/auth-rate-limi
 import { assertAuthRecaptcha } from '$lib/server/security/recaptcha';
 import { resendVerificationSchema } from '$lib/shared/schemas/auth';
 import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
+import { AUTH_RATE_LIMIT_MESSAGE } from '$lib/shared/auth-messages';
 
 function safeEmailPrefill(value: string | null): string {
 	if (!value) {
@@ -65,9 +66,21 @@ export const actions: Actions = {
 		});
 
 		if (!result.ok) {
+			if (result.reason === 'MAIL_NOT_CONFIGURED') {
+				return message(
+					form,
+					'Email is not configured. Set SMTP_HOST, SMTP_PORT, and SMTP_FROM in your environment.',
+					{ status: 503 }
+				);
+			}
+
+			if (result.reason === 'THROTTLED') {
+				return message(form, AUTH_RATE_LIMIT_MESSAGE, { status: 429 });
+			}
+
 			return message(
 				form,
-				'Email is not configured. Set SMTP_HOST, SMTP_PORT, and SMTP_FROM in your environment.',
+				'We could not send the verification email. Check SMTP settings and MailHog (http://localhost:8025), then try again.',
 				{ status: 503 }
 			);
 		}

@@ -9,22 +9,34 @@ import type { MailMessage, MailTransport } from '$lib/server/mail/types';
 
 let transportPromise: Promise<MailTransport | null> | null = null;
 
-async function getTransport(): Promise<MailTransport | null> {
-	if (!transportPromise) {
-		transportPromise = Promise.resolve().then(() => {
-			const provider = getMailProvider();
+function createTransport(): MailTransport | null {
+	const provider = getMailProvider();
 
-			if (provider === 'postmark') {
-				const config = getPostmarkConfig();
-				return config ? createPostmarkTransport(config) : null;
-			}
-
-			const config = getSmtpConfig();
-			return config ? createSmtpTransport(config) : null;
-		});
+	if (provider === 'postmark') {
+		const config = getPostmarkConfig();
+		return config ? createPostmarkTransport(config) : null;
 	}
 
-	return transportPromise;
+	const config = getSmtpConfig();
+	return config ? createSmtpTransport(config) : null;
+}
+
+async function getTransport(): Promise<MailTransport | null> {
+	if (transportPromise) {
+		const existing = await transportPromise;
+		if (existing) {
+			return existing;
+		}
+		transportPromise = null;
+	}
+
+	const transport = createTransport();
+
+	if (transport) {
+		transportPromise = Promise.resolve(transport);
+	}
+
+	return transport;
 }
 
 export async function sendMail(message: MailMessage): Promise<void> {

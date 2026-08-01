@@ -2,7 +2,7 @@ import type { RequestHandler } from './$types';
 import { requestVerificationEmail } from '$lib/server/auth/email-verification';
 import { jsonError, jsonOk } from '$lib/server/api/response';
 import { assertAuthRecaptcha } from '$lib/server/security/recaptcha';
-import { RESEND_VERIFICATION_SUCCESS_MESSAGE } from '$lib/shared/auth-messages';
+import { RESEND_VERIFICATION_SUCCESS_MESSAGE, AUTH_RATE_LIMIT_MESSAGE } from '$lib/shared/auth-messages';
 import { resendVerificationSchema } from '$lib/shared/schemas/auth';
 import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 
@@ -44,6 +44,10 @@ export const POST: RequestHandler = async ({ request, url, getClientAddress }) =
 	if (!result.ok) {
 		if (result.reason === 'MAIL_NOT_CONFIGURED') {
 			return jsonError('SERVICE_UNAVAILABLE', 'Email is not configured', { requestId });
+		}
+
+		if (result.reason === 'THROTTLED') {
+			return jsonError('RATE_LIMITED', AUTH_RATE_LIMIT_MESSAGE, { requestId });
 		}
 
 		return jsonError('SERVICE_UNAVAILABLE', 'Unable to send verification email', { requestId });

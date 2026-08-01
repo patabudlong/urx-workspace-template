@@ -5,7 +5,6 @@ import { matchesStoredPassword } from '$lib/server/auth/password-history';
 import { isForgotPasswordEmailThrottled } from '$lib/server/security/auth-rate-limit';
 import { isMailConfigured } from '$lib/server/mail/index';
 import { sendPasswordResetEmail } from '$lib/server/mail/password-reset-email';
-import { runInBackground } from '$lib/server/runtime/background-task';
 import {
 	createPasswordResetToken,
 	ensurePasswordResetTokenIndexes,
@@ -95,31 +94,29 @@ export async function sendPreparedPasswordResetEmail(
 	return { ok: true };
 }
 
-/**
- * Web forms: create the token synchronously, then send mail in the background
- * so the response is not blocked on SMTP/Postmark.
- */
+/** Web forms: create the token, then send mail before responding. */
 export async function queuePasswordResetEmailForWeb(
-	event: Pick<RequestEvent, 'platform'>,
+	_event: Pick<RequestEvent, 'platform'>,
 	input: {
 		email: string;
 		origin: string;
 	}
-): Promise<{ ok: true } | { ok: false; reason: 'MAIL_NOT_CONFIGURED' }> {
+): Promise<
+	| { ok: true }
+	| { ok: false; reason: 'MAIL_NOT_CONFIGURED' }
+	| { ok: false; reason: 'SEND_FAILED' }
+> {
 	const prepared = await preparePasswordResetEmail(input);
 
 	if (!prepared.ok) {
 		return prepared;
 	}
 
-	if (prepared.status === 'send_pending') {
-		const payload = prepared.payload;
-		runInBackground(event, async () => {
-			await sendPreparedPasswordResetEmail(payload);
-		});
+	if (prepared.status === 'skipped') {
+		return { ok: true };
 	}
 
-	return { ok: true };
+	return sendPreparedPasswordResetEmail(prepared.payload);
 }
 
 export async function requestPasswordReset(input: {

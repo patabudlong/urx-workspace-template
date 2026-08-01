@@ -13,7 +13,7 @@
 	import { PASSWORD_HISTORY_LIMIT, PASSWORD_REQUIREMENTS_SUMMARY } from '$lib/shared/password-policy';
 	import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 	import { warmRecaptcha } from '$lib/recaptcha/client';
-	import { AUTH_ACTION_BUTTON_CLASS, AUTH_INLINE_LINK_CLASS } from '$lib/auth/ui';
+	import { AUTH_ACTION_BUTTON_CLASS } from '$lib/auth/ui';
 	import { cn } from '$lib/utils.js';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import { get } from 'svelte/store';
@@ -85,9 +85,6 @@
 				description="This reset link is invalid or has expired."
 			/>
 			<Button href="/forgot-password" class={AUTH_ACTION_BUTTON_CLASS}>Request a new link</Button>
-			<p class="text-muted-foreground text-center text-sm">
-				<a href="/login" class={AUTH_INLINE_LINK_CLASS}>Back to sign in</a>
-			</p>
 		{:else}
 			<form method="POST" use:enhance class="space-y-5" novalidate>
 				<div class="space-y-5">
@@ -137,10 +134,12 @@
 					<RecaptchaNotice />
 				</div>
 			</form>
-
-			<p class="text-muted-foreground text-center text-sm">
-				<a href="/login" class={AUTH_INLINE_LINK_CLASS}>Back to sign in</a>
-			</p>
 		{/if}
 	</div>
+
+	{#snippet footer()}
+		<p class="text-center text-sm">
+			<a href="/login" class="hover:text-foreground hover:underline">Back to sign in</a>
+		</p>
+	{/snippet}
 </AuthFormPanel>

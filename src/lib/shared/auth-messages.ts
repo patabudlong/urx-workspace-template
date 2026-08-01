@@ -20,6 +20,9 @@ export const AUTH_RATE_LIMIT_MESSAGE =
 
 export const INVALID_CREDENTIALS_MESSAGE = 'Invalid email or password.';
 
+export const EMAIL_ALREADY_EXISTS_MESSAGE =
+	'An account with this email already exists.';
+
 export const INVALID_VERIFICATION_CODE_MESSAGE =
 	'That verification code is invalid or has expired.';
 
@@ -48,6 +51,10 @@ const AUTH_FORM_ALERT_PRESENTATIONS: Record<string, AuthAlertPresentation> = {
 	[INVALID_CREDENTIALS_MESSAGE]: {
 		title: 'Invalid email or password',
 		description: 'Check your credentials and try again.'
+	},
+	[EMAIL_ALREADY_EXISTS_MESSAGE]: {
+		title: 'An account with this email already exists.',
+		description: 'Sign in with this email or use a different one.'
 	},
 	[INVALID_VERIFICATION_CODE_MESSAGE]: {
 		title: 'Verification failed',
