@@ -12,10 +12,10 @@
 </script>
 
 <Sidebar.Provider>
-	<AppSidebar />
+	<AppSidebar workspace={data.workspace} />
 	<Sidebar.Inset>
-		<SiteHeader userDisplay={data.userDisplay} title={headerTitle} />
-		<div class="flex flex-1 flex-col gap-4 p-4 md:p-6">
+		<SiteHeader userDisplay={data.userDisplay} title={headerTitle} workspace={data.workspace} />
+		<div class="bg-muted/20 flex flex-1 flex-col gap-6 p-4 md:gap-8 md:p-6">
 			{@render children()}
 		</div>
 	</Sidebar.Inset>

@@ -1,62 +1,133 @@
 <script lang="ts">
-	import { Badge } from '$lib/components/ui/badge/index.js';
+	import PageHeader from '$lib/components/dashboard/page-header.svelte';
+	import StatCard from '$lib/components/dashboard/stat-card.svelte';
+	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
-	import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
-	import SmartphoneIcon from '@lucide/svelte/icons/smartphone';
+	import { formatWorkspaceRole } from '$lib/navigation/app-nav';
+	import ActivityIcon from '@lucide/svelte/icons/activity';
+	import ArrowRightIcon from '@lucide/svelte/icons/arrow-right';
+	import BookOpenIcon from '@lucide/svelte/icons/book-open';
+	import Building2Icon from '@lucide/svelte/icons/building-2';
+	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
+	import UsersIcon from '@lucide/svelte/icons/users';
 
 	let { data } = $props();
+
+	const greetingName = $derived(data.firstName || data.user.email.split('@')[0] || 'there');
+	const workspace = $derived(data.workspace);
 </script>
 
-<div class="space-y-6">
-	<div class="space-y-1">
-		<h2 class="text-2xl font-semibold tracking-tight">Welcome back</h2>
-		<p class="text-muted-foreground text-sm">
-			Signed in as <span class="text-foreground font-medium">{data.user.email}</span>
-		</p>
-	</div>
+<div class="mx-auto flex w-full max-w-6xl flex-col gap-8">
+	<PageHeader
+		eyebrow="Workspace overview"
+		title={`Welcome back, ${greetingName}`}
+		description="Your workspace hub for day-to-day operations, team access, and developer resources."
+	>
+		{#snippet actions()}
+			<Button href="/docs" variant="outline" size="sm">
+				<BookOpenIcon class="size-4" />
+				API docs
+			</Button>
+		{/snippet}
+	</PageHeader>
 
-	<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+	{#if workspace}
+		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+			<StatCard
+				label="Workspace"
+				value={workspace.workspaceName}
+				hint="{workspace.workspaceSlug}.workspace.urixoft.com"
+				icon={Building2Icon}
+			/>
+			<StatCard
+				label="Your role"
+				value={formatWorkspaceRole(workspace.role)}
+				hint={workspace.role === 'owner'
+					? 'You can manage workspace settings and invite teammates.'
+					: 'You have member access to this workspace.'}
+				icon={UsersIcon}
+			/>
+			<StatCard
+				label="Status"
+				value="Active"
+				hint="Your workspace is approved and ready to use."
+				icon={ShieldCheckIcon}
+				class="sm:col-span-2 xl:col-span-1"
+			/>
+		</div>
+	{/if}
+
+	<div class="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
 		<Card.Root>
 			<Card.Header>
-				<Card.Title>API Reference</Card.Title>
-				<Card.Description>Interactive Scalar docs for web and mobile teams.</Card.Description>
+				<Card.Title>Quick actions</Card.Title>
+				<Card.Description>Common links for your team and developers.</Card.Description>
 			</Card.Header>
-			<Card.Content class="flex items-center justify-between gap-4">
-				<Badge variant="secondary">OpenAPI v1</Badge>
-				<Button href="/docs" variant="outline" size="sm">
-					Open docs
-					<ExternalLinkIcon />
+			<Card.Content class="grid gap-3 sm:grid-cols-2">
+				<Button href="/docs" variant="outline" class="h-auto justify-start px-4 py-3">
+					<div class="flex w-full items-center gap-3">
+						<div class="bg-primary/10 text-primary flex size-9 items-center justify-center rounded-lg">
+							<BookOpenIcon class="size-4" />
+						</div>
+						<div class="min-w-0 text-left">
+							<p class="text-sm font-medium">Browse API docs</p>
+							<p class="text-muted-foreground text-xs">OpenAPI reference for web and mobile clients</p>
+						</div>
+					</div>
+				</Button>
+
+				<Button href="/api/v1/health" variant="outline" class="h-auto justify-start px-4 py-3" target="_blank">
+					<div class="flex w-full items-center gap-3">
+						<div class="bg-primary/10 text-primary flex size-9 items-center justify-center rounded-lg">
+							<ActivityIcon class="size-4" />
+						</div>
+						<div class="min-w-0 text-left">
+							<p class="text-sm font-medium">Check API health</p>
+							<p class="text-muted-foreground text-xs">Verify connectivity and service status</p>
+						</div>
+					</div>
 				</Button>
 			</Card.Content>
 		</Card.Root>
 
 		<Card.Root>
 			<Card.Header>
-				<Card.Title>Health endpoint</Card.Title>
-				<Card.Description>Poll connectivity for offline and degraded UI states.</Card.Description>
+				<Card.Title>Getting started</Card.Title>
+				<Card.Description>What you can do from here.</Card.Description>
 			</Card.Header>
-			<Card.Content class="flex items-center justify-between gap-4">
-				<code class="text-muted-foreground text-xs">GET /api/v1/health</code>
-				<Button href="/api/v1/health" variant="outline" size="sm" target="_blank">
-					Check
-					<ExternalLinkIcon />
+			<Card.Content class="space-y-4">
+				<ul class="space-y-3 text-sm">
+					<li class="flex items-start gap-3">
+						<span class="bg-primary mt-1.5 size-1.5 shrink-0 rounded-full" aria-hidden="true"></span>
+						<span class="text-muted-foreground leading-relaxed">
+							Use the sidebar to move between overview and developer resources.
+						</span>
+					</li>
+					<li class="flex items-start gap-3">
+						<span class="bg-primary mt-1.5 size-1.5 shrink-0 rounded-full" aria-hidden="true"></span>
+						<span class="text-muted-foreground leading-relaxed">
+							Share your workspace URL with teammates when inviting them to join.
+						</span>
+					</li>
+					<li class="flex items-start gap-3">
+						<span class="bg-primary mt-1.5 size-1.5 shrink-0 rounded-full" aria-hidden="true"></span>
+						<span class="text-muted-foreground leading-relaxed">
+							Connect mobile apps to the versioned JSON API under <code class="text-xs">/api/v1</code>.
+						</span>
+					</li>
+				</ul>
+
+				<Button href="/docs" size="sm" class="w-full sm:w-auto">
+					Explore the API
+					<ArrowRightIcon class="size-4" />
 				</Button>
 			</Card.Content>
 		</Card.Root>
-
-		<Card.Root>
-			<Card.Header>
-				<Card.Title>Mobile clients</Card.Title>
-				<Card.Description>Versioned JSON API with Bearer auth and shared contracts.</Card.Description>
-			</Card.Header>
-			<Card.Content class="flex items-center justify-between gap-4">
-				<div class="text-muted-foreground flex items-center gap-2 text-sm">
-					<SmartphoneIcon class="size-4" />
-					<span>/api/v1/*</span>
-				</div>
-				<Badge>Ready</Badge>
-			</Card.Content>
-		</Card.Root>
 	</div>
+
+	<StatusAlert variant="info" title="Workspace modules are coming next">
+		Team management, settings, and operational tools will appear here as modules are added to the
+		template.
+	</StatusAlert>
 </div>

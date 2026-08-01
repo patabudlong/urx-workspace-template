@@ -1,6 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
 import { getOnboardingAccessState } from '$lib/server/onboarding/workspace-onboarding';
+import { findUserById } from '$lib/server/repositories/users';
 import { loadUserDisplay } from '$lib/server/user-display';
 
 export const load: LayoutServerLoad = async ({ locals, url }) => {
@@ -15,11 +16,21 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 		redirect(303, '/onboarding');
 	}
 
+	const user = await findUserById(locals.user.id);
 	const userDisplay = await loadUserDisplay(locals.user.id, locals.user.email);
 
 	return {
 		user: locals.user,
-		workspace: access.status === 'ready' ? access : null,
+		firstName: user?.firstName ?? '',
+		workspace:
+			access.status === 'ready'
+				? {
+						workspaceId: access.workspaceId,
+						workspaceName: access.workspaceName,
+						workspaceSlug: access.workspaceSlug,
+						role: access.role
+					}
+				: null,
 		userDisplay
 	};
 };
