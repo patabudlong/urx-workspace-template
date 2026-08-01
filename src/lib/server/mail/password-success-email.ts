@@ -1,4 +1,8 @@
 import { sendMail } from '$lib/server/mail/index';
+import {
+	buildPlatformWorkspaceUrl,
+	resolvePlatformWorkspaceOrigin
+} from '$lib/server/mail/platform-origin';
 import { buildSimpleEmailHtml, buildSimpleEmailText } from '$lib/server/mail/templates/simple-email';
 import { formatEmailDateTime } from '$lib/shared/format-datetime';
 
@@ -10,7 +14,8 @@ export async function sendPasswordSuccessEmail(input: {
 }): Promise<void> {
 	const greeting = input.firstName.trim() || 'there';
 	const changedAtLabel = formatEmailDateTime(input.changedAt);
-	const loginUrl = `${input.origin}/login`;
+	const platformOrigin = resolvePlatformWorkspaceOrigin(input.origin);
+	const loginUrl = buildPlatformWorkspaceUrl(input.origin, '/login');
 
 	const content = {
 		title: 'Your password was changed',
@@ -26,8 +31,8 @@ export async function sendPasswordSuccessEmail(input: {
 		],
 		ctaLabel: 'Sign in',
 		ctaUrl: loginUrl,
-		logoUrl: `${input.origin}/email/urixoft-logo.png`,
-		illustrationUrl: `${input.origin}/email/password-success.png`,
+		logoUrl: `${platformOrigin}/email/urixoft-logo.png`,
+		illustrationUrl: `${platformOrigin}/email/password-success.png`,
 		illustrationAlt: 'Password changed successfully'
 	};
 

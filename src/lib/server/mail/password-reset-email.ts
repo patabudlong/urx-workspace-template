@@ -1,4 +1,5 @@
 import { sendMail } from '$lib/server/mail/index';
+import { resolvePlatformWorkspaceOrigin } from '$lib/server/mail/platform-origin';
 import {
 	buildPasswordResetEmailHtml,
 	buildPasswordResetEmailText
@@ -11,11 +12,12 @@ export async function sendPasswordResetEmail(input: {
 	origin: string;
 }): Promise<void> {
 	const greeting = input.firstName.trim() || 'there';
+	const platformOrigin = resolvePlatformWorkspaceOrigin(input.origin);
 	const content = {
 		greeting,
 		resetUrl: input.resetUrl,
-		logoUrl: `${input.origin}/email/urixoft-logo.png`,
-		illustrationUrl: `${input.origin}/email/forgot-password.png`
+		logoUrl: `${platformOrigin}/email/urixoft-logo.png`,
+		illustrationUrl: `${platformOrigin}/email/forgot-password.png`
 	};
 
 	await sendMail({

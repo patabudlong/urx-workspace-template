@@ -1,5 +1,10 @@
 import { sendMail } from '$lib/server/mail/index';
 import {
+	buildPlatformWorkspaceUrl,
+	formatPlatformWorkspaceHost,
+	resolvePlatformWorkspaceOrigin
+} from '$lib/server/mail/platform-origin';
+import {
 	buildSimpleEmailHtml,
 	buildSimpleEmailText
 } from '$lib/server/mail/templates/simple-email';
@@ -12,19 +17,21 @@ export async function sendWorkspaceApprovedEmail(input: {
 	origin: string;
 }): Promise<void> {
 	const greeting = input.firstName.trim() || 'there';
-	const dashboardUrl = `${input.origin.replace(/\/$/, '')}/`;
+	const platformOrigin = resolvePlatformWorkspaceOrigin(input.origin);
+	const platformHost = formatPlatformWorkspaceHost(input.origin);
+	const dashboardUrl = buildPlatformWorkspaceUrl(input.origin, '/login');
 	const content = {
 		title: 'Your workspace is approved',
 		greeting,
-		logoUrl: `${input.origin}/email/urixoft-logo.png`,
-		illustrationUrl: `${input.origin}/email/workspace-approved.png`,
+		logoUrl: `${platformOrigin}/email/urixoft-logo.png`,
+		illustrationUrl: `${platformOrigin}/email/workspace-approved.png`,
 		illustrationAlt: 'Workspace approved welcome illustration',
 		preheader: `${input.workspaceName} is ready. Sign in to open your dashboard.`,
 		paragraphs: [
 			`Great news — your workspace ${input.workspaceName} has been approved.`,
-			`Your workspace URL is ${input.workspaceSlug}.workspace.urixoft.com. Sign in to set up your team and start using Urixoft Workspace.`
+			`Sign in at ${platformHost} to set up your team and start using Urixoft Workspace.`
 		],
-		ctaLabel: 'Open dashboard',
+		ctaLabel: 'Sign in',
 		ctaUrl: dashboardUrl,
 		infoBoxParagraphs: [
 			'If you have any questions getting started, reply to this email or contact our support team.'

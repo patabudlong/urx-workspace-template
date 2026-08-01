@@ -6,6 +6,7 @@ import { isForgotPasswordEmailThrottled } from '$lib/server/security/auth-rate-l
 import { isMailConfigured } from '$lib/server/mail/index';
 import { sendPasswordResetEmail } from '$lib/server/mail/password-reset-email';
 import { sendPasswordSuccessEmail } from '$lib/server/mail/password-success-email';
+import { buildPlatformWorkspaceUrl, resolvePlatformWorkspaceOrigin } from '$lib/server/mail/platform-origin';
 import {
 	createPasswordResetToken,
 	ensurePasswordResetTokenIndexes,
@@ -68,7 +69,8 @@ export async function preparePasswordResetEmail(input: {
 		expiresAt
 	});
 
-	const resetUrl = `${input.origin}/reset-password?token=${encodeURIComponent(rawToken)}`;
+	const platformOrigin = resolvePlatformWorkspaceOrigin(input.origin);
+	const resetUrl = `${buildPlatformWorkspaceUrl(input.origin, '/reset-password')}?token=${encodeURIComponent(rawToken)}`;
 
 	return {
 		ok: true,
@@ -77,7 +79,7 @@ export async function preparePasswordResetEmail(input: {
 			to: user.email,
 			firstName: user.firstName,
 			resetUrl,
-			origin: input.origin
+			origin: platformOrigin
 		}
 	};
 }

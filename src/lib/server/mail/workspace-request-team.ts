@@ -1,5 +1,9 @@
 import { sendMail } from '$lib/server/mail/index';
 import {
+	buildPlatformWorkspaceUrl,
+	resolvePlatformWorkspaceOrigin
+} from '$lib/server/mail/platform-origin';
+import {
 	buildSimpleEmailHtml,
 	buildSimpleEmailText
 } from '$lib/server/mail/templates/simple-email';
@@ -15,7 +19,8 @@ export async function sendWorkspaceRequestTeamEmail(input: {
 	country: string;
 	origin: string;
 }): Promise<void> {
-	const reviewUrl = `${input.origin}/admin/workspace-requests`;
+	const platformOrigin = resolvePlatformWorkspaceOrigin(input.origin);
+	const reviewUrl = buildPlatformWorkspaceUrl(input.origin, '/admin/workspace-requests');
 	const content = {
 		title: 'New workspace owner request',
 		preheader: `${input.requesterName} requested workspace ${input.workspaceName}.`,
@@ -27,7 +32,7 @@ export async function sendWorkspaceRequestTeamEmail(input: {
 			`Contact: ${input.contactPhone}`,
 			`Country: ${input.country}`
 		],
-		logoUrl: `${input.origin}/email/urixoft-logo.png`,
+		logoUrl: `${platformOrigin}/email/urixoft-logo.png`,
 		ctaLabel: 'Review request',
 		ctaUrl: reviewUrl,
 		infoBoxParagraphs: ['Review and approve or reject this request from the admin panel.']

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import AppSidebar from '$lib/components/app-sidebar.svelte';
+	import PreventStaleAuthView from '$lib/components/prevent-stale-auth-view.svelte';
 	import SiteHeader from '$lib/components/site-header.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 
@@ -10,6 +11,8 @@
 		typeof page.data.meta?.title === 'string' ? page.data.meta.title : 'Dashboard'
 	);
 </script>
+
+<PreventStaleAuthView />
 
 <Sidebar.Provider>
 	<AppSidebar workspace={data.workspace} />

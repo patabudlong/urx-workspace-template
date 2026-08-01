@@ -4,6 +4,10 @@ import { jsonError } from '$lib/server/api/response';
 import { verifyAccessToken } from '$lib/server/auth/jwt';
 import { clearSessionCookie, SESSION_COOKIE_NAME } from '$lib/server/auth/session';
 import {
+	applyPrivateNoStoreHeaders,
+	isSensitiveHtmlRoute
+} from '$lib/server/http/cache-control';
+import {
 	consumeAuthRateLimit,
 	getAuthRateLimitMessage,
 	isAuthApiRateLimitedRoute,
@@ -89,6 +93,10 @@ export const handle: Handle = async ({ event, resolve }) => {
 	response.headers.set('X-Content-Type-Options', 'nosniff');
 	response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 	response.headers.set('X-Frame-Options', 'DENY');
+
+	if (!isApiRoute(pathname) && isSensitiveHtmlRoute(event.route.id)) {
+		applyPrivateNoStoreHeaders(response.headers);
+	}
 
 	if (isApiRoute(pathname)) {
 		return applyCorsHeaders(response, origin);
