@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
+	import { onMount, untrack } from 'svelte';
+	import { invalidateAll } from '$app/navigation';
 	import FormAlert from '$lib/components/auth/form-alert.svelte';
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
-	import LogoutDialog from '$lib/components/logout-dialog.svelte';
 	import OnboardingElementTour, {
 		type ElementTourStep
 	} from '$lib/components/onboarding/onboarding-element-tour.svelte';
@@ -17,8 +17,6 @@
 		type WorkspaceAvailabilityStatus
 	} from '$lib/components/onboarding/workspace-field-availability.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
-	import ThemeToggle from '$lib/components/theme-toggle.svelte';
-	import UrixoftLogo from '$lib/components/urixoft-logo.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Form from '$lib/components/ui/form/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -28,7 +26,8 @@
 	import { hasDismissedOnboardingWelcome } from '$lib/onboarding/welcome';
 	import {
 		memberOnboardingClientSchema,
-		ownerOnboardingClientSchema
+		ownerOnboardingClientSchema,
+		type OwnerOnboardingInput
 	} from '$lib/shared/schemas/onboarding';
 	import {
 		isWorkspaceNameReadyForAvailabilityCheck,
@@ -39,8 +38,8 @@
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import CircleHelpIcon from '@lucide/svelte/icons/circle-help';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
-	import { onMount, untrack } from 'svelte';
 	import { superForm } from 'sveltekit-superforms';
+	import type { FormPathLeaves, ValidationErrors } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
 
 	let { data } = $props();
@@ -69,7 +68,13 @@
 		{ id: 'pending', title: 'Awaiting approval', description: 'Your workspace request is under review.' }
 	];
 
-	const TOUR_STORAGE_KEY = 'urx-onboarding-element-tour-dismissed';
+	type OwnerField = FormPathLeaves<OwnerOnboardingInput>;
+
+	const OWNER_STEP_FIELDS: Partial<Record<WizardStepId, OwnerField[]>> = {
+		workspace: ['name', 'slug', 'teamSize'],
+		location: ['country', 'addressLine1', 'city'],
+		contact: ['contactPhone']
+	};
 
 	let mode = $state<OnboardingMode>('create');
 	let wizardStep = $state<WizardStepId>(
@@ -77,8 +82,8 @@
 	);
 	let stepError = $state('');
 	let welcomeOpen = $state(false);
-	let tourReady = $state(false);
-	let tourActive = $state(false);
+	let tourReady = $state(true);
+	let tourActive = $state(data.access.status !== 'pending_review');
 	let tourRunId = $state(0);
 	let slugTouched = $state(false);
 	let availabilityRequestId = 0;
@@ -87,7 +92,33 @@
 
 	const ownerSuperform = superForm(untrack(() => data.ownerForm), {
 		validators: zod4Client(ownerOnboardingClientSchema),
-		resetForm: false
+		resetForm: false,
+		onSubmit: ({ validators }) => {
+			validators(false);
+		},
+		onResult: async ({ result }) => {
+			if (result.type === 'redirect') {
+				return;
+			}
+
+			if (result.type === 'failure') {
+				const actionData = result.data as
+					| { ownerForm?: { valid: boolean; errors: ValidationErrors<OwnerOnboardingInput> } }
+					| undefined;
+				if (actionData?.ownerForm && !actionData.ownerForm.valid) {
+					wizardStep = resolveOwnerErrorStep(actionData.ownerForm.errors);
+					stepError = 'Please correct the highlighted fields before submitting.';
+				}
+				return;
+			}
+
+			if (result.type === 'success') {
+				stepError = '';
+				tourActive = false;
+				await invalidateAll();
+				wizardStep = 'pending';
+			}
+		}
 	});
 
 	const memberSuperform = superForm(untrack(() => data.memberForm), {
@@ -98,8 +129,10 @@
 	const {
 		enhance: enhanceOwner,
 		form: ownerForm,
+		errors: ownerErrors,
 		message: ownerMessage,
-		submitting: ownerSubmitting
+		submitting: ownerSubmitting,
+		validate: validateOwnerField
 	} = ownerSuperform;
 
 	const {
@@ -133,10 +166,15 @@
 
 	const ownerSubmitBlocked = $derived(
 		$ownerSubmitting ||
-			nameAvailability === 'taken' ||
-			slugAvailability === 'taken' ||
-			nameAvailability === 'checking' ||
-			slugAvailability === 'checking'
+			(wizardStep === 'workspace' &&
+				(nameAvailability === 'taken' ||
+					slugAvailability === 'taken' ||
+					nameAvailability === 'checking' ||
+					slugAvailability === 'checking'))
+	);
+
+	const isOwnerWizardStep = $derived(
+		mode === 'create' && ['workspace', 'location', 'contact', 'review'].includes(wizardStep)
 	);
 
 	const elementTourSteps = $derived.by((): ElementTourStep[] => {
@@ -153,13 +191,13 @@
 					title: 'Choose how to get started',
 					description:
 						'Create a new workspace as the owner, or join an existing team with an invite code.',
-					placement: 'right'
+					placement: 'left'
 				},
 				{
 					target: '[data-tour="progress-guide"]',
 					title: 'Follow the setup guide',
 					description: 'This panel tracks where you are in onboarding and what comes next.',
-					placement: 'left'
+					placement: 'right'
 				},
 				closeStep
 			];
@@ -218,13 +256,17 @@
 		];
 	});
 
+	$effect(() => {
+		if (data.access.status === 'pending_review') {
+			wizardStep = 'pending';
+			tourActive = false;
+		}
+	});
+
 	onMount(() => {
 		if (data.access.status !== 'pending_review' && !hasDismissedOnboardingWelcome()) {
 			welcomeOpen = true;
 		}
-
-		tourActive = sessionStorage.getItem(TOUR_STORAGE_KEY) !== 'true';
-		tourReady = true;
 
 		if (data.access.status !== 'pending_review') {
 			return;
@@ -253,15 +295,9 @@
 
 	function dismissElementTour() {
 		tourActive = false;
-		if (browser) {
-			sessionStorage.setItem(TOUR_STORAGE_KEY, 'true');
-		}
 	}
 
 	function showElementTour() {
-		if (browser) {
-			sessionStorage.removeItem(TOUR_STORAGE_KEY);
-		}
 		tourActive = true;
 		tourRunId += 1;
 	}
@@ -375,7 +411,7 @@
 
 	async function ensureWorkspaceSlugAvailable(): Promise<boolean> {
 		if (!isWorkspaceSlugReadyForAvailabilityCheck($ownerForm.slug)) {
-			return true;
+			return false;
 		}
 
 		if (slugAvailability === 'available') {
@@ -383,7 +419,10 @@
 		}
 
 		if (slugAvailability === 'taken') {
-			stepError = 'This workspace URL is already taken. Try a different company name.';
+			await validateOwnerField('slug', {
+				update: true,
+				errors: 'This workspace URL is already taken. Try a different company name.'
+			});
 			return false;
 		}
 
@@ -398,7 +437,10 @@
 
 			slugAvailability = result.slug?.available ? 'available' : 'taken';
 			if (!result.slug?.available) {
-				stepError = 'This workspace URL is already taken. Try a different company name.';
+				await validateOwnerField('slug', {
+					update: true,
+					errors: 'This workspace URL is already taken. Try a different company name.'
+				});
 				return false;
 			}
 		} catch {
@@ -409,76 +451,59 @@
 		return true;
 	}
 
-	function validateWorkspaceStep(): boolean {
-		const parsed = ownerOnboardingClientSchema.pick({
-			name: true,
-			slug: true,
-			teamSize: true
-		}).safeParse({
-			name: $ownerForm.name,
-			slug: $ownerForm.slug,
-			teamSize: $ownerForm.teamSize
-		});
-
-		if (!parsed.success) {
-			stepError = parsed.error.issues[0]?.message ?? 'Please complete all required fields.';
-			return false;
+	async function validateCurrentOwnerStep(): Promise<boolean> {
+		const fields = OWNER_STEP_FIELDS[wizardStep];
+		if (!fields) {
+			return true;
 		}
 
-		if (nameAvailability === 'taken' || slugAvailability === 'taken') {
-			stepError = 'Choose a different workspace name or URL.';
-			return false;
+		let valid = true;
+
+		for (const field of fields) {
+			const messages = await validateOwnerField(field, { update: true, taint: true });
+			if (messages?.length) {
+				valid = false;
+			}
 		}
 
-		stepError = '';
-		return true;
-	}
+		if (wizardStep === 'workspace') {
+			if (nameAvailability === 'taken') {
+				await validateOwnerField('name', {
+					update: true,
+					errors: 'This workspace name is already taken.'
+				});
+				valid = false;
+			}
 
-	function validateLocationStep(): boolean {
-		const parsed = ownerOnboardingClientSchema.pick({
-			country: true,
-			addressLine1: true,
-			city: true
-		}).safeParse({
-			country: $ownerForm.country,
-			addressLine1: $ownerForm.addressLine1,
-			city: $ownerForm.city
-		});
-
-		if (!parsed.success) {
-			stepError = parsed.error.issues[0]?.message ?? 'Please complete all required fields.';
-			return false;
+			if (slugAvailability === 'taken') {
+				await validateOwnerField('slug', {
+					update: true,
+					errors: 'This workspace URL is already taken.'
+				});
+				valid = false;
+			}
 		}
 
-		stepError = '';
-		return true;
-	}
-
-	function validateContactStep(): boolean {
-		const parsed = ownerOnboardingClientSchema.pick({
-			contactPhone: true,
-			website: true
-		}).safeParse({
-			contactPhone: $ownerForm.contactPhone,
-			website: $ownerForm.website
-		});
-
-		if (!parsed.success) {
-			stepError = parsed.error.issues[0]?.message ?? 'Please complete all required fields.';
-			return false;
+		if (valid) {
+			stepError = '';
 		}
 
-		stepError = '';
-		return true;
+		return valid;
 	}
 
 	async function goNext() {
 		if (wizardStep === 'workspace') {
-			if (!validateWorkspaceStep()) return;
-			if (!(await ensureWorkspaceSlugAvailable())) return;
+			if (!(await validateCurrentOwnerStep())) {
+				return;
+			}
+			if (!(await ensureWorkspaceSlugAvailable())) {
+				return;
+			}
+		} else if (wizardStep === 'location' || wizardStep === 'contact') {
+			if (!(await validateCurrentOwnerStep())) {
+				return;
+			}
 		}
-		if (wizardStep === 'location' && !validateLocationStep()) return;
-		if (wizardStep === 'contact' && !validateContactStep()) return;
 
 		const order: WizardStepId[] = ['choose', 'workspace', 'location', 'contact', 'review'];
 		const index = order.indexOf(wizardStep);
@@ -499,13 +524,43 @@
 			.filter(Boolean)
 			.join(', ') || '—';
 	}
+
+	function resolveOwnerErrorStep(errors: ValidationErrors<OwnerOnboardingInput>): WizardStepId {
+		const fieldToStep: Partial<Record<OwnerField, WizardStepId>> = {
+			name: 'workspace',
+			slug: 'workspace',
+			teamSize: 'workspace',
+			country: 'location',
+			addressLine1: 'location',
+			city: 'location',
+			contactPhone: 'contact',
+			website: 'contact'
+		};
+
+		for (const [field, messages] of Object.entries(errors)) {
+			if (messages?.length) {
+				const step = fieldToStep[field as OwnerField];
+				if (step) {
+					return step;
+				}
+			}
+		}
+
+		return 'review';
+	}
 </script>
 
 <OnboardingWelcomeModal bind:open={welcomeOpen} firstName={data.firstName} />
 
 <main
-	class="onboarding-page mx-auto grid min-h-svh max-w-[120rem] items-center gap-0 p-4 sm:p-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]"
+	class="onboarding-page mx-auto grid w-full max-w-[120rem] items-center gap-0 p-4 sm:p-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]"
 >
+	<OnboardingWalkthrough
+		steps={walkthroughSteps}
+		currentStepId={wizardStep}
+		completedStepIds={completedStepIds}
+	/>
+
 	<section
 		class={cn(
 			'bg-card border-border relative mx-auto grid w-full max-w-[42rem] content-start gap-7 rounded-2xl border p-6 shadow-lg sm:p-8 lg:p-10',
@@ -514,37 +569,35 @@
 	>
 		<SubmitProgressBar active={$ownerSubmitting || $memberSubmitting} label="Submitting…" />
 
-		<div class="flex items-start justify-between gap-4">
-			<a href="/" class="flex w-fit items-center gap-3.5 no-underline" aria-label="Urixoft Workspace">
-				<UrixoftLogo class="size-10 shrink-0 rounded-sm" />
-				<div class="min-w-0">
-					<strong class="text-foreground block text-base leading-tight font-semibold tracking-tight">
-						Urixoft Workspace
-					</strong>
-					<small class="text-muted-foreground mt-0.5 block text-[0.8125rem] leading-tight">
-						Workspace onboarding
-					</small>
-				</div>
-			</a>
+		{#if stepError && isOwnerWizardStep}
+			<StatusAlert variant="danger">{stepError}</StatusAlert>
+		{/if}
 
-			<div class="flex shrink-0 items-center gap-2">
-				{#if tourReady && !tourActive}
-					<Button type="button" variant="outline" size="sm" onclick={showElementTour}>
-						<CircleHelpIcon class="size-4" />
-						Show tour
+		{#if $ownerMessage && isOwnerWizardStep}
+			<FormAlert>{$ownerMessage}</FormAlert>
+		{/if}
+
+		{#if $memberMessage && wizardStep === 'join'}
+			<FormAlert>{$memberMessage}</FormAlert>
+		{/if}
+
+		<div class="flex items-center justify-between gap-3">
+			<div class="min-w-0">
+				{#if wizardStep !== 'choose' && wizardStep !== 'pending'}
+					<Button type="button" variant="ghost" size="sm" class="w-fit px-2" onclick={goBack}>
+						<ArrowLeftIcon class="size-4" />
+						Back
 					</Button>
 				{/if}
-				<ThemeToggle iconClass="size-5" />
-				<LogoutDialog />
 			</div>
-		</div>
 
-		{#if wizardStep !== 'choose' && wizardStep !== 'pending'}
-			<Button type="button" variant="ghost" size="sm" class="w-fit px-2" onclick={goBack}>
-				<ArrowLeftIcon class="size-4" />
-				Back
-			</Button>
-		{/if}
+			{#if tourReady && !tourActive && wizardStep !== 'pending'}
+				<Button type="button" variant="outline" size="sm" onclick={showElementTour}>
+					<CircleHelpIcon class="size-4" />
+					Show tour
+				</Button>
+			{/if}
+		</div>
 
 		{#if wizardStep === 'choose'}
 			<div class="choose-panel" data-tour="selection">
@@ -563,7 +616,7 @@
 				<div class="grid gap-3.5 pl-7">
 					<button
 						type="button"
-						class="hover:border-primary hover:bg-muted/40 flex items-center gap-4 overflow-visible rounded-lg border p-5 text-left transition-colors"
+						class="hover:border-primary hover:bg-muted/40 bg-card flex items-center gap-4 overflow-visible rounded-lg border p-5 text-left transition-colors"
 						onclick={() => selectMode('create')}
 					>
 						<img
@@ -584,7 +637,7 @@
 
 					<button
 						type="button"
-						class="hover:border-primary hover:bg-muted/40 flex items-center gap-4 overflow-visible rounded-lg border p-5 text-left transition-colors"
+						class="hover:border-primary hover:bg-muted/40 bg-card flex items-center gap-4 overflow-visible rounded-lg border p-5 text-left transition-colors"
 						onclick={() => selectMode('join')}
 					>
 						<img
@@ -682,10 +735,6 @@
 
 			<form method="POST" action="?/member" use:enhanceMember class="grid gap-4">
 				<div class="form-panel" data-tour="selection">
-					{#if $memberMessage}
-						<FormAlert>{$memberMessage}</FormAlert>
-					{/if}
-
 					<Form.Field form={memberSuperform} name="workspaceRef">
 						<Form.Control>
 							{#snippet children({ props })}
@@ -786,7 +835,13 @@
 								{#snippet children({ props })}
 									<Form.Label required>Team size</Form.Label>
 									<Select.Root type="single" bind:value={$ownerForm.teamSize}>
-										<Select.Trigger class="h-10 w-full">
+										<Select.Trigger
+											class={cn(
+												'h-10 w-full',
+												$ownerErrors.teamSize && 'border-destructive ring-3 ring-destructive/20'
+											)}
+											aria-invalid={$ownerErrors.teamSize ? true : undefined}
+										>
 											<span class="truncate">
 												{data.teamSizeOptions.find((option) => option.value === $ownerForm.teamSize)
 													?.label ?? 'How many people?'}
@@ -823,9 +878,10 @@
 								{#snippet children({ props })}
 									<Form.Label required>Country</Form.Label>
 									<WorkspaceCountryCombobox
-										id="country"
+										id={props.id}
 										countries={data.countries}
 										bind:value={$ownerForm.country}
+										aria-invalid={props['aria-invalid']}
 									/>
 									<input type="hidden" name={props.name} value={$ownerForm.country} />
 								{/snippet}
@@ -947,13 +1003,19 @@
 						<Form.Field form={ownerSuperform} name="website">
 							<Form.Control>
 								{#snippet children({ props })}
-									<Form.Label>
+									<Form.Label required={false}>
 										Website
 										<span class="text-muted-foreground text-[0.65rem] font-normal tracking-wide">
 											(optional)
 										</span>
 									</Form.Label>
-									<Input {...props} id="website" bind:value={$ownerForm.website} autocomplete="url" />
+									<Input
+										{...props}
+										id="website"
+										bind:value={$ownerForm.website}
+										autocomplete="url"
+										required={false}
+									/>
 								{/snippet}
 							</Form.Control>
 							<SingleFieldErrors />
@@ -1015,10 +1077,6 @@
 							</StatusAlert>
 						</div>
 
-						{#if $ownerMessage}
-							<FormAlert>{$ownerMessage}</FormAlert>
-						{/if}
-
 						<input type="hidden" name="name" value={$ownerForm.name} />
 						<input type="hidden" name="slug" value={$ownerForm.slug} />
 						<input type="hidden" name="contactPhone" value={$ownerForm.contactPhone} />
@@ -1045,10 +1103,6 @@
 					</form>
 				{/if}
 
-				{#if stepError}
-					<StatusAlert variant="danger">{stepError}</StatusAlert>
-				{/if}
-
 				{#if wizardStep !== 'review'}
 					<Button type="button" class="h-10 w-full" data-tour="next-action" onclick={goNext}>
 						Continue
@@ -1057,12 +1111,6 @@
 			</div>
 		{/if}
 	</section>
-
-	<OnboardingWalkthrough
-		steps={walkthroughSteps}
-		currentStepId={wizardStep}
-		completedStepIds={completedStepIds}
-	/>
 </main>
 
 {#if tourActive}
@@ -1083,7 +1131,7 @@
 		gap: 1.25rem;
 		padding: 1.5rem 1.625rem;
 		border-radius: calc(var(--radius) + 2px);
-		background: color-mix(in srgb, var(--muted) 88%, var(--card));
+		background: var(--card);
 		border: 1px solid var(--border);
 		overflow: visible;
 	}

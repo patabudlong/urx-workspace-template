@@ -14,7 +14,7 @@
 </script>
 
 <div
-	class="border-primary/20 bg-primary/5 grid grid-cols-[auto_1fr] items-start gap-3.5 rounded-xl border p-4 shadow-sm"
+		class="border-primary/20 bg-primary/5 grid grid-cols-[auto_1fr] items-start gap-3.5 rounded-xl border p-4 shadow-sm"
 >
 	<span
 		class="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg"

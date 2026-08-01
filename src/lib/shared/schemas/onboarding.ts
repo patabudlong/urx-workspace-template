@@ -19,7 +19,9 @@ const workspaceSlugSchema = z
 const workspaceSlugClientSchema = z
 	.string()
 	.trim()
-	.refine((value) => !value || isValidWorkspaceSlug(value), {
+	.min(1, 'Workspace URL is required.')
+	.transform((value) => slugifyWorkspaceName(value))
+	.refine((value) => isValidWorkspaceSlug(value), {
 		message: 'Workspace URL must be 2–48 characters using lowercase letters, numbers, and hyphens.'
 	});
 

@@ -1,7 +1,13 @@
 <script lang="ts">
-	let { children } = $props();
+	import OnboardingShell from '$lib/components/onboarding/onboarding-shell.svelte';
+
+	let { data, children } = $props();
 </script>
 
-<div class="bg-muted/40 min-h-svh">
+<OnboardingShell
+	userEmail={data.userDisplay.email}
+	userAvatarUrl={data.userDisplay.avatarUrl}
+	userInitials={data.userDisplay.initials}
+>
 	{@render children?.()}
-</div>
+</OnboardingShell>
