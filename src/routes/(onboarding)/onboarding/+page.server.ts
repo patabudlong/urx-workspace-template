@@ -9,6 +9,7 @@ import {
 	joinWorkspaceAsMember,
 	submitOwnerWorkspaceRequest
 } from '$lib/server/onboarding/workspace-onboarding';
+import { buildWorkspaceRequestUrl } from '$lib/server/workspace-host';
 import {
 	memberOnboardingSchema,
 	ownerOnboardingSchema
@@ -102,7 +103,7 @@ export const actions: Actions = {
 
 		redirect(303, '/onboarding');
 	},
-	member: async ({ request, locals }) => {
+	member: async ({ request, locals, url }) => {
 		const form = await superValidate(request, zod4(memberOnboardingSchema));
 
 		if (!form.valid) {
@@ -126,6 +127,6 @@ export const actions: Actions = {
 			return message(form, messages[result.reason], { status: 400 });
 		}
 
-		redirect(303, '/');
+		redirect(303, buildWorkspaceRequestUrl(result.workspaceSlug, url));
 	}
 };

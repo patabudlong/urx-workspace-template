@@ -26,7 +26,10 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	if (locals.user) {
 		redirect(
 			303,
-			await resolveAuthenticatedLandingPath(locals.user.id, url.searchParams.get('redirectTo'))
+			await resolveAuthenticatedLandingPath(locals.user.id, {
+				requestedPath: url.searchParams.get('redirectTo'),
+				requestUrl: url
+			})
 		);
 	}
 

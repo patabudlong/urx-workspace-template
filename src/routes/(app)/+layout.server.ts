@@ -3,6 +3,7 @@ import type { LayoutServerLoad } from './$types';
 import { isSuperadminUser } from '$lib/server/auth/platform-admin';
 import { PLATFORM_ADMIN_HOME } from '$lib/server/auth/post-auth-navigation';
 import { getOnboardingAccessState } from '$lib/server/onboarding/workspace-onboarding';
+import { resolveWorkspaceLandingUrl } from '$lib/server/workspace-host';
 import { findUserById } from '$lib/server/repositories/users';
 import { loadUserDisplay } from '$lib/server/user-display';
 
@@ -22,6 +23,18 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 
 	if (access.status !== 'ready' && url.pathname !== '/onboarding') {
 		redirect(303, '/onboarding');
+	}
+
+	if (access.status === 'ready') {
+		const landing = resolveWorkspaceLandingUrl(
+			access.workspaceSlug,
+			url,
+			url.pathname + url.search
+		);
+
+		if (landing.startsWith('http')) {
+			redirect(303, landing);
+		}
 	}
 	const userDisplay = await loadUserDisplay(locals.user.id, locals.user.email);
 

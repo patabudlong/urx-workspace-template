@@ -85,7 +85,13 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 		cookies.set(SESSION_COOKIE_NAME, result.accessToken, getSessionCookieOptions());
 
-		redirect(303, await resolveAuthenticatedLandingPath(result.user.id, redirectTo));
+		redirect(
+			303,
+			await resolveAuthenticatedLandingPath(result.user.id, {
+				requestedPath: redirectTo,
+				requestUrl: url
+			})
+		);
 	} catch {
 		authErrorRedirect(context, 'google_auth_failed');
 	}

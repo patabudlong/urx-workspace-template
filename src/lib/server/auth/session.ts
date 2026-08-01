@@ -1,4 +1,5 @@
 import { env } from '$env/dynamic/private';
+import { getSessionCookieDomain } from '$lib/server/workspace-host';
 
 export const SESSION_COOKIE_NAME = 'urx_session';
 export const ACCESS_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
@@ -10,13 +11,17 @@ export function getSessionCookieOptions(): {
 	sameSite: 'lax';
 	secure: boolean;
 	maxAge: number;
+	domain?: string;
 } {
+	const domain = getSessionCookieDomain();
+
 	return {
 		path: '/',
 		httpOnly: true,
 		sameSite: 'lax',
 		secure: process.env.NODE_ENV === 'production',
-		maxAge: ACCESS_TOKEN_TTL_SECONDS
+		maxAge: ACCESS_TOKEN_TTL_SECONDS,
+		...(domain ? { domain } : {})
 	};
 }
 

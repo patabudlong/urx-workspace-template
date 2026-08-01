@@ -25,6 +25,7 @@
 	import { fetchOnboardingAccess } from '$lib/onboarding/access-poll';
 	import { fetchWorkspaceAvailability } from '$lib/onboarding/workspace-availability';
 	import { hasDismissedOnboardingWelcome } from '$lib/onboarding/welcome';
+	import { buildWorkspaceUrlFromWindow } from '$lib/workspace-host';
 	import {
 		memberOnboardingClientSchema,
 		ownerOnboardingClientSchema,
@@ -295,7 +296,7 @@
 				const access = await fetchOnboardingAccess();
 				if (access.status === 'ready') {
 					window.clearInterval(interval);
-					window.location.assign('/');
+					window.location.assign(buildWorkspaceUrlFromWindow(access.workspaceSlug));
 				}
 			} catch (error) {
 				if (error instanceof Error && error.name === 'AbortError') {
