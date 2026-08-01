@@ -7,6 +7,7 @@ export type MailAttachment = {
 
 export type MailMessage = {
 	to: string;
+	from?: string;
 	subject: string;
 	text: string;
 	html: string;

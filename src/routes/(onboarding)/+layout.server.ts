@@ -3,6 +3,7 @@ import type { LayoutServerLoad } from './$types';
 import { getOnboardingAccessState } from '$lib/server/onboarding/workspace-onboarding';
 import { findUserById } from '$lib/server/repositories/users';
 import { isSuperadminUser } from '$lib/server/auth/platform-admin';
+import { buildUserDisplay } from '$lib/shared/user-display';
 
 export const load: LayoutServerLoad = async ({ locals }) => {
 	if (!locals.user) {
@@ -16,19 +17,17 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 	}
 
 	const user = await findUserById(locals.user.id);
-
-	const firstName = user?.firstName?.trim() ?? '';
-	const lastName = user?.lastName?.trim() ?? '';
-	const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || '?';
+	const userDisplay = buildUserDisplay({
+		email: user?.email ?? locals.user.email,
+		firstName: user?.firstName,
+		lastName: user?.lastName,
+		avatarUrl: user?.avatarUrl
+	});
 
 	return {
 		user: locals.user,
 		access,
 		isSuperadmin: user ? isSuperadminUser(user) : false,
-		userDisplay: {
-			email: user?.email ?? locals.user.email,
-			avatarUrl: user?.avatarUrl ?? null,
-			initials
-		}
+		userDisplay
 	};
 };

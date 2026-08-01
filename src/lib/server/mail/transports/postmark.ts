@@ -16,7 +16,7 @@ export function createPostmarkTransport(config: {
 					'X-Postmark-Server-Token': config.serverToken
 				},
 				body: JSON.stringify({
-					From: config.from,
+					From: message.from ?? config.from,
 					To: message.to,
 					Subject: message.subject,
 					TextBody: message.text,

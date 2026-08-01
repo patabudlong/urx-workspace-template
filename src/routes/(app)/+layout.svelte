@@ -14,7 +14,7 @@
 <Sidebar.Provider>
 	<AppSidebar />
 	<Sidebar.Inset>
-		<SiteHeader userEmail={data.user.email} title={headerTitle} />
+		<SiteHeader userDisplay={data.userDisplay} title={headerTitle} />
 		<div class="flex flex-1 flex-col gap-4 p-4 md:p-6">
 			{@render children()}
 		</div>

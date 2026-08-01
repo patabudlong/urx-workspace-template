@@ -1,6 +1,7 @@
 <script lang="ts">
 	import LogoutDialog from '$lib/components/logout-dialog.svelte';
 	import ThemeToggle from '$lib/components/theme-toggle.svelte';
+	import UserAvatar from '$lib/components/user-avatar.svelte';
 	import UrixoftLogo from '$lib/components/urixoft-logo.svelte';
 	import type { Snippet } from 'svelte';
 
@@ -31,23 +32,7 @@
 		<div class="flex shrink-0 items-center gap-2 sm:gap-3">
 			{#if userEmail}
 				<div class="flex items-center gap-2 sm:gap-3">
-					{#if userAvatarUrl}
-						<img
-							src={userAvatarUrl}
-							alt=""
-							class="ring-border size-8 shrink-0 rounded-full object-cover ring-1"
-							width="32"
-							height="32"
-							referrerpolicy="no-referrer"
-						/>
-					{:else}
-						<span
-							class="bg-muted text-muted-foreground ring-border flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ring-1"
-							aria-hidden="true"
-						>
-							{userInitials}
-						</span>
-					{/if}
+					<UserAvatar avatarUrl={userAvatarUrl} initials={userInitials} />
 					<span class="text-muted-foreground hidden max-w-[12rem] truncate text-sm sm:inline">
 						{userEmail}
 					</span>

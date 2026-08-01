@@ -3,11 +3,12 @@
 		STATUS_ALERT_DEFAULT_TITLES,
 		type StatusAlertVariant
 	} from '$lib/components/status-alert.svelte';
-	import {
-		formatAuthRateLimitMessage,
-		isAuthRateLimitMessage,
-		type AuthFormMessage
-	} from '$lib/shared/auth-messages';
+import {
+	formatAuthRateLimitMessage,
+	getAuthFormAlertPresentation,
+	isAuthRateLimitMessage,
+	type AuthFormMessage
+} from '$lib/shared/auth-messages';
 
 	let {
 		message,
@@ -74,12 +75,27 @@
 
 	const resolvedTitle = $derived(
 		title ??
-			(resolvedVariant === 'warning'
+			(initialRetryAfter && initialRetryAfter > 0
 				? 'Too many attempts'
-				: STATUS_ALERT_DEFAULT_TITLES[resolvedVariant])
+				: displayMessage
+					? (getAuthFormAlertPresentation(displayMessage)?.title ??
+						STATUS_ALERT_DEFAULT_TITLES[resolvedVariant])
+					: STATUS_ALERT_DEFAULT_TITLES[resolvedVariant])
+	);
+
+	const resolvedDescription = $derived(
+		displayMessage ? getAuthFormAlertPresentation(displayMessage)?.description : undefined
+	);
+
+	const showMessageBody = $derived(
+		Boolean(displayMessage) && !resolvedDescription
 	);
 </script>
 
 {#if displayMessage}
-	<StatusAlert variant={resolvedVariant} title={resolvedTitle}>{displayMessage}</StatusAlert>
+	<StatusAlert variant={resolvedVariant} title={resolvedTitle} description={resolvedDescription}>
+		{#if showMessageBody}
+			{displayMessage}
+		{/if}
+	</StatusAlert>
 {/if}

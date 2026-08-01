@@ -6,6 +6,7 @@ import {
 
 export async function sendWorkspaceRequestReceivedEmail(input: {
 	to: string;
+	from: string;
 	firstName: string;
 	workspaceName: string;
 	origin: string;
@@ -15,8 +16,8 @@ export async function sendWorkspaceRequestReceivedEmail(input: {
 		title: 'We received your workspace request',
 		greeting,
 		logoUrl: `${input.origin}/email/urixoft-logo.png`,
-		illustrationUrl: `${input.origin}/email/verify-email.png`,
-		illustrationAlt: 'Workspace request received illustration',
+		illustrationUrl: `${input.origin}/email/workspace-request-review.png`,
+		illustrationAlt: 'Workspace request under review illustration',
 		preheader:
 			'Your workspace request is under review. We will email you when your dashboard is ready.',
 		paragraphs: [
@@ -30,6 +31,7 @@ export async function sendWorkspaceRequestReceivedEmail(input: {
 
 	await sendMail({
 		to: input.to,
+		from: input.from,
 		subject: 'Your workspace request is under review',
 		text: buildSimpleEmailText(content),
 		html: buildSimpleEmailHtml(content)

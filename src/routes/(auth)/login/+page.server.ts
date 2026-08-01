@@ -8,7 +8,11 @@ import { getSessionCookieOptions, SESSION_COOKIE_NAME } from '$lib/server/auth/s
 import { getAuthRateLimitFormFailure } from '$lib/server/security/auth-rate-limit-form';
 import { assertAuthRecaptcha } from '$lib/server/security/recaptcha';
 import { loginSchema } from '$lib/shared/schemas/auth';
-import { EMAIL_NOT_VERIFIED_MESSAGE, getAuthRedirectAlert } from '$lib/shared/auth-messages';
+import {
+	EMAIL_NOT_VERIFIED_MESSAGE,
+	getAuthRedirectAlert,
+	INVALID_CREDENTIALS_MESSAGE
+} from '$lib/shared/auth-messages';
 import { getGoogleAuthErrorMessage } from '$lib/shared/google-auth';
 import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 
@@ -89,7 +93,7 @@ export const actions: Actions = {
 				return message(form, EMAIL_NOT_VERIFIED_MESSAGE, { status: 403 });
 			}
 
-			return message(form, 'Invalid email or password.', { status: 401 });
+			return message(form, INVALID_CREDENTIALS_MESSAGE, { status: 401 });
 		}
 
 		cookies.set(SESSION_COOKIE_NAME, result.accessToken, getSessionCookieOptions());

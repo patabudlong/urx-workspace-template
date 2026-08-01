@@ -16,7 +16,7 @@ export function createSmtpTransport(config: {
 	return {
 		async send(message: MailMessage) {
 			await transporter.sendMail({
-				from: config.from,
+				from: message.from ?? config.from,
 				to: message.to,
 				subject: message.subject,
 				text: message.text,

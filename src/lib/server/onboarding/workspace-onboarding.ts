@@ -128,6 +128,7 @@ export async function submitOwnerWorkspaceRequest(input: {
 	await Promise.all([
 		sendWorkspaceRequestReceivedEmail({
 			to: user.email,
+			from: teamEmail,
 			firstName: user.firstName,
 			workspaceName: workspace.name,
 			origin: input.origin

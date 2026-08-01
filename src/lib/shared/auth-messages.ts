@@ -18,6 +18,31 @@ export const PASSWORD_WEAK_MESSAGE = 'Password does not meet all requirements.';
 export const AUTH_RATE_LIMIT_MESSAGE =
 	'Too many attempts. Please wait a few minutes and try again.';
 
+export const INVALID_CREDENTIALS_MESSAGE = 'Invalid email or password.';
+
+export type AuthAlertPresentation = {
+	title: string;
+	description?: string;
+};
+
+const AUTH_FORM_ALERT_PRESENTATIONS: Record<string, AuthAlertPresentation> = {
+	[INVALID_CREDENTIALS_MESSAGE]: {
+		title: 'Invalid email or password',
+		description: 'Check your credentials and try again.'
+	},
+	[EMAIL_NOT_VERIFIED_MESSAGE]: {
+		title: 'Email not verified',
+		description: EMAIL_NOT_VERIFIED_MESSAGE
+	},
+	[AUTH_RATE_LIMIT_MESSAGE]: {
+		title: 'Too many attempts'
+	}
+};
+
+export function getAuthFormAlertPresentation(message: string): AuthAlertPresentation | null {
+	return AUTH_FORM_ALERT_PRESENTATIONS[message] ?? null;
+}
+
 export type AuthRateLimitMessage = {
 	type: 'rate_limited';
 	text: string;
