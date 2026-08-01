@@ -3,7 +3,7 @@ import { superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { message } from 'sveltekit-superforms';
 import type { Actions, PageServerLoad } from './$types';
-import { requestPasswordReset } from '$lib/server/auth/password-reset';
+import { queuePasswordResetEmailForWeb } from '$lib/server/auth/password-reset';
 import { getAuthRateLimitFormFailure } from '$lib/server/security/auth-rate-limit-form';
 import { assertAuthRecaptcha } from '$lib/server/security/recaptcha';
 import { FORGOT_PASSWORD_SUCCESS_MESSAGE } from '$lib/shared/auth-messages';
@@ -51,23 +51,15 @@ export const actions: Actions = {
 			return message(form, recaptcha.message, { status: 400 });
 		}
 
-		const result = await requestPasswordReset({
+		const result = await queuePasswordResetEmailForWeb(event, {
 			email: form.data.email,
 			origin: url.origin
 		});
 
 		if (!result.ok) {
-			if (result.reason === 'MAIL_NOT_CONFIGURED') {
-				return message(
-					form,
-					'Email is not configured. Set SMTP_HOST, SMTP_PORT, and SMTP_FROM in your environment.',
-					{ status: 503 }
-				);
-			}
-
 			return message(
 				form,
-				'We could not send the reset email right now. Please try again in a few minutes.',
+				'Email is not configured. Set SMTP_HOST, SMTP_PORT, and SMTP_FROM in your environment.',
 				{ status: 503 }
 			);
 		}

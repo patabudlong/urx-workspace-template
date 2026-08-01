@@ -15,10 +15,9 @@
 	} from '$lib/shared/schemas/auth';
 	import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 	import { warmRecaptcha } from '$lib/recaptcha/client';
-	import { AUTH_ACTION_BUTTON_CLASS, AUTH_INLINE_LINK_CLASS } from '$lib/auth/ui';
+	import { AUTH_ACTION_BUTTON_CLASS } from '$lib/auth/ui';
 	import { cn } from '$lib/utils.js';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
-	import MailCheckIcon from '@lucide/svelte/icons/mail-check';
 	import { get } from 'svelte/store';
 	import { onMount, untrack } from 'svelte';
 	import { superForm, type SuperForm } from 'sveltekit-superforms';
@@ -39,6 +38,7 @@
 	});
 
 	const superform = superForm(untrack(() => data.form), {
+		resetForm: false,
 		validators: zod4Client(forgotPasswordClientSchema),
 		onSubmit: createAuthFormOnSubmit({
 			getFormData: () => {
@@ -87,27 +87,13 @@
 >
 	<div class="space-y-6">
 		{#if submitted}
-			<div class="space-y-6">
-				<div
-					class="flex flex-col items-center gap-6 rounded-xl border border-border/50 bg-muted/30 px-6 py-8 text-center ring-1 ring-foreground/5"
-				>
-					<div
-						class="bg-primary/10 text-primary flex size-20 items-center justify-center rounded-full"
-					>
-						<MailCheckIcon class="size-10" aria-hidden="true" />
-					</div>
-					<p class="text-muted-foreground text-sm leading-relaxed">{$formMessage}</p>
-				</div>
-				<Button href="/login" class={AUTH_ACTION_BUTTON_CLASS}>Back to sign in</Button>
-			</div>
+			<AuthFormMessageAlert message={$formMessage} />
 		{:else}
 			<form method="POST" use:enhance class="space-y-5" novalidate>
 				<div class="space-y-5">
 					{#if recaptchaError}
 						<AuthFormMessageAlert message={recaptchaError} />
-					{/if}
-
-					{#if $formMessage}
+					{:else if $formMessage}
 						<AuthFormMessageAlert message={$formMessage} bind:limited={formRateLimited} />
 					{/if}
 
@@ -146,11 +132,23 @@
 					<RecaptchaNotice />
 				</div>
 			</form>
-
-			<p class="text-muted-foreground text-center text-sm">
-				Remember your password?
-				<a href="/login" class={AUTH_INLINE_LINK_CLASS}>Sign in</a>
-			</p>
 		{/if}
 	</div>
+
+	{#snippet footer()}
+		{#if submitted}
+			<p class="text-center text-sm">
+				<a href="/login" class="hover:text-foreground hover:underline">Back to sign in</a>
+				<span class="text-muted-foreground px-2" aria-hidden="true">|</span>
+				<a href="/verify/resend" class="hover:text-foreground hover:underline">
+					Resend verification email
+				</a>
+			</p>
+		{:else}
+			<p class="text-center text-sm">
+				Remember your password?
+				<a href="/login" class="hover:text-foreground hover:underline">Sign in</a>
+			</p>
+		{/if}
+	{/snippet}
 </AuthFormPanel>

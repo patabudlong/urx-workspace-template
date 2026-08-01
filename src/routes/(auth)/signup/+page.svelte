@@ -16,7 +16,7 @@
 	import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 	import { CONSENT_CONTEXTS } from '$lib/shared/models/consent-event';
 	import { warmRecaptcha } from '$lib/recaptcha/client';
-	import { AUTH_ACTION_BUTTON_CLASS, AUTH_INLINE_LINK_CLASS } from '$lib/auth/ui';
+	import { AUTH_ACTION_BUTTON_CLASS } from '$lib/auth/ui';
 	import { cn } from '$lib/utils.js';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import { get } from 'svelte/store';
@@ -211,10 +211,12 @@
 			redirectTo={data.redirectTo}
 			disabled={submitDisabled}
 		/>
-
-		<p class="text-muted-foreground text-center text-sm">
-			Already have an account?
-			<a href="/login" class={AUTH_INLINE_LINK_CLASS}>Sign in</a>
-		</p>
 	</div>
+
+	{#snippet footer()}
+		<p class="text-center text-sm">
+			Already have an account?
+			<a href="/login" class="hover:text-foreground hover:underline">Sign in</a>
+		</p>
+	{/snippet}
 </AuthFormPanel>

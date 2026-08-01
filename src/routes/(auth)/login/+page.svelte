@@ -90,28 +90,22 @@
 			novalidate
 		>
 			<div class="space-y-5">
-				{#if data.passwordResetSuccess}
-					<StatusAlert
-						variant="success"
-						title="Password updated"
-						description="Sign in with your new password."
-					/>
-				{/if}
-
-				{#if data.googleAuthError}
+				{#if recaptchaError}
+					<AuthFormMessageAlert message={recaptchaError} />
+				{:else if $formMessage}
+					<AuthFormMessageAlert message={$formMessage} bind:limited={formRateLimited} />
+				{:else if data.googleAuthError}
 					<AuthFormMessageAlert
 						message={data.googleAuthError}
 						retryAfterSeconds={data.rateLimitRetryAfter}
 						bind:limited={redirectRateLimited}
 					/>
-				{/if}
-
-				{#if recaptchaError}
-					<AuthFormMessageAlert message={recaptchaError} />
-				{/if}
-
-				{#if $formMessage}
-					<AuthFormMessageAlert message={$formMessage} bind:limited={formRateLimited} />
+				{:else if data.passwordResetSuccess}
+					<StatusAlert
+						variant="success"
+						title="Password updated"
+						description="Sign in with your new password."
+					/>
 				{/if}
 
 				<div class="space-y-4">

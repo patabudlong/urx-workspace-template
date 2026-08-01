@@ -197,7 +197,23 @@ import StatusAlert from '$lib/components/status-alert.svelte';
 
 - **`FormAlert`** (`$lib/components/auth/form-alert.svelte`) — shorthand for `variant="danger"`; requires `title` + `description`.
 - **`AuthFormMessageAlert`** — wraps `StatusAlert`; resolves `title` + `description` from `resolveAuthFormAlertPresentation()`; auto-uses `warning` for rate-limit countdowns.
-- **One alert at a time** — show a single alert per form or page section. When a new status appears, **replace** the previous alert — never stack two banners. Use a mutually exclusive `{#if}` / `{:else if}` chain ordered by priority (e.g. client error → server error → success/info).
+- **One alert at a time** — show a single alert per form or page section. When a new status appears, **replace** the previous alert — never stack two banners. Use a mutually exclusive `{#if}` / `{:else if}` chain ordered by priority:
+  1. Client errors (reCAPTCHA, validation)
+  2. Form action errors (`$formMessage` from superforms)
+  3. Redirect / query-param errors (`?error=…`, Google OAuth)
+  4. Success or info banners (`?reset=success`, “check your email”) — lowest priority; hide when any error is active
+
+```svelte
+{#if recaptchaError}
+	<AuthFormMessageAlert message={recaptchaError} />
+{:else if $formMessage}
+	<AuthFormMessageAlert message={$formMessage} bind:limited={formRateLimited} />
+{:else if data.googleAuthError}
+	<AuthFormMessageAlert message={data.googleAuthError} retryAfterSeconds={data.rateLimitRetryAfter} />
+{:else if data.passwordResetSuccess}
+	<StatusAlert variant="success" title="Password updated" description="Sign in with your new password." />
+{/if}
+```
 - **Alert copy** — prefer structured `title` + `description` mappings in `$lib/shared/auth-messages.ts`. Title = short headline; description = supporting detail or next step. Unmapped messages fall back to `AUTH_ALERT_FALLBACK_TITLE` + message as description.
 - Icons: `class="size-4 shrink-0"` in the component; `aria-hidden="true"` on decorative icons. `role="alert"` for danger/warning; `role="status"` for info/success/plain.
 

@@ -12,7 +12,7 @@
 	import { verifyEmailClientSchema, type VerifyEmailInput } from '$lib/shared/schemas/auth';
 	import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 	import { warmRecaptcha } from '$lib/recaptcha/client';
-	import { AUTH_ACTION_BUTTON_CLASS, AUTH_INLINE_LINK_CLASS } from '$lib/auth/ui';
+	import { AUTH_ACTION_BUTTON_CLASS } from '$lib/auth/ui';
 	import { cn } from '$lib/utils.js';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import { get } from 'svelte/store';
@@ -149,15 +149,23 @@
 					<RecaptchaNotice />
 				</div>
 			</form>
+		{/if}
+	</div>
 
-			<div class="mt-25 space-y-3 text-center">
-				<p class="text-muted-foreground text-sm">Didn't get a code?</p>
+	{#snippet footer()}
+		{#if !verified}
+			<div class="space-y-3 text-center">
+				<p class="text-sm">Didn't get a code?</p>
 				<p class="text-sm">
-					<a href={resendHref} class={AUTH_INLINE_LINK_CLASS}>Resend verification email</a>
-					<span class="text-muted-foreground px-2" aria-hidden="true">|</span>
-					<a href="/verify/resend" class={AUTH_INLINE_LINK_CLASS}>Use a different email</a>
+					<a href={resendHref} class="hover:text-foreground hover:underline">
+						Resend verification email
+					</a>
+					<span class="px-2" aria-hidden="true">|</span>
+					<a href="/verify/resend" class="hover:text-foreground hover:underline">
+						Use a different email
+					</a>
 				</p>
 			</div>
 		{/if}
-	</div>
+	{/snippet}
 </AuthFormPanel>
