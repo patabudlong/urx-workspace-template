@@ -38,7 +38,7 @@ export async function verifyAccessToken(token: string): Promise<AccessTokenPaylo
 				audience: AUDIENCE
 			});
 
-			if (!payload.sub || typeof payload.email !== 'string') {
+			if (!payload.sub || typeof payload.email !== 'string' || payload.typ === 'session_handoff') {
 				continue;
 			}
 

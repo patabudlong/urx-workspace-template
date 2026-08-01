@@ -3,6 +3,7 @@ import type { LayoutServerLoad } from './$types';
 import { isSuperadminUser } from '$lib/server/auth/platform-admin';
 import { PLATFORM_ADMIN_HOME } from '$lib/server/auth/post-auth-navigation';
 import { getOnboardingAccessState } from '$lib/server/onboarding/workspace-onboarding';
+import { resolveCrossHostWorkspaceRedirect } from '$lib/server/auth/session-handoff';
 import { resolveWorkspaceLandingUrl } from '$lib/server/workspace-host';
 import { findUserById } from '$lib/server/repositories/users';
 import { loadUserDisplay } from '$lib/server/user-display';
@@ -26,14 +27,19 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 	}
 
 	if (access.status === 'ready') {
-		const landing = resolveWorkspaceLandingUrl(
-			access.workspaceSlug,
-			url,
-			url.pathname + url.search
-		);
+		const path = url.pathname + url.search;
+		const landing = resolveWorkspaceLandingUrl(access.workspaceSlug, url, path);
 
 		if (landing.startsWith('http')) {
-			redirect(303, landing);
+			redirect(
+				303,
+				await resolveCrossHostWorkspaceRedirect(
+					{ sub: locals.user.id, email: locals.user.email },
+					access.workspaceSlug,
+					url,
+					path
+				)
+			);
 		}
 	}
 	const userDisplay = await loadUserDisplay(locals.user.id, locals.user.email);

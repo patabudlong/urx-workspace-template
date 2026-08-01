@@ -1,6 +1,6 @@
 import { isSuperadminUser } from '$lib/server/auth/platform-admin';
+import { resolveCrossHostWorkspaceRedirect } from '$lib/server/auth/session-handoff';
 import { getOnboardingAccessState } from '$lib/server/onboarding/workspace-onboarding';
-import { resolveWorkspaceLandingUrl } from '$lib/server/workspace-host';
 import { findUserById } from '$lib/server/repositories/users';
 
 export const PLATFORM_ADMIN_HOME = '/admin/workspace-requests';
@@ -40,7 +40,12 @@ export async function resolveAuthenticatedLandingPath(
 	}
 
 	if (access.status === 'ready' && options.requestUrl) {
-		return resolveWorkspaceLandingUrl(access.workspaceSlug, options.requestUrl, path);
+		return resolveCrossHostWorkspaceRedirect(
+			{ sub: userId, email: user?.email ?? '' },
+			access.workspaceSlug,
+			options.requestUrl,
+			path
+		);
 	}
 
 	return path;

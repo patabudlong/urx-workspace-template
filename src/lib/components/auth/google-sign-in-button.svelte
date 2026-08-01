@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { AUTH_ACTION_BUTTON_CLASS } from '$lib/auth/ui';
+	import { getPlatformAuthOriginFromWindow } from '$lib/auth/platform-origin';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { cn } from '$lib/utils.js';
 	import type { ConsentContext } from '$lib/shared/models/consent-event';
@@ -18,7 +19,8 @@
 			redirectTo
 		});
 
-		window.location.assign(`/auth/google?${params.toString()}`);
+		const platformOrigin = getPlatformAuthOriginFromWindow();
+		window.location.assign(`${platformOrigin}/auth/google?${params.toString()}`);
 	}
 </script>
 

@@ -3,6 +3,7 @@ import { AUTH_RATE_LIMIT_MESSAGE } from '$lib/shared/auth-messages';
 export const GOOGLE_AUTH_ERROR_MESSAGES = {
 	google_cancelled: 'Google sign-in was cancelled.',
 	google_auth_failed: 'Google sign-in failed. Please try again.',
+	session_handoff_expired: 'Your sign-in link expired. Please sign in again.',
 	google_not_configured: 'Google sign-in is not configured on this server.',
 	auth_not_configured: 'Authentication is not configured. Set JWT_SECRET in your environment.',
 	google_account_conflict:

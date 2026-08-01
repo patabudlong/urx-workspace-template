@@ -89,12 +89,12 @@
 
 	let mode = $state<OnboardingMode>('create');
 	let wizardStep = $state<WizardStepId>(
-		data.access.status === 'pending_review' ? 'pending' : 'choose'
+		untrack(() => (data.access.status === 'pending_review' ? 'pending' : 'choose'))
 	);
 	let stepError = $state('');
 	let welcomeOpen = $state(false);
 	let tourReady = $state(true);
-	let tourActive = $state(data.access.status !== 'pending_review');
+	let tourActive = $state(untrack(() => data.access.status !== 'pending_review'));
 	let tourRunId = $state(0);
 	let slugTouched = $state(false);
 	let availabilityRequestId = 0;

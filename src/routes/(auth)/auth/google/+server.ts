@@ -12,6 +12,7 @@ import {
 	GOOGLE_OAUTH_VERIFIER_COOKIE,
 	isGoogleAuthConfigured
 } from '$lib/server/auth/google-oauth';
+import { getPlatformAuthOrigin, getSessionCookieDomain } from '$lib/server/workspace-host';
 import { CONSENT_CONTEXTS, type ConsentContext } from '$lib/shared/models/consent-event';
 
 function safeRedirectPath(value: string | null): string {
@@ -27,12 +28,15 @@ function parseConsentContext(value: string | null): ConsentContext {
 }
 
 function getOAuthCookieOptions() {
+	const domain = getSessionCookieDomain();
+
 	return {
 		path: '/',
 		httpOnly: true,
 		sameSite: 'lax' as const,
 		secure: process.env.NODE_ENV === 'production',
-		maxAge: GOOGLE_OAUTH_COOKIE_MAX_AGE
+		maxAge: GOOGLE_OAUTH_COOKIE_MAX_AGE,
+		...(domain ? { domain } : {})
 	};
 }
 
@@ -41,9 +45,15 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		error(503, 'Google sign-in is not configured');
 	}
 
+	const platformOrigin = getPlatformAuthOrigin(url);
+
+	if (url.origin !== platformOrigin) {
+		redirect(302, `${platformOrigin}/auth/google${url.search}`);
+	}
+
 	const state = generateOAuthState();
 	const codeVerifier = generateCodeVerifier();
-	const redirectUri = getGoogleRedirectUri(url.origin);
+	const redirectUri = getGoogleRedirectUri(platformOrigin);
 	const redirectTo = safeRedirectPath(url.searchParams.get('redirectTo'));
 	const context = parseConsentContext(url.searchParams.get('context'));
 	const cookieOptions = getOAuthCookieOptions();

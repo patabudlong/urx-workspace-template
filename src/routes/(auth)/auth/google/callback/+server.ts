@@ -13,6 +13,7 @@ import {
 	isGoogleAuthConfigured
 } from '$lib/server/auth/google-oauth';
 import { getSessionCookieOptions, SESSION_COOKIE_NAME } from '$lib/server/auth/session';
+import { getPlatformAuthOrigin, getSessionCookieDomain } from '$lib/server/workspace-host';
 import { CONSENT_CONTEXTS, type ConsentContext } from '$lib/shared/models/consent-event';
 
 function safeRedirectPath(value: string | null | undefined): string {
@@ -24,12 +25,20 @@ function safeRedirectPath(value: string | null | undefined): string {
 }
 
 function clearOAuthCookies(cookies: import('@sveltejs/kit').Cookies): void {
-	const options = { path: '/' };
+	const domain = getSessionCookieDomain();
+	const options = {
+		path: '/',
+		...(domain ? { domain } : {})
+	};
 
 	cookies.delete(GOOGLE_OAUTH_STATE_COOKIE, options);
 	cookies.delete(GOOGLE_OAUTH_VERIFIER_COOKIE, options);
 	cookies.delete(GOOGLE_OAUTH_REDIRECT_COOKIE, options);
 	cookies.delete(GOOGLE_OAUTH_CONTEXT_COOKIE, options);
+	cookies.delete(GOOGLE_OAUTH_STATE_COOKIE, { path: '/' });
+	cookies.delete(GOOGLE_OAUTH_VERIFIER_COOKIE, { path: '/' });
+	cookies.delete(GOOGLE_OAUTH_REDIRECT_COOKIE, { path: '/' });
+	cookies.delete(GOOGLE_OAUTH_CONTEXT_COOKIE, { path: '/' });
 }
 
 function authErrorRedirect(context: ConsentContext, code: string): never {
@@ -67,9 +76,10 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 	}
 
 	try {
+		const platformOrigin = getPlatformAuthOrigin(url);
 		const accessToken = await exchangeGoogleAuthorizationCode({
 			code,
-			redirectUri: getGoogleRedirectUri(url.origin),
+			redirectUri: getGoogleRedirectUri(platformOrigin),
 			codeVerifier
 		});
 		const profile = await fetchGoogleProfile(accessToken);
