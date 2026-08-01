@@ -6,7 +6,7 @@ import { PASSWORD_REUSE_MESSAGE, PASSWORD_WEAK_MESSAGE } from '$lib/shared/auth-
 import { resetPasswordSchema } from '$lib/shared/schemas/auth';
 import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 
-export const POST: RequestHandler = async ({ request, getClientAddress }) => {
+export const POST: RequestHandler = async ({ request, url, getClientAddress }) => {
 	const requestId = request.headers.get('x-request-id') ?? undefined;
 
 	let body: unknown;
@@ -38,7 +38,8 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 
 	const result = await resetPasswordWithToken({
 		token: parsed.data.token,
-		password: parsed.data.password
+		password: parsed.data.password,
+		origin: url.origin
 	});
 
 	if (!result.ok) {

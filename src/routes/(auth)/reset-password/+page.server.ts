@@ -66,7 +66,8 @@ export const actions: Actions = {
 
 		const result = await resetPasswordWithToken({
 			token: form.data.token,
-			password: form.data.password
+			password: form.data.password,
+			origin: url.origin
 		});
 
 		if (!result.ok) {

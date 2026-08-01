@@ -5,6 +5,7 @@ import { matchesStoredPassword } from '$lib/server/auth/password-history';
 import { isForgotPasswordEmailThrottled } from '$lib/server/security/auth-rate-limit';
 import { isMailConfigured } from '$lib/server/mail/index';
 import { sendPasswordResetEmail } from '$lib/server/mail/password-reset-email';
+import { sendPasswordSuccessEmail } from '$lib/server/mail/password-success-email';
 import {
 	createPasswordResetToken,
 	ensurePasswordResetTokenIndexes,
@@ -154,6 +155,7 @@ export async function isPasswordResetTokenValid(token: string): Promise<boolean>
 export async function resetPasswordWithToken(input: {
 	token: string;
 	password: string;
+	origin?: string;
 }): Promise<
 	| { ok: true }
 	| { ok: false; reason: 'INVALID_TOKEN' }
@@ -201,6 +203,19 @@ export async function resetPasswordWithToken(input: {
 	}
 
 	await markPasswordResetTokenUsed(record._id.toString());
+
+	if (input.origin && (await isMailConfigured())) {
+		try {
+			await sendPasswordSuccessEmail({
+				to: user.email,
+				firstName: user.firstName,
+				changedAt: new Date(),
+				origin: input.origin
+			});
+		} catch (error) {
+			console.error('Failed to send password success email', error);
+		}
+	}
 
 	return { ok: true };
 }
