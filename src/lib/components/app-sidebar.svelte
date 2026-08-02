@@ -6,7 +6,8 @@
 	import { APP_NAV_GROUPS, isAppNavActive, type AppNavItem } from '$lib/navigation/app-nav';
 	import type { UserDisplay } from '$lib/shared/user-display';
 
-	let { userDisplay }: { userDisplay: UserDisplay } = $props();
+	let { userDisplay, workspaceRole = null }: { userDisplay: UserDisplay; workspaceRole?: string | null } =
+		$props();
 
 	function navTarget(item: AppNavItem): string | undefined {
 		return item.external ? '_blank' : undefined;
@@ -56,7 +57,7 @@
 	</Sidebar.Content>
 
 	<Sidebar.Footer>
-		<SidebarNavUser {userDisplay} />
+		<SidebarNavUser {userDisplay} {workspaceRole} />
 	</Sidebar.Footer>
 
 	<Sidebar.Rail />

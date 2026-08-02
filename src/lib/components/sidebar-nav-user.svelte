@@ -1,20 +1,28 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { useSidebar } from '$lib/components/ui/sidebar/index.js';
 	import UserAvatar from '$lib/components/user-avatar.svelte';
+	import { getOwnerProfileNavItems } from '$lib/navigation/app-nav';
 	import type { UserDisplay } from '$lib/shared/user-display';
 	import EllipsisVerticalIcon from '@lucide/svelte/icons/ellipsis-vertical';
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
+	import LogoutDialog from '$lib/components/logout-dialog.svelte';
 
-	let { userDisplay }: { userDisplay: UserDisplay } = $props();
+	let {
+		userDisplay,
+		workspaceRole = null
+	}: {
+		userDisplay: UserDisplay;
+		workspaceRole?: string | null;
+	} = $props();
 
 	const sidebar = useSidebar();
+	const ownerNavItems = $derived(getOwnerProfileNavItems(workspaceRole));
 
-	let logoutForm = $state<HTMLFormElement | null>(null);
+	let logoutOpen = $state(false);
 </script>
-
-<form bind:this={logoutForm} method="POST" action="/logout" class="hidden" aria-hidden="true"></form>
 
 <Sidebar.Menu>
 	<Sidebar.MenuItem>
@@ -30,7 +38,7 @@
 						<UserAvatar
 							avatarUrl={userDisplay.avatarUrl}
 							initials={userDisplay.initials}
-							class="size-8 rounded-lg"
+							class="size-8"
 						/>
 						<div
 							class="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden"
@@ -53,7 +61,7 @@
 						<UserAvatar
 							avatarUrl={userDisplay.avatarUrl}
 							initials={userDisplay.initials}
-							class="size-8 rounded-lg"
+							class="size-8"
 						/>
 						<div class="grid flex-1 text-left text-sm leading-tight">
 							<span class="truncate font-medium">{userDisplay.fullName}</span>
@@ -61,11 +69,24 @@
 						</div>
 					</div>
 				</DropdownMenu.Label>
+				{#if ownerNavItems.length > 0}
+					<DropdownMenu.Separator />
+					{#each ownerNavItems as item (item.href)}
+						<DropdownMenu.Item
+							onSelect={() => {
+								goto(item.href);
+							}}
+						>
+							<item.icon />
+							{item.title}
+						</DropdownMenu.Item>
+					{/each}
+				{/if}
 				<DropdownMenu.Separator />
 				<DropdownMenu.Item
 					variant="destructive"
 					onSelect={() => {
-						logoutForm?.requestSubmit();
+						logoutOpen = true;
 					}}
 				>
 					<LogOutIcon />
@@ -75,3 +96,5 @@
 		</DropdownMenu.Root>
 	</Sidebar.MenuItem>
 </Sidebar.Menu>
+
+<LogoutDialog bind:open={logoutOpen} showTrigger={false} />

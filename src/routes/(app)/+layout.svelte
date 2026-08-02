@@ -10,7 +10,7 @@
 <PreventStaleAuthView />
 
 <Sidebar.Provider>
-	<AppSidebar userDisplay={data.userDisplay} />
+	<AppSidebar userDisplay={data.userDisplay} workspaceRole={data.workspace?.role ?? null} />
 	<Sidebar.Inset>
 		<SiteHeader
 			workspace={data.workspace}

@@ -1,7 +1,11 @@
 import type { Component } from 'svelte';
 import ActivityIcon from '@lucide/svelte/icons/activity';
 import BookOpenIcon from '@lucide/svelte/icons/book-open';
+import CreditCardIcon from '@lucide/svelte/icons/credit-card';
 import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
+import ShieldIcon from '@lucide/svelte/icons/shield';
+import UserCircleIcon from '@lucide/svelte/icons/user-circle';
+import { WORKSPACE_MEMBER_ROLES } from '$lib/shared/models/workspace-member';
 
 export type AppNavItem = {
 	title: string;
@@ -48,6 +52,27 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
 	}
 ];
 
+export const OWNER_PROFILE_NAV_ITEMS: AppNavItem[] = [
+	{
+		title: 'Account',
+		href: '/account',
+		icon: UserCircleIcon,
+		match: 'exact'
+	},
+	{
+		title: 'Security',
+		href: '/security',
+		icon: ShieldIcon,
+		match: 'exact'
+	},
+	{
+		title: 'Billing',
+		href: '/billing',
+		icon: CreditCardIcon,
+		match: 'exact'
+	}
+];
+
 export function isAppNavActive(pathname: string, item: AppNavItem): boolean {
 	if (item.match === 'prefix') {
 		return pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -66,4 +91,12 @@ export function formatWorkspaceRole(role: string): string {
 	}
 
 	return role.charAt(0).toUpperCase() + role.slice(1);
+}
+
+export function isWorkspaceOwner(role: string | null | undefined): boolean {
+	return role === WORKSPACE_MEMBER_ROLES.OWNER;
+}
+
+export function getOwnerProfileNavItems(workspaceRole: string | null | undefined): AppNavItem[] {
+	return isWorkspaceOwner(workspaceRole) ? OWNER_PROFILE_NAV_ITEMS : [];
 }

@@ -1,11 +1,20 @@
 <script lang="ts">
 	import * as Command from '$lib/components/ui/command/index.js';
-	import { APP_NAV_GROUPS } from '$lib/navigation/app-nav';
+	import { APP_NAV_GROUPS, getOwnerProfileNavItems } from '$lib/navigation/app-nav';
 	import { cn } from '$lib/utils.js';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import { onMount } from 'svelte';
 
+	let {
+		workspaceRole = null
+	}: {
+		workspaceRole?: string | null;
+	} = $props();
+
 	let open = $state(false);
+
+	const navGroups = $derived(APP_NAV_GROUPS);
+	const ownerNavItems = $derived(getOwnerProfileNavItems(workspaceRole));
 
 	const isMac = $derived(
 		typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.platform)
@@ -73,7 +82,7 @@
 	<Command.Input placeholder="Search pages and resources..." />
 	<Command.List>
 		<Command.Empty>No results found.</Command.Empty>
-		{#each APP_NAV_GROUPS as group (group.label)}
+		{#each navGroups as group (group.label)}
 			<Command.Group heading={group.label}>
 				{#each group.items as item (item.href)}
 					<Command.LinkItem
@@ -90,5 +99,20 @@
 				{/each}
 			</Command.Group>
 		{/each}
+		{#if ownerNavItems.length > 0}
+			<Command.Group heading="Settings">
+				{#each ownerNavItems as item (item.href)}
+					<Command.LinkItem
+						href={item.href}
+						onSelect={() => {
+							open = false;
+						}}
+					>
+						<item.icon />
+						<span>{item.title}</span>
+					</Command.LinkItem>
+				{/each}
+			</Command.Group>
+		{/if}
 	</Command.List>
 </Command.Dialog>

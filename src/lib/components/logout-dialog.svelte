@@ -2,10 +2,18 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 
-	let open = $state(false);
+	let {
+		open = $bindable(false),
+		showTrigger = true
+	}: {
+		open?: boolean;
+		showTrigger?: boolean;
+	} = $props();
 </script>
 
-<Button variant="outline" size="sm" onclick={() => (open = true)}>Sign out</Button>
+{#if showTrigger}
+	<Button variant="outline" size="sm" onclick={() => (open = true)}>Sign out</Button>
+{/if}
 
 <Dialog.Root bind:open>
 	<Dialog.Content showCloseButton={false}>

@@ -29,7 +29,7 @@
 	</div>
 
 	<div class="flex shrink-0 items-center gap-1 sm:gap-2">
-		<SiteHeaderGlobalSearch />
+		<SiteHeaderGlobalSearch workspaceRole={workspace?.role ?? null} />
 		<NotificationBellButton />
 		<ThemeToggle />
 	</div>
