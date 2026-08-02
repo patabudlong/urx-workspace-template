@@ -9,13 +9,16 @@
 	import EllipsisVerticalIcon from '@lucide/svelte/icons/ellipsis-vertical';
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
 	import LogoutDialog from '$lib/components/logout-dialog.svelte';
+	import { cn } from '$lib/utils.js';
 
 	let {
 		userDisplay,
-		workspaceRole = null
+		workspaceRole = null,
+		compact = false
 	}: {
 		userDisplay: UserDisplay;
 		workspaceRole?: string | null;
+		compact?: boolean;
 	} = $props();
 
 	const sidebar = useSidebar();
@@ -32,7 +35,10 @@
 					<Sidebar.MenuButton
 						size="lg"
 						tooltipContent={userDisplay.fullName}
-						class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+						class={cn(
+							'data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground',
+							compact && 'md:h-8 md:p-0'
+						)}
 						{...props}
 					>
 						<UserAvatar
@@ -40,13 +46,15 @@
 							initials={userDisplay.initials}
 							class="size-8"
 						/>
-						<div
-							class="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden"
-						>
-							<span class="truncate font-medium">{userDisplay.fullName}</span>
-							<span class="text-muted-foreground truncate text-xs">{userDisplay.email}</span>
-						</div>
-						<EllipsisVerticalIcon class="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
+						{#if !compact}
+							<div
+								class="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden"
+							>
+								<span class="truncate font-medium">{userDisplay.fullName}</span>
+								<span class="text-muted-foreground truncate text-xs">{userDisplay.email}</span>
+							</div>
+							<EllipsisVerticalIcon class="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
+						{/if}
 					</Sidebar.MenuButton>
 				{/snippet}
 			</DropdownMenu.Trigger>

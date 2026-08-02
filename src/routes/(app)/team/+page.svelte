@@ -5,9 +5,9 @@
 
 <div class="flex w-full flex-col gap-8">
 	<PageHeader
-		eyebrow="Workspace"
-		title="Team"
-		description="Invite teammates, manage roles, and control who has access to this workspace."
+		eyebrow="Team"
+		title="Members"
+		description="View workspace members, update roles, and manage who has access."
 	/>
 
 	<Card.Root>

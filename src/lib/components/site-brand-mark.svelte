@@ -6,12 +6,14 @@
 	let {
 		href,
 		adaptiveLogo = false,
+		iconOnly = false,
 		logoClass = 'size-8 shrink-0 rounded-sm',
 		class: className,
 		...rest
 	}: {
 		href?: string;
 		adaptiveLogo?: boolean;
+		iconOnly?: boolean;
 		logoClass?: string;
 		class?: string;
 	} & Record<string, unknown> = $props();
@@ -26,10 +28,12 @@
 	{:else}
 		<UrixoftLogo class={logoClass} />
 	{/if}
-	<div class="min-w-0 text-sm leading-tight">
-		<p class="truncate font-semibold">{BRAND_NAME}</p>
-		<p class="text-muted-foreground truncate text-xs">{PRODUCT_NAME}</p>
-	</div>
+	{#if !iconOnly}
+		<div class="min-w-0 text-sm leading-tight">
+			<p class="truncate font-semibold">{BRAND_NAME}</p>
+			<p class="text-muted-foreground truncate text-xs">{PRODUCT_NAME}</p>
+		</div>
+	{/if}
 {/snippet}
 
 {#if href}
