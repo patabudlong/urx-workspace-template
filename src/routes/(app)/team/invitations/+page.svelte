@@ -73,14 +73,15 @@
 					<Form.Control>
 						{#snippet children({ props })}
 							<Form.Label required>Email</Form.Label>
-							<InputGroup.Root>
+							<InputGroup.Root class="h-10">
 								<InputGroup.Addon align="inline-start" class="text-muted-foreground">
 									<MailIcon class="size-4" aria-hidden="true" />
 								</InputGroup.Addon>
 								<InputGroup.Input
 									{...props}
 									type="email"
-									autocomplete="email"
+									autocomplete="off"
+									class="h-10"
 									disabled={submitting}
 									bind:value={$form.email}
 								/>
