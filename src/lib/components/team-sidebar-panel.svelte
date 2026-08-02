@@ -1,14 +1,15 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import { isAppNavActive } from '$lib/navigation/app-nav';
-	import { TEAM_NAV_ITEMS } from '$lib/navigation/team-nav';
+	import { isAppNavActive, type AppNavItem } from '$lib/navigation/app-nav';
+
+	let { items }: { items: AppNavItem[] } = $props();
 </script>
 
 <Sidebar.Header class="border-sidebar-border shrink-0 gap-1 border-b p-4">
 	<h2 class="text-sm font-semibold">Team</h2>
 	<p class="text-muted-foreground mt-1 text-xs leading-relaxed">
-		Manage members and invitations for this workspace.
+		Manage members, invitations, and role permissions for this workspace.
 	</p>
 </Sidebar.Header>
 
@@ -16,7 +17,7 @@
 	<Sidebar.Group>
 		<Sidebar.GroupLabel>Manage</Sidebar.GroupLabel>
 		<Sidebar.Menu>
-			{#each TEAM_NAV_ITEMS as item (item.href)}
+			{#each items as item (item.href)}
 				<Sidebar.MenuItem>
 					<Sidebar.MenuButton isActive={isAppNavActive(page.url.pathname, item)} tooltipContent={item.title}>
 						{#snippet child({ props })}

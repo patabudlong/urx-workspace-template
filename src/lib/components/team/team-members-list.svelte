@@ -8,6 +8,7 @@
 		formatTeamMemberRemovedMessage,
 		TEAM_MEMBER_REMOVE_FAILED_MESSAGE
 	} from '$lib/shared/team/member-messages';
+	import { getTeamRoleTooltip } from '$lib/shared/team/role-permissions';
 	import { invalidateAll } from '$app/navigation';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import CrownIcon from '@lucide/svelte/icons/crown';
@@ -148,7 +149,10 @@
 						<td class="text-muted-foreground px-4 py-3">{member.email}</td>
 						<td class="px-4 py-3">
 							{#if member.role === WORKSPACE_MEMBER_ROLES.OWNER}
-								<span class="inline-flex items-center gap-1.5">
+								<span
+									class="inline-flex items-center gap-1.5"
+									title={getTeamRoleTooltip(member.role)}
+								>
 									<CrownIcon
 										class="size-4 shrink-0 text-amber-600 dark:text-amber-400"
 										aria-hidden="true"
@@ -156,7 +160,7 @@
 									{member.roleLabel}
 								</span>
 							{:else}
-								{member.roleLabel}
+								<span title={getTeamRoleTooltip(member.role)}>{member.roleLabel}</span>
 							{/if}
 						</td>
 						<td class="text-muted-foreground px-4 py-3">{formatJoinedAt(member.joinedAt)}</td>

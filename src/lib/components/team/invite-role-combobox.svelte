@@ -48,6 +48,7 @@
 				role="combobox"
 				aria-expanded={open}
 				aria-invalid={ariaInvalid}
+				title={selectedOption?.tooltip}
 				{disabled}
 				class={cn(
 					'h-10 w-full justify-between px-2.5 font-normal',
@@ -67,7 +68,8 @@
 					{#each TEAM_INVITE_ROLE_OPTIONS as option (option.value)}
 						<Command.Item
 							value={option.label}
-							keywords={[option.value, option.description]}
+							keywords={[option.value, option.description, option.tooltip]}
+							title={option.tooltip}
 							onSelect={() => {
 								value = option.value;
 								closeAndFocusTrigger();
