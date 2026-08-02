@@ -6,6 +6,19 @@ import { ObjectId } from 'mongodb';
 
 let workspaceInvitationIndexesPromise: Promise<void> | null = null;
 
+const TERMINAL_INVITATION_STATUSES = [
+	WORKSPACE_INVITATION_STATUSES.ACCEPTED,
+	WORKSPACE_INVITATION_STATUSES.REVOKED,
+	WORKSPACE_INVITATION_STATUSES.EXPIRED
+] as const;
+
+function openInvitationFilter(now = new Date()) {
+	return {
+		status: { $nin: TERMINAL_INVITATION_STATUSES },
+		expiresAt: { $gt: now }
+	};
+}
+
 const invitationProjection = {
 	_id: 1,
 	workspaceId: 1,
@@ -36,6 +49,21 @@ export async function ensureWorkspaceInvitationIndexes(): Promise<void> {
 					partialFilterExpression: { status: WORKSPACE_INVITATION_STATUSES.PENDING }
 				}
 			);
+
+			const now = new Date();
+
+			await invitations.updateMany(
+				{
+					status: { $nin: [...TERMINAL_INVITATION_STATUSES, WORKSPACE_INVITATION_STATUSES.PENDING] },
+					expiresAt: { $gt: now }
+				},
+				{
+					$set: {
+						status: WORKSPACE_INVITATION_STATUSES.PENDING,
+						updatedAt: now
+					}
+				}
+			);
 		})().catch((error) => {
 			workspaceInvitationIndexesPromise = null;
 			throw error;
@@ -56,8 +84,7 @@ export async function findPendingWorkspaceInvitation(input: {
 		{
 			workspaceId: new ObjectId(input.workspaceId),
 			invitedEmail: input.invitedEmail.trim().toLowerCase(),
-			status: WORKSPACE_INVITATION_STATUSES.PENDING,
-			expiresAt: { $gt: now }
+			...openInvitationFilter(now)
 		},
 		{ projection: invitationProjection }
 	);
@@ -73,13 +100,43 @@ export async function listPendingWorkspaceInvitations(
 		.find(
 			{
 				workspaceId: new ObjectId(workspaceId),
-				status: WORKSPACE_INVITATION_STATUSES.PENDING,
-				expiresAt: { $gt: now }
+				...openInvitationFilter(now)
 			},
 			{ projection: invitationProjection }
 		)
 		.sort({ createdAt: -1 })
 		.toArray();
+}
+
+export async function findValidWorkspaceInvitationByTokenHash(
+	tokenHash: string
+): Promise<WorkspaceInvitationDocument | null> {
+	const invitations = await getWorkspaceInvitationsCollection<WorkspaceInvitationDocument>();
+	const now = new Date();
+
+	return invitations.findOne(
+		{
+			tokenHash,
+			...openInvitationFilter(now)
+		},
+		{ projection: invitationProjection }
+	);
+}
+
+export async function markWorkspaceInvitationAccepted(invitationId: string): Promise<void> {
+	const invitations = await getWorkspaceInvitationsCollection();
+	const now = new Date();
+
+	await invitations.updateOne(
+		{ _id: new ObjectId(invitationId) },
+		{
+			$set: {
+				status: WORKSPACE_INVITATION_STATUSES.ACCEPTED,
+				acceptedAt: now,
+				updatedAt: now
+			}
+		}
+	);
 }
 
 export async function createWorkspaceInvitation(input: {

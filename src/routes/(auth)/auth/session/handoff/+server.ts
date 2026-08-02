@@ -3,6 +3,7 @@ import type { RequestHandler } from './$types';
 import { signAccessToken } from '$lib/server/auth/jwt';
 import { safeRedirectPath } from '$lib/server/auth/post-auth-navigation';
 import { getOnboardingAccessState } from '$lib/server/onboarding/workspace-onboarding';
+import { isAcceptInvitationPath } from '$lib/server/team/invitation-redirect';
 import {
 	resolveCrossHostWorkspaceRedirect,
 	verifySessionHandoffToken
@@ -26,17 +27,19 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 	const access = await getOnboardingAccessState(payload.sub);
 
-	if (access.status !== 'ready') {
+	if (access.status !== 'ready' && !isAcceptInvitationPath(redirectTo)) {
 		redirect(303, '/onboarding');
 	}
 
-	const hostSlug = parseWorkspaceSlugFromRequest(url);
+	if (access.status === 'ready') {
+		const hostSlug = parseWorkspaceSlugFromRequest(url);
 
-	if (hostSlug && hostSlug !== access.workspaceSlug) {
-		redirect(
-			303,
-			await resolveCrossHostWorkspaceRedirect(payload, access.workspaceSlug, url, redirectTo)
-		);
+		if (hostSlug && hostSlug !== access.workspaceSlug) {
+			redirect(
+				303,
+				await resolveCrossHostWorkspaceRedirect(payload, access.workspaceSlug, url, redirectTo)
+			);
+		}
 	}
 
 	cookies.set(

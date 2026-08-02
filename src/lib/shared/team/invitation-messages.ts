@@ -19,3 +19,14 @@ export const TEAM_INVITATION_SELF_MESSAGE = 'You cannot invite your own email ad
 
 export const TEAM_INVITATION_NO_WORKSPACE_MESSAGE =
 	'No active workspace was found. Refresh the page and try again.';
+
+export const TEAM_INVITATION_INVALID_LINK_MESSAGE =
+	'This invitation link is invalid or has expired.';
+
+export const TEAM_INVITATION_EMAIL_MISMATCH_MESSAGE =
+	'Sign in with the email address that received this invitation.';
+
+export const TEAM_INVITATION_ACCEPT_FAILED_MESSAGE =
+	'We could not accept this invitation. Please try again.';
+
+export const TEAM_INVITATION_ACCEPTED_MESSAGE = 'Invitation accepted.';

@@ -7,7 +7,7 @@ import {
 	createWorkspaceRequest,
 	ensureWorkspaceIndexes
 } from '$lib/server/repositories/workspaces';
-import { findWorkspaceMemberByUserId, createWorkspaceMember } from '$lib/server/repositories/workspace-members';
+import { listWorkspaceMembersByUserId, createWorkspaceMember } from '$lib/server/repositories/workspace-members';
 import { ensureWorkspaceMemberIndexes } from '$lib/server/repositories/workspace-members';
 import { sendWorkspaceRequestReceivedEmail } from '$lib/server/mail/workspace-request-received';
 import { sendWorkspaceRequestTeamEmail } from '$lib/server/mail/workspace-request-team';
@@ -27,18 +27,20 @@ export async function getOnboardingAccessState(userId: string): Promise<Onboardi
 	await ensureWorkspaceMemberIndexes();
 	await ensureWorkspaceIndexes();
 
-	const membership = await findWorkspaceMemberByUserId(userId);
+	const memberships = await listWorkspaceMembersByUserId(userId);
 
-	if (membership) {
+	for (const membership of memberships) {
 		const workspace = await findWorkspaceBySlugOrId(membership.workspaceId.toString());
 
-		return {
-			status: 'ready',
-			workspaceId: membership.workspaceId.toString(),
-			workspaceName: workspace?.name ?? 'Workspace',
-			workspaceSlug: workspace?.slug ?? '',
-			role: membership.role
-		};
+		if (workspace?.status === WORKSPACE_STATUSES.ACTIVE) {
+			return {
+				status: 'ready',
+				workspaceId: membership.workspaceId.toString(),
+				workspaceName: workspace.name,
+				workspaceSlug: workspace.slug,
+				role: membership.role
+			};
+		}
 	}
 
 	const pending = await findPendingWorkspaceByUserId(userId);

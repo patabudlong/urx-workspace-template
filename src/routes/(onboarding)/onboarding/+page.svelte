@@ -9,7 +9,6 @@
 	import OnboardingWalkthrough, {
 		type WalkthroughStep
 	} from '$lib/components/onboarding/onboarding-walkthrough.svelte';
-	import OnboardingWelcomeModal from '$lib/components/onboarding/onboarding-welcome-modal.svelte';
 	import PhoneCountryInput from '$lib/components/onboarding/phone-country-input.svelte';
 	import SubmitProgressBar from '$lib/components/onboarding/submit-progress-bar.svelte';
 	import WorkspaceBrandLogoUpload from '$lib/components/onboarding/workspace-brand-logo-upload.svelte';
@@ -24,7 +23,6 @@
 	import * as Select from '$lib/components/ui/select/index.js';
 	import { fetchOnboardingAccess } from '$lib/onboarding/access-poll';
 	import { fetchWorkspaceAvailability } from '$lib/onboarding/workspace-availability';
-	import { hasDismissedOnboardingWelcome } from '$lib/onboarding/welcome';
 	import { buildWorkspaceUrlFromWindow } from '$lib/workspace-host';
 	import {
 		memberOnboardingClientSchema,
@@ -92,7 +90,6 @@
 		untrack(() => (data.access.status === 'pending_review' ? 'pending' : 'choose'))
 	);
 	let stepError = $state('');
-	let welcomeOpen = $state(false);
 	let tourReady = $state(true);
 	let tourActive = $state(untrack(() => data.access.status !== 'pending_review'));
 	let tourRunId = $state(0);
@@ -282,10 +279,6 @@
 	});
 
 	onMount(() => {
-		if (data.access.status !== 'pending_review' && !hasDismissedOnboardingWelcome()) {
-			welcomeOpen = true;
-		}
-
 		if (data.access.status !== 'pending_review') {
 			return;
 		}
@@ -621,8 +614,6 @@
 		return 'review';
 	}
 </script>
-
-<OnboardingWelcomeModal bind:open={welcomeOpen} firstName={data.firstName} />
 
 <main class="onboarding-page mx-auto flex w-full max-w-xl flex-col items-center gap-8 p-4 sm:p-6 lg:max-w-5xl lg:gap-10">
 	{#if wizardStep !== 'pending'}

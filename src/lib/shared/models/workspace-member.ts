@@ -2,7 +2,11 @@ import type { ObjectId } from 'mongodb';
 
 export const WORKSPACE_MEMBER_ROLES = {
 	OWNER: 'owner',
-	MEMBER: 'member'
+	ADMIN: 'admin',
+	EDITOR: 'editor',
+	MEMBER: 'member',
+	VIEWER: 'viewer',
+	GUEST: 'guest'
 } as const;
 
 export type WorkspaceMemberRole = (typeof WORKSPACE_MEMBER_ROLES)[keyof typeof WORKSPACE_MEMBER_ROLES];
