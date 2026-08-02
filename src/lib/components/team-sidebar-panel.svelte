@@ -5,14 +5,14 @@
 	import { TEAM_NAV_ITEMS } from '$lib/navigation/team-nav';
 </script>
 
-<Sidebar.Header class="border-sidebar-border shrink-0 border-b p-4">
+<Sidebar.Header class="border-sidebar-border shrink-0 gap-1 border-b p-4">
 	<h2 class="text-sm font-semibold">Team</h2>
 	<p class="text-muted-foreground mt-1 text-xs leading-relaxed">
 		Manage members and invitations for this workspace.
 	</p>
 </Sidebar.Header>
 
-<Sidebar.Content class="min-h-0 flex-1">
+<Sidebar.Content class="min-h-0 flex-1 gap-1 ps-1 pt-1">
 	<Sidebar.Group>
 		<Sidebar.GroupLabel>Manage</Sidebar.GroupLabel>
 		<Sidebar.Menu>

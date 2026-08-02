@@ -31,7 +31,7 @@
 		</Sidebar.Menu>
 	</Sidebar.Header>
 
-	<Sidebar.Content>
+	<Sidebar.Content class="py-1 pe-1">
 		{#each APP_NAV_GROUPS as group (group.label)}
 			<Sidebar.Group>
 				<Sidebar.GroupLabel>{group.label}</Sidebar.GroupLabel>

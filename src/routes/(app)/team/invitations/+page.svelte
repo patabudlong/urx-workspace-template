@@ -2,6 +2,7 @@
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
 	import InviteRoleCombobox from '$lib/components/team/invite-role-combobox.svelte';
+	import PendingInvitationsEmpty from '$lib/components/team/pending-invitations-empty.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -128,7 +129,7 @@
 			<Card.Description>Track invitations that have not been accepted yet.</Card.Description>
 		</Card.Header>
 		<Card.Content>
-			<p class="text-muted-foreground text-sm">No pending invitations.</p>
+			<PendingInvitationsEmpty />
 		</Card.Content>
 	</Card.Root>
 </div>

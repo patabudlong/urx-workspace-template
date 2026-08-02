@@ -10,7 +10,7 @@
 <div class="flex min-h-0 flex-1 flex-col md:flex-row">
 	<aside
 		class={cn(
-			'bg-sidebar text-sidebar-foreground border-sidebar-border hidden w-(--team-secondary-sidebar-width) shrink-0 md:flex md:flex-col md:border-r'
+			'bg-sidebar text-sidebar-foreground border-sidebar-border hidden w-(--team-secondary-sidebar-width) shrink-0 md:flex md:flex-col md:border-r md:py-2'
 		)}
 	>
 		<TeamSidebarPanel />

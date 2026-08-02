@@ -62,9 +62,7 @@
 	</Popover.Trigger>
 	<Popover.Content class="w-(--bits-popover-anchor-width) p-0" align="start" sideOffset={4}>
 		<Command.Root class="rounded-lg p-0 shadow-none">
-			<Command.Input placeholder="Search roles..." />
 			<Command.List>
-				<Command.Empty>No roles found.</Command.Empty>
 				<Command.Group>
 					{#each TEAM_INVITE_ROLE_OPTIONS as option (option.value)}
 						<Command.Item
