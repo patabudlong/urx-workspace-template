@@ -1,0 +1,45 @@
+---
+description: Standards for static image assets (UI and email illustrations)
+globs: static/**/*.{png,jpg,jpeg,webp,svg}
+alwaysApply: false
+---
+
+# Static image assets
+
+Apply when adding or processing images under `static/` (especially `static/email/`).
+
+## Transparency and backgrounds
+
+- **Email illustrations** must use a **transparent PNG** — never ship a solid black or white matte behind artwork.
+- Before committing uploaded artwork (e.g. Storyset/Freepik exports):
+  1. Verify the file is true PNG with alpha (not JPEG renamed to `.png`).
+  2. Remove near-black/near-white matte backgrounds so the shared email card background shows through.
+  3. Crop to content bounds after transparency cleanup.
+- Prefer saving email illustrations to `static/email/<descriptive-name>.png` and reference via `${origin}/email/<descriptive-name>.png`.
+
+## Processing checklist
+
+| Step | Action |
+|------|--------|
+| Format | Convert to PNG with alpha channel |
+| Background | Remove solid black/white mats (threshold near-black pixels to transparent) |
+| Crop | Trim empty transparent margins |
+| Size | Reasonable dimensions for email (~600–800px wide max) |
+| Naming | kebab-case, semantic (`team-invitation.png`, not `Invite-pana.png`) |
+
+## Email usage
+
+- Pair every new illustration with a sender in `src/lib/server/mail/` using `buildSimpleEmailHtml` / `illustrationUrl`.
+- Follow `email-templates.mdc` for layout — do not embed images as base64 in HTML.
+
+## UI usage
+
+- Use `@lucide/svelte` icons for chrome; raster illustrations only for marketing/onboarding/email bands.
+- Do not commit duplicate assets — reuse `static/email/` illustrations in UI when appropriate.
+
+## Red flags (reject in review)
+
+- JPEG saved as `.png` without alpha
+- Solid black rectangle behind illustration in email
+- Base64 image blobs in `.svelte` or mail templates
+- One-off filenames that do not describe purpose

@@ -3,32 +3,52 @@
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
 	import InviteRoleCombobox from '$lib/components/team/invite-role-combobox.svelte';
 	import PendingInvitationsEmpty from '$lib/components/team/pending-invitations-empty.svelte';
+	import PendingInvitationsList from '$lib/components/team/pending-invitations-list.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Form from '$lib/components/ui/form/index.js';
 	import * as InputGroup from '$lib/components/ui/input-group/index.js';
 	import { findTeamInviteRoleOption } from '$lib/shared/team/invite-roles';
+	import {
+		TEAM_INVITATION_SENT_MESSAGE,
+		TEAM_INVITATION_SEND_FAILED_MESSAGE
+	} from '$lib/shared/team/invitation-messages';
 	import { teamInvitationSchema } from '$lib/shared/schemas/team-invitation';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import MailIcon from '@lucide/svelte/icons/mail';
+	import { invalidateAll } from '$app/navigation';
 	import { untrack } from 'svelte';
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
 
-	const INVITATION_SENT_MESSAGE = 'They will receive an email with instructions to join this workspace.';
+	const INVITATION_SENT_DESCRIPTION =
+		'They will receive an email with instructions to join this workspace.';
 
 	let { data } = $props();
 
 	let submitting = $state(false);
+	let showSuccess = $state(false);
+	let emailInputRef = $state<HTMLInputElement | null>(null);
 
 	const superform = superForm(untrack(() => data.form), {
 		validators: zod4Client(teamInvitationSchema),
+		resetForm: false,
 		onSubmit: () => {
 			submitting = true;
+			showSuccess = false;
 		},
-		onUpdated: () => {
+		onUpdated: async ({ form: updatedForm }) => {
 			submitting = false;
+
+			if (updatedForm.message === TEAM_INVITATION_SENT_MESSAGE) {
+				showSuccess = true;
+				form.update(($current) => {
+					$current.email = '';
+					return $current;
+				});
+				await invalidateAll();
+			}
 		},
 		onError: () => {
 			submitting = false;
@@ -42,9 +62,19 @@
 			'Choose the access level for this teammate.'
 	);
 
-	const invitationSent = $derived(
-		typeof $formMessage === 'string' && $formMessage === 'Invitation sent.'
+	const formError = $derived(
+		typeof $formMessage === 'string' &&
+			$formMessage.length > 0 &&
+			$formMessage !== TEAM_INVITATION_SENT_MESSAGE
+			? $formMessage
+			: null
 	);
+
+	function inviteAnother() {
+		showSuccess = false;
+		$form.email = '';
+		emailInputRef?.focus();
+	}
 </script>
 
 <div class="flex w-full flex-col gap-8">
@@ -61,11 +91,22 @@
 		</Card.Header>
 		<Card.Content>
 			<form method="POST" use:enhance class="max-w-xl space-y-5">
-				{#if invitationSent}
+				{#if showSuccess}
 					<StatusAlert
 						variant="success"
 						title="Invitation sent"
-						description={INVITATION_SENT_MESSAGE}
+						description={INVITATION_SENT_DESCRIPTION}
+					/>
+					<Button type="button" variant="outline" class="h-10" onclick={inviteAnother}>
+						Invite another
+					</Button>
+				{:else if formError}
+					<StatusAlert
+						variant="danger"
+						title={formError === TEAM_INVITATION_SEND_FAILED_MESSAGE
+							? 'Invitation failed'
+							: 'Could not send invitation'}
+						description={formError}
 					/>
 				{/if}
 
@@ -79,6 +120,7 @@
 								</InputGroup.Addon>
 								<InputGroup.Input
 									{...props}
+									bind:ref={emailInputRef}
 									type="email"
 									autocomplete="off"
 									class="h-10"
@@ -130,7 +172,11 @@
 			<Card.Description>Track invitations that have not been accepted yet.</Card.Description>
 		</Card.Header>
 		<Card.Content>
-			<PendingInvitationsEmpty />
+			{#if data.pendingInvitations.length > 0}
+				<PendingInvitationsList invitations={data.pendingInvitations} />
+			{:else}
+				<PendingInvitationsEmpty />
+			{/if}
 		</Card.Content>
 	</Card.Root>
 </div>

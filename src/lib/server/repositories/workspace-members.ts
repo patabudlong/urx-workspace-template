@@ -56,6 +56,21 @@ export async function listWorkspaceMembersByUserId(
 		.toArray();
 }
 
+export async function findWorkspaceMemberByWorkspaceAndUserId(input: {
+	workspaceId: string;
+	userId: string;
+}): Promise<WorkspaceMemberDocument | null> {
+	const members = await getWorkspaceMembersCollection<WorkspaceMemberDocument>();
+
+	return members.findOne(
+		{
+			workspaceId: new ObjectId(input.workspaceId),
+			userId: new ObjectId(input.userId)
+		},
+		{ projection: memberProjection }
+	);
+}
+
 export async function createWorkspaceMember(input: {
 	userId: string;
 	workspaceId: string;
