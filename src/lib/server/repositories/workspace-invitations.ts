@@ -123,6 +123,31 @@ export async function findValidWorkspaceInvitationByTokenHash(
 	);
 }
 
+export async function revokeWorkspaceInvitation(input: {
+	invitationId: string;
+	workspaceId: string;
+}): Promise<boolean> {
+	const invitations = await getWorkspaceInvitationsCollection();
+	const now = new Date();
+
+	const result = await invitations.updateOne(
+		{
+			_id: new ObjectId(input.invitationId),
+			workspaceId: new ObjectId(input.workspaceId),
+			...openInvitationFilter(now)
+		},
+		{
+			$set: {
+				status: WORKSPACE_INVITATION_STATUSES.REVOKED,
+				revokedAt: now,
+				updatedAt: now
+			}
+		}
+	);
+
+	return result.matchedCount === 1;
+}
+
 export async function markWorkspaceInvitationAccepted(invitationId: string): Promise<void> {
 	const invitations = await getWorkspaceInvitationsCollection();
 	const now = new Date();
@@ -139,17 +164,58 @@ export async function markWorkspaceInvitationAccepted(invitationId: string): Pro
 	);
 }
 
-export async function revokeWorkspaceInvitation(input: {
+export async function findWorkspaceInvitationById(input: {
 	invitationId: string;
 	workspaceId: string;
-}): Promise<boolean> {
+}): Promise<WorkspaceInvitationDocument | null> {
+	const invitations = await getWorkspaceInvitationsCollection<WorkspaceInvitationDocument>();
+	const now = new Date();
+
+	return invitations.findOne(
+		{
+			_id: new ObjectId(input.invitationId),
+			workspaceId: new ObjectId(input.workspaceId),
+			...openInvitationFilter(now)
+		},
+		{ projection: invitationProjection }
+	);
+}
+
+export async function refreshWorkspaceInvitationToken(input: {
+	invitationId: string;
+	workspaceId: string;
+	tokenHash: string;
+	expiresAt: Date;
+}): Promise<WorkspaceInvitationDocument | null> {
+	const invitations = await getWorkspaceInvitationsCollection<WorkspaceInvitationDocument>();
+	const now = new Date();
+
+	const result = await invitations.findOneAndUpdate(
+		{
+			_id: new ObjectId(input.invitationId),
+			workspaceId: new ObjectId(input.workspaceId),
+			...openInvitationFilter(now)
+		},
+		{
+			$set: {
+				tokenHash: input.tokenHash,
+				expiresAt: input.expiresAt,
+				updatedAt: now
+			}
+		},
+		{ returnDocument: 'after', projection: invitationProjection }
+	);
+
+	return result;
+}
+
+export async function declineWorkspaceInvitationByTokenHash(tokenHash: string): Promise<boolean> {
 	const invitations = await getWorkspaceInvitationsCollection();
 	const now = new Date();
 
 	const result = await invitations.updateOne(
 		{
-			_id: new ObjectId(input.invitationId),
-			workspaceId: new ObjectId(input.workspaceId),
+			tokenHash,
 			...openInvitationFilter(now)
 		},
 		{

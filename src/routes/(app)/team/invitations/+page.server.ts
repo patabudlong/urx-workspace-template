@@ -1,4 +1,4 @@
-import { fail } from '@sveltejs/kit';
+import { error, fail } from '@sveltejs/kit';
 import { message, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import type { Actions, PageServerLoad } from './$types';
@@ -7,8 +7,12 @@ import {
 	listPendingWorkspaceInvitations,
 	revokeWorkspaceInvitation
 } from '$lib/server/repositories/workspace-invitations';
+import { findUserByEmail } from '$lib/server/repositories/users';
 import { consumeTeamInvitationFormRateLimit } from '$lib/server/security/team-invitation-rate-limit';
-import { queueTeamInvitationForWeb } from '$lib/server/team/workspace-invitations';
+import {
+	queueTeamInvitationForWeb,
+	resendWorkspaceInvitationForWeb
+} from '$lib/server/team/workspace-invitations';
 import {
 	listUserWorkspaceContexts,
 	resolveActiveWorkspaceContext
@@ -20,20 +24,29 @@ import {
 	teamInvitationDefaults,
 	teamInvitationSchema
 } from '$lib/shared/schemas/team-invitation';
-import {
-	TEAM_INVITATION_CANCEL_FAILED_MESSAGE,
-	TEAM_INVITATION_CANCELLED_MESSAGE,
-	TEAM_INVITATION_MAIL_NOT_CONFIGURED_MESSAGE,
-	TEAM_INVITATION_NO_WORKSPACE_MESSAGE,
-	TEAM_INVITATION_RATE_LIMIT_MESSAGE,
-	TEAM_INVITATION_SEND_FAILED_MESSAGE,
-	TEAM_INVITATION_SENT_MESSAGE
-} from '$lib/shared/team/invitation-messages';
+	import {
+		TEAM_INVITATION_CANCEL_FAILED_MESSAGE,
+		TEAM_INVITATION_CANCELLED_MESSAGE,
+		TEAM_INVITATION_MAIL_NOT_CONFIGURED_MESSAGE,
+		TEAM_INVITATION_NO_WORKSPACE_MESSAGE,
+		TEAM_INVITATION_RATE_LIMIT_MESSAGE,
+		TEAM_INVITATION_RESEND_FAILED_MESSAGE,
+		TEAM_INVITATION_RESENT_MESSAGE,
+		TEAM_INVITATION_SEND_FAILED_MESSAGE,
+		TEAM_INVITATION_SENT_EXISTING_ACCOUNT_MESSAGE,
+		TEAM_INVITATION_SENT_MESSAGE
+	} from '$lib/shared/team/invitation-messages';
+import { canInviteWorkspaceMembers } from '$lib/shared/team/member-management';
 import { findTeamInviteRoleOption } from '$lib/shared/team/invite-roles';
 import { ObjectId } from 'mongodb';
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const { workspace } = await parent();
+
+	if (workspace && !canInviteWorkspaceMembers(workspace.role)) {
+		error(403, 'You do not have permission to manage invitations.');
+	}
+
 	const form = await superValidate(zod4(teamInvitationSchema), {
 		defaults: teamInvitationDefaults
 	});
@@ -42,13 +55,19 @@ export const load: PageServerLoad = async ({ parent }) => {
 		? await (async () => {
 				await ensureWorkspaceInvitationIndexes();
 
-				return (await listPendingWorkspaceInvitations(workspace.workspaceId)).map((invitation) => ({
-				id: invitation._id.toString(),
-				email: invitation.invitedEmail,
-				role: invitation.role,
-				roleLabel: findTeamInviteRoleOption(invitation.role)?.label ?? invitation.role,
-				createdAt: invitation.createdAt.toISOString()
-			}));
+				const invitations = await listPendingWorkspaceInvitations(workspace.workspaceId);
+
+				return Promise.all(
+					invitations.map(async (invitation) => ({
+						id: invitation._id.toString(),
+						email: invitation.invitedEmail,
+						role: invitation.role,
+						roleLabel: findTeamInviteRoleOption(invitation.role)?.label ?? invitation.role,
+						createdAt: invitation.createdAt.toISOString(),
+						expiresAt: invitation.expiresAt.toISOString(),
+						hasAccount: Boolean(await findUserByEmail(invitation.invitedEmail))
+					}))
+				);
 			})()
 		: [];
 
@@ -75,6 +94,10 @@ export const actions: Actions = {
 
 		if (!workspace) {
 			return message(form, TEAM_INVITATION_NO_WORKSPACE_MESSAGE, { status: 400 });
+		}
+
+		if (!canInviteWorkspaceMembers(workspace.role)) {
+			return message(form, TEAM_INVITATION_NO_WORKSPACE_MESSAGE, { status: 403 });
 		}
 
 		const rateLimited = consumeTeamInvitationFormRateLimit({
@@ -129,7 +152,66 @@ export const actions: Actions = {
 			}
 		}
 
-		return message(form, TEAM_INVITATION_SENT_MESSAGE);
+		return message(
+			form,
+			result.inviteeHasAccount
+				? TEAM_INVITATION_SENT_EXISTING_ACCOUNT_MESSAGE
+				: TEAM_INVITATION_SENT_MESSAGE
+		);
+	},
+	resend: async ({ request, url, locals }) => {
+		const form = await superValidate(request, zod4(cancelTeamInvitationSchema));
+
+		if (!locals.user) {
+			return fail(401, { resendForm: form });
+		}
+
+		const workspaces = await listUserWorkspaceContexts(locals.user.id);
+		const workspace = resolveActiveWorkspaceContext(workspaces, url, getWorkspaceHostSuffix());
+		const userDisplay = await loadUserDisplay(locals.user.id, locals.user.email);
+
+		if (!workspace) {
+			return fail(400, {
+				resendForm: form,
+				resendMessage: TEAM_INVITATION_NO_WORKSPACE_MESSAGE
+			});
+		}
+
+		if (!canInviteWorkspaceMembers(workspace.role)) {
+			return fail(403, {
+				resendForm: form,
+				resendMessage: TEAM_INVITATION_NO_WORKSPACE_MESSAGE
+			});
+		}
+
+		if (!form.valid || !ObjectId.isValid(form.data.invitationId)) {
+			return fail(400, {
+				resendForm: form,
+				resendMessage: TEAM_INVITATION_RESEND_FAILED_MESSAGE
+			});
+		}
+
+		const result = await resendWorkspaceInvitationForWeb({
+			workspaceId: workspace.workspaceId,
+			invitationId: form.data.invitationId,
+			inviterName: userDisplay.fullName.trim() || 'A teammate',
+			origin: url.origin
+		});
+
+		if (!result.ok) {
+			return fail(result.reason === 'MAIL_NOT_CONFIGURED' ? 503 : 404, {
+				resendForm: form,
+				resendMessage:
+					result.reason === 'MAIL_NOT_CONFIGURED'
+						? TEAM_INVITATION_MAIL_NOT_CONFIGURED_MESSAGE
+						: TEAM_INVITATION_RESEND_FAILED_MESSAGE
+			});
+		}
+
+		return {
+			resendForm: form,
+			resendMessage: TEAM_INVITATION_RESENT_MESSAGE
+		};
 	},
 	cancel: async ({ request, url, locals }) => {
 		const form = await superValidate(request, zod4(cancelTeamInvitationSchema));
@@ -143,6 +225,13 @@ export const actions: Actions = {
 
 		if (!workspace) {
 			return fail(400, {
+				cancelForm: form,
+				cancelMessage: TEAM_INVITATION_NO_WORKSPACE_MESSAGE
+			});
+		}
+
+		if (!canInviteWorkspaceMembers(workspace.role)) {
+			return fail(403, {
 				cancelForm: form,
 				cancelMessage: TEAM_INVITATION_NO_WORKSPACE_MESSAGE
 			});

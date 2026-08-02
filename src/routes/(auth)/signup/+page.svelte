@@ -99,8 +99,10 @@
 </script>
 
 <AuthFormPanel
-	title="Create your account"
-	description="Start managing jobs, clients, and your team in one workspace."
+	title={data.lockedEmail ? 'Create account & join' : 'Create your account'}
+	description={data.lockedEmail
+		? 'Create your account with the invited email to join the workspace.'
+		: 'Start managing jobs, clients, and your team in one workspace.'}
 >
 	<div class="space-y-6">
 		<form
@@ -171,6 +173,8 @@
 									type="email"
 									autocomplete="email"
 									disabled={submitDisabled}
+									readonly={Boolean(data.lockedEmail)}
+									class={cn(data.lockedEmail && 'bg-muted/40')}
 									bind:value={$form.email}
 								/>
 							{/snippet}
@@ -209,9 +213,9 @@
 				>
 					{#if authLoading.isAuthLoading}
 						<Loader2Icon class="size-4 animate-spin" aria-hidden="true" />
-						Creating account...
+						{data.lockedEmail ? 'Creating account…' : 'Creating account...'}
 					{:else}
-						Create account
+						{data.lockedEmail ? 'Create account & join' : 'Create account'}
 					{/if}
 				</Button>
 				<RecaptchaNotice />

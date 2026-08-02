@@ -1,5 +1,6 @@
 import {
 	buildBodyParagraphHtml,
+	buildFooterNoteHtml,
 	buildMutedInfoBoxHtml,
 	buildPrimaryButtonHtml,
 	buildTransactionalEmailHtml,
@@ -17,7 +18,9 @@ export type SimpleEmailContent = {
 	preheader?: string;
 	illustrationUrl?: string;
 	illustrationAlt?: string;
+	illustrationWidth?: number;
 	infoBoxParagraphs?: string[];
+	footerNoteParagraphs?: string[];
 };
 
 export function buildSimpleEmailHtml(content: SimpleEmailContent): string {
@@ -34,6 +37,11 @@ export function buildSimpleEmailHtml(content: SimpleEmailContent): string {
 	const infoBox = content.infoBoxParagraphs?.length
 		? buildMutedInfoBoxHtml(content.infoBoxParagraphs.map((paragraph) => escapeHtml(paragraph)))
 		: '';
+	const footerNote = content.footerNoteParagraphs?.length
+		? buildFooterNoteHtml(
+				content.footerNoteParagraphs.map((paragraph) => escapeHtml(paragraph)).join('<br><br>')
+			)
+		: '';
 
 	return buildTransactionalEmailHtml({
 		preheader: content.preheader ?? content.paragraphs[0] ?? content.title,
@@ -42,7 +50,9 @@ export function buildSimpleEmailHtml(content: SimpleEmailContent): string {
 		headline: content.title,
 		bodyHtml: `${greeting}${paragraphs}${cta}${infoBox}`,
 		illustrationUrl: content.illustrationUrl,
-		illustrationAlt: content.illustrationAlt
+		illustrationAlt: content.illustrationAlt,
+		illustrationWidth: content.illustrationWidth,
+		footerNoteHtml: footerNote || undefined
 	});
 }
 
@@ -61,6 +71,10 @@ export function buildSimpleEmailText(content: SimpleEmailContent): string {
 
 	if (content.ctaLabel && content.ctaUrl) {
 		lines.push('', `${content.ctaLabel}: ${content.ctaUrl}`);
+	}
+
+	if (content.footerNoteParagraphs?.length) {
+		lines.push('', ...content.footerNoteParagraphs);
 	}
 
 	return buildTransactionalEmailText(lines);

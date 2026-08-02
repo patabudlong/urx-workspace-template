@@ -22,6 +22,8 @@ import {
 	safeRedirectPath
 } from '$lib/server/auth/post-auth-navigation';
 import { safeEmailPrefill } from '$lib/shared/auth-prefill';
+import { getInvitationFlowLockedEmail } from '$lib/shared/team/invitation-flow';
+import { TEAM_INVITATION_EMAIL_LOCKED_MISMATCH_MESSAGE } from '$lib/shared/team/invitation-messages';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (locals.user) {
@@ -36,11 +38,14 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
 	const prefilledEmail = safeEmailPrefill(url.searchParams.get('email'));
 
+	const redirectTo = safeRedirectPath(url.searchParams.get('redirectTo'));
+	const lockedEmail = getInvitationFlowLockedEmail(redirectTo, url.searchParams.get('email'));
+
 	const form = await superValidate(zod4(signupSchema), {
 		defaults: {
 			firstName: '',
 			lastName: '',
-			email: prefilledEmail,
+			email: lockedEmail ?? prefilledEmail,
 			password: '',
 			acceptedTerms: false
 		}
@@ -50,7 +55,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
 	return {
 		form,
-		redirectTo: safeRedirectPath(url.searchParams.get('redirectTo')),
+		redirectTo,
+		lockedEmail,
 		googleAuthError:
 			authRedirectAlert.message ?? getGoogleAuthErrorMessage(url.searchParams.get('error')),
 		rateLimitRetryAfter: authRedirectAlert.rateLimitRetryAfter,
@@ -76,6 +82,15 @@ export const actions: Actions = {
 
 		if (!form.valid) {
 			return fail(400, { form });
+		}
+
+		const lockedEmail = getInvitationFlowLockedEmail(
+			safeRedirectPath(url.searchParams.get('redirectTo')),
+			url.searchParams.get('email')
+		);
+
+		if (lockedEmail && form.data.email.trim().toLowerCase() !== lockedEmail) {
+			return message(form, TEAM_INVITATION_EMAIL_LOCKED_MISMATCH_MESSAGE, { status: 400 });
 		}
 
 		const recaptcha = await assertAuthRecaptcha({

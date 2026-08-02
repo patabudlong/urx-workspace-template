@@ -78,9 +78,32 @@
 
 	formStore = form;
 	validateFormFn = superform.validateForm;
+
+	const signupHref = $derived.by(() => {
+		const params = new URLSearchParams();
+
+		if (data.redirectTo !== '/') {
+			params.set('redirectTo', data.redirectTo);
+		}
+
+		const email = (data.lockedEmail ?? $form.email).trim();
+
+		if (email) {
+			params.set('email', email);
+		}
+
+		const query = params.toString();
+
+		return query ? `/signup?${query}` : '/signup';
+	});
 </script>
 
-<AuthFormPanel title="Sign in" description="Use your workspace account to access the dashboard and tools.">
+<AuthFormPanel
+	title={data.lockedEmail ? 'Sign in to accept' : 'Sign in'}
+	description={data.lockedEmail
+		? 'Use the invited email address to sign in and join the workspace.'
+		: 'Use your workspace account to access the dashboard and tools.'}
+>
 	<div class="space-y-6">
 		<form
 			method="POST"
@@ -118,6 +141,8 @@
 									type="email"
 									autocomplete="email"
 									disabled={submitDisabled}
+									readonly={Boolean(data.lockedEmail)}
+									class={cn(data.lockedEmail && 'bg-muted/40')}
 									bind:value={$form.email}
 								/>
 							{/snippet}
@@ -184,7 +209,7 @@
 
 		<p class="text-muted-foreground text-center text-sm">
 			Don't have an account?
-			<a href="/signup" class={AUTH_INLINE_LINK_CLASS}>Sign up</a>
+			<a href={signupHref} class={AUTH_INLINE_LINK_CLASS}>Sign up</a>
 		</p>
 	</div>
 

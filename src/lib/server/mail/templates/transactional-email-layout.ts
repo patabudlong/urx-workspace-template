@@ -33,6 +33,7 @@ export type TransactionalEmailLayoutInput = {
 	bodyHtml: string;
 	illustrationUrl?: string;
 	illustrationAlt?: string;
+	illustrationWidth?: number;
 	footerNoteHtml?: string;
 };
 
@@ -52,6 +53,7 @@ export function buildTransactionalEmailHtml(input: TransactionalEmailLayoutInput
 		? escapeHtml(input.illustrationUrl)
 		: undefined;
 	const illustrationAlt = escapeHtml(input.illustrationAlt ?? 'Illustration');
+	const illustrationWidth = input.illustrationWidth ?? ILLUSTRATION_DISPLAY_WIDTH;
 
 	const illustrationRow = illustrationUrl
 		? [
@@ -62,12 +64,12 @@ export function buildTransactionalEmailHtml(input: TransactionalEmailLayoutInput
 				`background-color:${BRAND_TERTIARY};">`,
 				'<img',
 				`src="${illustrationUrl}"`,
-				`width="${ILLUSTRATION_DISPLAY_WIDTH}"`,
-				`height="${ILLUSTRATION_DISPLAY_WIDTH}"`,
+				`width="${illustrationWidth}"`,
+				`height="${illustrationWidth}"`,
 				`alt="${illustrationAlt}"`,
 				'style="display:block;margin:0 auto;',
-				`width:${ILLUSTRATION_DISPLAY_WIDTH}px;`,
-				`height:${ILLUSTRATION_DISPLAY_WIDTH}px;`,
+				`width:${illustrationWidth}px;`,
+				`height:${illustrationWidth}px;`,
 				'max-width:100%;border:0;',
 				'-ms-interpolation-mode:bicubic;">',
 				'</td>',
@@ -78,7 +80,7 @@ export function buildTransactionalEmailHtml(input: TransactionalEmailLayoutInput
 	const footerNoteRow = input.footerNoteHtml
 		? [
 				'<tr>',
-				'<td style="padding:20px 32px;',
+				'<td style="padding:16px 32px 24px 32px;',
 				`border-top:1px solid ${BORDER};`,
 				'font-family:Arial,Helvetica,sans-serif;">',
 				input.footerNoteHtml,
@@ -176,8 +178,8 @@ export function buildTransactionalEmailHtml(input: TransactionalEmailLayoutInput
 		input.bodyHtml,
 		'</td>',
 		'</tr>',
-		...footerNoteRow,
 		...illustrationRow,
+		...footerNoteRow,
 		'</table>',
 		'<table role="presentation"',
 		'width="520" cellpadding="0"',
@@ -244,6 +246,16 @@ export function buildTransactionalEmailText(lines: string[]): string {
 		`urixoft.com: ${URIXOFT_WEBSITE}`,
 		`facebook: ${URIXOFT_SOCIAL.facebook}`,
 		`linkedin: ${URIXOFT_SOCIAL.linkedin}`
+	].join('\n');
+}
+
+export function buildFooterNoteHtml(text: string): string {
+	return [
+		'<p style="margin:0;',
+		'font-size:12px;line-height:18px;',
+		`color:${TEXT_MUTED};">`,
+		text,
+		'</p>'
 	].join('\n');
 }
 

@@ -12,6 +12,8 @@
 	import { findTeamInviteRoleOption } from '$lib/shared/team/invite-roles';
 	import {
 		TEAM_INVITATION_SENT_DESCRIPTION,
+		TEAM_INVITATION_SENT_EXISTING_ACCOUNT_DESCRIPTION,
+		TEAM_INVITATION_SENT_EXISTING_ACCOUNT_MESSAGE,
 		TEAM_INVITATION_SENT_MESSAGE,
 		TEAM_INVITATION_SEND_FAILED_MESSAGE,
 		TEAM_PENDING_INVITATIONS_DESCRIPTION
@@ -23,8 +25,6 @@
 	import { untrack } from 'svelte';
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
-
-	const INVITATION_SENT_DESCRIPTION = TEAM_INVITATION_SENT_DESCRIPTION;
 
 	let { data } = $props();
 
@@ -42,7 +42,10 @@
 		onUpdated: async ({ form: updatedForm }) => {
 			submitting = false;
 
-			if (updatedForm.message === TEAM_INVITATION_SENT_MESSAGE) {
+			if (
+				updatedForm.message === TEAM_INVITATION_SENT_MESSAGE ||
+				updatedForm.message === TEAM_INVITATION_SENT_EXISTING_ACCOUNT_MESSAGE
+			) {
 				showSuccess = true;
 				form.update(($current) => {
 					$current.email = '';
@@ -58,6 +61,12 @@
 
 	const { enhance, form, message: formMessage } = superform;
 
+	const invitationSentDescription = $derived(
+		$formMessage === TEAM_INVITATION_SENT_EXISTING_ACCOUNT_MESSAGE
+			? TEAM_INVITATION_SENT_EXISTING_ACCOUNT_DESCRIPTION
+			: TEAM_INVITATION_SENT_DESCRIPTION
+	);
+
 	const selectedRoleDescription = $derived(
 		findTeamInviteRoleOption($form.role)?.description ??
 			'Choose the access level for this teammate.'
@@ -66,7 +75,8 @@
 	const formError = $derived(
 		typeof $formMessage === 'string' &&
 			$formMessage.length > 0 &&
-			$formMessage !== TEAM_INVITATION_SENT_MESSAGE
+			$formMessage !== TEAM_INVITATION_SENT_MESSAGE &&
+			$formMessage !== TEAM_INVITATION_SENT_EXISTING_ACCOUNT_MESSAGE
 			? $formMessage
 			: null
 	);
@@ -89,7 +99,7 @@
 		<Card.Header>
 			<Card.Title>Invite teammate</Card.Title>
 			<Card.Description>
-				Send an email invitation. The invitee must create an account and accept before joining.
+				Send an email invitation. Recipients sign in or create an account with the invited email to accept.
 			</Card.Description>
 		</Card.Header>
 		<Card.Content>
@@ -98,7 +108,7 @@
 					<StatusAlert
 						variant="success"
 						title="Invitation sent"
-						description={INVITATION_SENT_DESCRIPTION}
+						description={invitationSentDescription}
 					/>
 					<Button type="button" variant="outline" class="h-10" onclick={inviteAnother}>
 						Invite another
