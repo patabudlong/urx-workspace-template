@@ -4,6 +4,10 @@ export function canInviteWorkspaceMembers(role: string | null | undefined): bool
 	return canRemoveWorkspaceMembers(role);
 }
 
+export function canViewTeamRoles(role: string | null | undefined): boolean {
+	return canRemoveWorkspaceMembers(role);
+}
+
 export function canRemoveWorkspaceMembers(role: string | null | undefined): boolean {
 	return (
 		role === WORKSPACE_MEMBER_ROLES.OWNER || role === WORKSPACE_MEMBER_ROLES.ADMIN

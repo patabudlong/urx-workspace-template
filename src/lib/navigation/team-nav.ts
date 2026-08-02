@@ -1,5 +1,5 @@
 import type { AppNavItem } from '$lib/navigation/app-nav';
-import { isWorkspaceOwner } from '$lib/navigation/app-nav';
+import { canViewTeamRoles } from '$lib/shared/team/member-management';
 import KeyRoundIcon from '@lucide/svelte/icons/key-round';
 import MailIcon from '@lucide/svelte/icons/mail';
 import UsersIcon from '@lucide/svelte/icons/users';
@@ -28,7 +28,7 @@ export const TEAM_NAV_ITEMS: AppNavItem[] = [
 export function getTeamNavItems(role: string | null | undefined): AppNavItem[] {
 	return TEAM_NAV_ITEMS.filter((item) => {
 		if (item.href === '/team/roles') {
-			return isWorkspaceOwner(role);
+			return canViewTeamRoles(role);
 		}
 
 		return true;

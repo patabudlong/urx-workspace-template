@@ -2,6 +2,7 @@
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
 	import InviteRoleCombobox from '$lib/components/team/invite-role-combobox.svelte';
+	import TeamLearnAboutRolesLink from '$lib/components/team/team-learn-about-roles-link.svelte';
 	import PendingInvitationsEmpty from '$lib/components/team/pending-invitations-empty.svelte';
 	import PendingInvitationsList from '$lib/components/team/pending-invitations-list.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
@@ -150,9 +151,12 @@
 					<Form.Control>
 						{#snippet children({ props })}
 							<Form.Label required>Role</Form.Label>
-							<p class="text-muted-foreground text-xs leading-relaxed">
-								{selectedRoleDescription}
-							</p>
+							<div class="flex items-center justify-between gap-2">
+								<p class="text-muted-foreground text-xs leading-relaxed">
+									{selectedRoleDescription}
+								</p>
+								<TeamLearnAboutRolesLink class="shrink-0" />
+							</div>
 							<InviteRoleCombobox
 								id={props.id}
 								bind:value={$form.role}

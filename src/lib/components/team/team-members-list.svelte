@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ListPagination from '$lib/components/list/list-pagination.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import RemoveTeamMemberDialog from '$lib/components/team/remove-team-member-dialog.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -34,6 +35,9 @@
 		searchQuery?: string;
 	} = $props();
 
+	const PAGE_SIZE = 10;
+
+	let currentPage = $state(1);
 	let removingId = $state<string | null>(null);
 	let removeMessage = $state<string | null>(null);
 	let removeError = $state<string | null>(null);
@@ -43,6 +47,10 @@
 
 	const filteredMembers = $derived(filterTeamMembers(members, searchQuery));
 	const isSearching = $derived(searchQuery.trim().length > 0);
+	const totalPages = $derived(Math.max(1, Math.ceil(filteredMembers.length / PAGE_SIZE)));
+	const paginatedMembers = $derived(
+		filteredMembers.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+	);
 
 	function formatJoinedAt(value: string): string {
 		return new Intl.DateTimeFormat(undefined, {
@@ -99,6 +107,17 @@
 			removeEnhanceAction = undefined;
 		}
 	});
+
+	$effect(() => {
+		searchQuery;
+		currentPage = 1;
+	});
+
+	$effect(() => {
+		if (currentPage > totalPages) {
+			currentPage = totalPages;
+		}
+	});
 </script>
 
 <div class="space-y-4">
@@ -127,14 +146,14 @@
 			</p>
 		</div>
 	{:else}
-	<div class="overflow-hidden rounded-lg border">
-		<table class="w-full text-sm">
+	<div class="overflow-x-auto rounded-lg border">
+		<table class="w-full min-w-[40rem] text-sm">
 			<thead class="bg-muted/40 border-b">
 				<tr>
-					<th class="text-muted-foreground px-4 py-3 text-left font-medium">Name</th>
-					<th class="text-muted-foreground px-4 py-3 text-left font-medium">Email</th>
-					<th class="text-muted-foreground px-4 py-3 text-left font-medium">Role</th>
-					<th class="text-muted-foreground px-4 py-3 text-left font-medium">Joined</th>
+					<th class="text-muted-foreground min-w-32 px-4 py-3 text-left font-medium">Name</th>
+					<th class="text-muted-foreground min-w-48 px-4 py-3 text-left font-medium">Email</th>
+					<th class="text-muted-foreground min-w-28 px-4 py-3 text-left font-medium">Role</th>
+					<th class="text-muted-foreground min-w-28 px-4 py-3 text-left font-medium">Joined</th>
 					{#if canManageMembers}
 						<th class="text-muted-foreground px-4 py-3 text-right font-medium">
 							<span class="sr-only">Actions</span>
@@ -143,7 +162,7 @@
 				</tr>
 			</thead>
 			<tbody>
-				{#each filteredMembers as member (member.id)}
+				{#each paginatedMembers as member (member.id)}
 					<tr class="border-b last:border-b-0">
 						<td class="px-4 py-3 font-medium">{member.name}</td>
 						<td class="text-muted-foreground px-4 py-3">{member.email}</td>
@@ -186,6 +205,7 @@
 			</tbody>
 		</table>
 	</div>
+	<ListPagination bind:page={currentPage} pageSize={PAGE_SIZE} total={filteredMembers.length} />
 	{/if}
 </div>
 

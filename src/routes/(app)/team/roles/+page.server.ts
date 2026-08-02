@@ -1,10 +1,12 @@
+import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { requireWorkspaceOwner } from '$lib/server/workspace-access';
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const { workspace } = await parent();
 
-	requireWorkspaceOwner(workspace);
+	if (!workspace) {
+		redirect(303, '/');
+	}
 
 	return {
 		meta: {
