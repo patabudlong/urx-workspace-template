@@ -3,7 +3,7 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 </script>
 
-<div class="mx-auto flex w-full max-w-4xl flex-col gap-8">
+<div class="flex w-full flex-col gap-8">
 	<PageHeader
 		eyebrow="Settings"
 		title="Security"

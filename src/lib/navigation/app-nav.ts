@@ -4,6 +4,7 @@ import BookOpenIcon from '@lucide/svelte/icons/book-open';
 import CreditCardIcon from '@lucide/svelte/icons/credit-card';
 import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
 import ShieldIcon from '@lucide/svelte/icons/shield';
+import UsersIcon from '@lucide/svelte/icons/users';
 import UserCircleIcon from '@lucide/svelte/icons/user-circle';
 import { WORKSPACE_MEMBER_ROLES } from '$lib/shared/models/workspace-member';
 
@@ -29,6 +30,12 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
 				href: '/',
 				icon: LayoutDashboardIcon,
 				match: 'exact'
+			},
+			{
+				title: 'Team',
+				href: '/team',
+				icon: UsersIcon,
+				match: 'prefix'
 			}
 		]
 	},

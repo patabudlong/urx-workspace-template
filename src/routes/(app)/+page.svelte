@@ -18,7 +18,7 @@
 	const workspace = $derived(data.workspace);
 </script>
 
-<div class="mx-auto flex w-full max-w-6xl flex-col gap-8">
+<div class="flex w-full flex-col gap-8">
 	<PageHeader
 		eyebrow="Workspace overview"
 		title={`Welcome back, ${greetingName}`}

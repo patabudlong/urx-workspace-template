@@ -5,19 +5,19 @@
 
 <div class="flex w-full flex-col gap-8">
 	<PageHeader
-		eyebrow="Settings"
-		title="Billing"
-		description="Manage your workspace subscription, invoices, and payment methods."
+		eyebrow="Workspace"
+		title="Team"
+		description="Invite teammates, manage roles, and control who has access to this workspace."
 	/>
 
 	<Card.Root>
 		<Card.Header>
-			<Card.Title>Workspace billing</Card.Title>
-			<Card.Description>Billing and subscription settings will be available here.</Card.Description>
+			<Card.Title>Team members</Card.Title>
+			<Card.Description>Member management and invitations will be available here.</Card.Description>
 		</Card.Header>
 		<Card.Content>
 			<p class="text-muted-foreground text-sm">
-				View your plan, update payment details, and download invoices for this workspace.
+				View your team, send invites, and update member roles from this page.
 			</p>
 		</Card.Content>
 	</Card.Root>
