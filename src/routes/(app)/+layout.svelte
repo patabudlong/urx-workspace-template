@@ -15,7 +15,7 @@
 <PreventStaleAuthView />
 
 <Sidebar.Provider>
-	<AppSidebar workspace={data.workspace} />
+	<AppSidebar userDisplay={data.userDisplay} />
 	<Sidebar.Inset>
 		<SiteHeader userDisplay={data.userDisplay} title={headerTitle} workspace={data.workspace} />
 		<div class="bg-muted/20 flex flex-1 flex-col gap-6 p-4 md:gap-8 md:p-6">

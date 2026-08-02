@@ -1,23 +1,12 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import SidebarNavUser from '$lib/components/sidebar-nav-user.svelte';
 	import SiteBrandMark from '$lib/components/site-brand-mark.svelte';
-	import { Badge } from '$lib/components/ui/badge/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import {
-		APP_NAV_GROUPS,
-		formatWorkspaceRole,
-		isAppNavActive,
-		type AppNavItem
-	} from '$lib/navigation/app-nav';
-	import Building2Icon from '@lucide/svelte/icons/building-2';
+	import { APP_NAV_GROUPS, isAppNavActive, type AppNavItem } from '$lib/navigation/app-nav';
+	import type { UserDisplay } from '$lib/shared/user-display';
 
-	type WorkspaceContext = {
-		workspaceName: string;
-		workspaceSlug: string;
-		role: string;
-	};
-
-	let { workspace = null }: { workspace?: WorkspaceContext | null } = $props();
+	let { userDisplay }: { userDisplay: UserDisplay } = $props();
 
 	function navTarget(item: AppNavItem): string | undefined {
 		return item.external ? '_blank' : undefined;
@@ -66,26 +55,9 @@
 		{/each}
 	</Sidebar.Content>
 
-	{#if workspace}
-		<Sidebar.Footer>
-			<div class="border-sidebar-border bg-sidebar-accent/40 flex items-start gap-3 rounded-lg border p-3">
-				<div
-					class="bg-sidebar-primary text-sidebar-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-lg"
-				>
-					<Building2Icon class="size-4" />
-				</div>
-				<div class="min-w-0 flex-1 space-y-1">
-					<p class="truncate text-sm font-medium">{workspace.workspaceName}</p>
-					<p class="text-muted-foreground truncate font-mono text-[11px]">
-						{workspace.workspaceSlug}.workspace.urixoft.com
-					</p>
-					<Badge variant="secondary" class="w-fit px-1.5 py-0 text-[10px] font-medium">
-						{formatWorkspaceRole(workspace.role)}
-					</Badge>
-				</div>
-			</div>
-		</Sidebar.Footer>
-	{/if}
+	<Sidebar.Footer>
+		<SidebarNavUser {userDisplay} />
+	</Sidebar.Footer>
 
 	<Sidebar.Rail />
 </Sidebar.Root>
