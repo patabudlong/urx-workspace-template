@@ -8,7 +8,15 @@ export async function ensureWorkspaceMemberIndexes(): Promise<void> {
 	if (!workspaceMemberIndexesPromise) {
 		workspaceMemberIndexesPromise = (async () => {
 			const members = await getWorkspaceMembersCollection();
-			await members.createIndex({ userId: 1 }, { unique: true });
+
+			try {
+				await members.dropIndex('userId_1');
+			} catch {
+				// Legacy single-membership index may not exist.
+			}
+
+			await members.createIndex({ userId: 1, workspaceId: 1 }, { unique: true });
+			await members.createIndex({ userId: 1 });
 			await members.createIndex({ workspaceId: 1, role: 1 });
 		})().catch((error) => {
 			workspaceMemberIndexesPromise = null;
@@ -35,6 +43,17 @@ export async function findWorkspaceMemberByUserId(
 	const members = await getWorkspaceMembersCollection<WorkspaceMemberDocument>();
 
 	return members.findOne({ userId: new ObjectId(userId) }, { projection: memberProjection });
+}
+
+export async function listWorkspaceMembersByUserId(
+	userId: string
+): Promise<WorkspaceMemberDocument[]> {
+	const members = await getWorkspaceMembersCollection<WorkspaceMemberDocument>();
+
+	return members
+		.find({ userId: new ObjectId(userId) }, { projection: memberProjection })
+		.sort({ joinedAt: 1 })
+		.toArray();
 }
 
 export async function createWorkspaceMember(input: {

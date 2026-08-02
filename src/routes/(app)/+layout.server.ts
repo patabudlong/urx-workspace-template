@@ -4,7 +4,14 @@ import { isSuperadminUser } from '$lib/server/auth/platform-admin';
 import { PLATFORM_ADMIN_HOME } from '$lib/server/auth/post-auth-navigation';
 import { getOnboardingAccessState } from '$lib/server/onboarding/workspace-onboarding';
 import { resolveCrossHostWorkspaceRedirect } from '$lib/server/auth/session-handoff';
-import { resolveWorkspaceLandingUrl } from '$lib/server/workspace-host';
+import {
+	getWorkspaceHostSuffix,
+	resolveWorkspaceLandingUrl
+} from '$lib/server/workspace-host';
+import {
+	listUserWorkspaceContexts,
+	resolveActiveWorkspaceContext
+} from '$lib/server/workspace-context';
 import { findUserById } from '$lib/server/repositories/users';
 import { loadUserDisplay } from '$lib/server/user-display';
 
@@ -26,36 +33,39 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 		redirect(303, '/onboarding');
 	}
 
-	if (access.status === 'ready') {
+	const workspaceHostSuffix = getWorkspaceHostSuffix();
+	const workspaces =
+		access.status === 'ready' ? await listUserWorkspaceContexts(locals.user.id) : [];
+	const workspace =
+		access.status === 'ready'
+			? resolveActiveWorkspaceContext(workspaces, url, workspaceHostSuffix)
+			: null;
+
+	if (access.status === 'ready' && workspace) {
 		const path = url.pathname + url.search;
-		const landing = resolveWorkspaceLandingUrl(access.workspaceSlug, url, path);
+		const landing = resolveWorkspaceLandingUrl(workspace.workspaceSlug, url, path);
 
 		if (landing.startsWith('http')) {
 			redirect(
 				303,
 				await resolveCrossHostWorkspaceRedirect(
 					{ sub: locals.user.id, email: locals.user.email },
-					access.workspaceSlug,
+					workspace.workspaceSlug,
 					url,
 					path
 				)
 			);
 		}
 	}
+
 	const userDisplay = await loadUserDisplay(locals.user.id, locals.user.email);
 
 	return {
 		user: locals.user,
 		firstName: user?.firstName ?? '',
-		workspace:
-			access.status === 'ready'
-				? {
-						workspaceId: access.workspaceId,
-						workspaceName: access.workspaceName,
-						workspaceSlug: access.workspaceSlug,
-						role: access.role
-					}
-				: null,
+		workspace,
+		workspaces,
+		workspaceHostSuffix,
 		userDisplay
 	};
 };
