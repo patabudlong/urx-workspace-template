@@ -10,17 +10,17 @@
 	const teamNavItems = $derived(getTeamNavItems(page.data.workspace?.role));
 </script>
 
-<div class="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
+<div class="flex min-h-0 min-w-0 flex-1 flex-col lg:flex-row">
 	<aside
 		class={cn(
-			'bg-sidebar text-sidebar-foreground border-sidebar-border hidden h-full w-(--team-secondary-sidebar-width) shrink-0 md:flex md:min-h-0 md:flex-col md:overflow-hidden md:border-r md:py-2'
+			'bg-sidebar text-sidebar-foreground border-sidebar-border hidden h-full w-(--team-secondary-sidebar-width) shrink-0 lg:flex lg:min-h-0 lg:flex-col lg:overflow-hidden lg:border-r lg:py-2'
 		)}
 	>
 		<TeamSidebarPanel items={teamNavItems} />
 	</aside>
 
-	<div class="flex min-h-0 min-w-0 flex-1 flex-col gap-6 overflow-y-auto p-4 md:gap-8 md:p-6">
-		<div class="md:hidden">
+	<div class="flex min-h-0 min-w-0 flex-1 flex-col gap-6 overflow-x-auto overflow-y-auto p-4 lg:gap-8 lg:p-6">
+		<div class="lg:hidden">
 			<SectionSidebar
 				title="Team"
 				description="Manage members, invitations, and roles for this workspace."

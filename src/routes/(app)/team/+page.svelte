@@ -11,7 +11,7 @@
 	let searchQuery = $state('');
 </script>
 
-<div class="flex w-full flex-col gap-8">
+<div class="flex w-full min-w-0 flex-col gap-8">
 	<PageHeader
 		eyebrow="Team"
 		title="Members"
