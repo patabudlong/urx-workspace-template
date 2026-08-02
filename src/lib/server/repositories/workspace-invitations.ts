@@ -139,6 +139,31 @@ export async function markWorkspaceInvitationAccepted(invitationId: string): Pro
 	);
 }
 
+export async function revokeWorkspaceInvitation(input: {
+	invitationId: string;
+	workspaceId: string;
+}): Promise<boolean> {
+	const invitations = await getWorkspaceInvitationsCollection();
+	const now = new Date();
+
+	const result = await invitations.updateOne(
+		{
+			_id: new ObjectId(input.invitationId),
+			workspaceId: new ObjectId(input.workspaceId),
+			...openInvitationFilter(now)
+		},
+		{
+			$set: {
+				status: WORKSPACE_INVITATION_STATUSES.REVOKED,
+				revokedAt: now,
+				updatedAt: now
+			}
+		}
+	);
+
+	return result.matchedCount === 1;
+}
+
 export async function createWorkspaceInvitation(input: {
 	workspaceId: string;
 	invitedEmail: string;

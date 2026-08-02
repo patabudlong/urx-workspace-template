@@ -46,6 +46,21 @@ export async function findUserById(userId: string): Promise<UserDocument | null>
 	return users.findOne({ _id: new ObjectId(userId) }, { projection: userProjection });
 }
 
+export async function findUsersByIds(userIds: string[]): Promise<UserDocument[]> {
+	if (userIds.length === 0) {
+		return [];
+	}
+
+	const users = await getUsersCollection<UserDocument>();
+
+	return users
+		.find(
+			{ _id: { $in: userIds.map((userId) => new ObjectId(userId)) } },
+			{ projection: userProjection }
+		)
+		.toArray();
+}
+
 export async function findUserByEmail(email: string): Promise<UserDocument | null> {
 	const users = await getUsersCollection<UserDocument>();
 

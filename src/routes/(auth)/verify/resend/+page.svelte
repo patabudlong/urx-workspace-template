@@ -14,7 +14,7 @@
 	} from '$lib/shared/schemas/auth';
 	import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 	import { warmRecaptcha } from '$lib/recaptcha/client';
-	import { AUTH_ACTION_BUTTON_CLASS } from '$lib/auth/ui';
+	import { AUTH_ACTION_BUTTON_CLASS, AUTH_INLINE_LINK_CLASS } from '$lib/auth/ui';
 	import { cn } from '$lib/utils.js';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import { get } from 'svelte/store';
@@ -73,6 +73,28 @@
 
 	formStore = form;
 	validateFormFn = superform.validateForm;
+
+	const formAction = $derived(
+		data.redirectTo !== '/' ? `?redirectTo=${encodeURIComponent(data.redirectTo)}` : undefined
+	);
+
+	const loginHref = $derived.by(() => {
+		const params = new URLSearchParams();
+
+		if (data.redirectTo !== '/') {
+			params.set('redirectTo', data.redirectTo);
+		}
+
+		const email = $form.email.trim();
+
+		if (email) {
+			params.set('email', email);
+		}
+
+		const query = params.toString();
+
+		return query ? `/login?${query}` : '/login';
+	});
 </script>
 
 <AuthFormPanel
@@ -80,7 +102,7 @@
 	description="Enter the email for your account and we will send you a new 6-digit verification code."
 >
 	<div class="space-y-6">
-		<form method="POST" use:enhance class="space-y-5" novalidate>
+		<form method="POST" action={formAction} use:enhance class="space-y-5" novalidate>
 			<div class="space-y-5">
 					{#if recaptchaError}
 						<AuthFormMessageAlert message={recaptchaError} />
@@ -127,7 +149,7 @@
 	{#snippet footer()}
 		<p class="text-center text-sm">
 			Remember your password?
-			<a href="/login" class="hover:text-foreground hover:underline">Sign in</a>
+			<a href={loginHref} class={AUTH_INLINE_LINK_CLASS}>Sign in</a>
 		</p>
 	{/snippet}
 </AuthFormPanel>

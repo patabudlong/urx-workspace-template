@@ -1,5 +1,16 @@
 export const TEAM_INVITATION_SENT_MESSAGE = 'Invitation sent.';
 
+export const TEAM_INVITATION_SENT_DESCRIPTION =
+	'They will receive an email to create an account (if needed) and accept the invitation. They will appear under Members only after accepting.';
+
+export const TEAM_PENDING_INVITATIONS_DESCRIPTION =
+	'Invited people who have not joined yet. They must create an account and accept the invitation before they appear under Members.';
+
+export const TEAM_INVITATION_CANCELLED_MESSAGE = 'Invitation cancelled.';
+
+export const TEAM_INVITATION_CANCEL_FAILED_MESSAGE =
+	'We could not cancel this invitation. Refresh the page and try again.';
+
 export const TEAM_INVITATION_MAIL_NOT_CONFIGURED_MESSAGE =
 	'Email is not configured. Set SMTP_HOST, SMTP_PORT, and SMTP_FROM in your environment.';
 

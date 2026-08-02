@@ -2,7 +2,11 @@ import { fail } from '@sveltejs/kit';
 import { message, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import type { Actions, PageServerLoad } from './$types';
-import { listPendingWorkspaceInvitations, ensureWorkspaceInvitationIndexes } from '$lib/server/repositories/workspace-invitations';
+import {
+	ensureWorkspaceInvitationIndexes,
+	listPendingWorkspaceInvitations,
+	revokeWorkspaceInvitation
+} from '$lib/server/repositories/workspace-invitations';
 import { consumeTeamInvitationFormRateLimit } from '$lib/server/security/team-invitation-rate-limit';
 import { queueTeamInvitationForWeb } from '$lib/server/team/workspace-invitations';
 import {
@@ -12,10 +16,13 @@ import {
 import { getWorkspaceHostSuffix } from '$lib/server/workspace-host';
 import { loadUserDisplay } from '$lib/server/user-display';
 import {
+	cancelTeamInvitationSchema,
 	teamInvitationDefaults,
 	teamInvitationSchema
 } from '$lib/shared/schemas/team-invitation';
 import {
+	TEAM_INVITATION_CANCEL_FAILED_MESSAGE,
+	TEAM_INVITATION_CANCELLED_MESSAGE,
 	TEAM_INVITATION_MAIL_NOT_CONFIGURED_MESSAGE,
 	TEAM_INVITATION_NO_WORKSPACE_MESSAGE,
 	TEAM_INVITATION_RATE_LIMIT_MESSAGE,
@@ -23,6 +30,7 @@ import {
 	TEAM_INVITATION_SENT_MESSAGE
 } from '$lib/shared/team/invitation-messages';
 import { findTeamInviteRoleOption } from '$lib/shared/team/invite-roles';
+import { ObjectId } from 'mongodb';
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const { workspace } = await parent();
@@ -54,7 +62,7 @@ export const load: PageServerLoad = async ({ parent }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request, url, locals, getClientAddress }) => {
+	send: async ({ request, url, locals, getClientAddress }) => {
 		const form = await superValidate(request, zod4(teamInvitationSchema));
 
 		if (!locals.user) {
@@ -122,5 +130,52 @@ export const actions: Actions = {
 		}
 
 		return message(form, TEAM_INVITATION_SENT_MESSAGE);
+	},
+	cancel: async ({ request, url, locals }) => {
+		const form = await superValidate(request, zod4(cancelTeamInvitationSchema));
+
+		if (!locals.user) {
+			return fail(401, { cancelForm: form });
+		}
+
+		const workspaces = await listUserWorkspaceContexts(locals.user.id);
+		const workspace = resolveActiveWorkspaceContext(workspaces, url, getWorkspaceHostSuffix());
+
+		if (!workspace) {
+			return fail(400, {
+				cancelForm: form,
+				cancelMessage: TEAM_INVITATION_NO_WORKSPACE_MESSAGE
+			});
+		}
+
+		if (!form.valid) {
+			return fail(400, { cancelForm: form });
+		}
+
+		if (!ObjectId.isValid(form.data.invitationId)) {
+			return fail(400, {
+				cancelForm: form,
+				cancelMessage: TEAM_INVITATION_CANCEL_FAILED_MESSAGE
+			});
+		}
+
+		await ensureWorkspaceInvitationIndexes();
+
+		const revoked = await revokeWorkspaceInvitation({
+			invitationId: form.data.invitationId,
+			workspaceId: workspace.workspaceId
+		});
+
+		if (!revoked) {
+			return fail(404, {
+				cancelForm: form,
+				cancelMessage: TEAM_INVITATION_CANCEL_FAILED_MESSAGE
+			});
+		}
+
+		return {
+			cancelForm: form,
+			cancelMessage: TEAM_INVITATION_CANCELLED_MESSAGE
+		};
 	}
 };

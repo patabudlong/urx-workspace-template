@@ -21,6 +21,7 @@ import {
 	resolveAuthenticatedLandingPath,
 	safeRedirectPath
 } from '$lib/server/auth/post-auth-navigation';
+import { safeEmailPrefill } from '$lib/shared/auth-prefill';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (locals.user) {
@@ -33,11 +34,13 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		);
 	}
 
+	const prefilledEmail = safeEmailPrefill(url.searchParams.get('email'));
+
 	const form = await superValidate(zod4(signupSchema), {
 		defaults: {
 			firstName: '',
 			lastName: '',
-			email: '',
+			email: prefilledEmail,
 			password: '',
 			acceptedTerms: false
 		}
@@ -138,9 +141,16 @@ export const actions: Actions = {
 			);
 		}
 
-		redirect(
-			303,
-			`/verify?email=${encodeURIComponent(form.data.email)}&sent=1&source=signup`
-		);
+		const redirectTo = safeRedirectPath(url.searchParams.get('redirectTo'));
+		const verifyUrl = new URL('/verify', url.origin);
+		verifyUrl.searchParams.set('email', form.data.email);
+		verifyUrl.searchParams.set('sent', '1');
+		verifyUrl.searchParams.set('source', 'signup');
+
+		if (redirectTo !== '/') {
+			verifyUrl.searchParams.set('redirectTo', redirectTo);
+		}
+
+		redirect(303, `${verifyUrl.pathname}${verifyUrl.search}`);
 	}
 };

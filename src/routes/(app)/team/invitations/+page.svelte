@@ -11,8 +11,10 @@
 	import * as InputGroup from '$lib/components/ui/input-group/index.js';
 	import { findTeamInviteRoleOption } from '$lib/shared/team/invite-roles';
 	import {
+		TEAM_INVITATION_SENT_DESCRIPTION,
 		TEAM_INVITATION_SENT_MESSAGE,
-		TEAM_INVITATION_SEND_FAILED_MESSAGE
+		TEAM_INVITATION_SEND_FAILED_MESSAGE,
+		TEAM_PENDING_INVITATIONS_DESCRIPTION
 	} from '$lib/shared/team/invitation-messages';
 	import { teamInvitationSchema } from '$lib/shared/schemas/team-invitation';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
@@ -22,8 +24,7 @@
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
 
-	const INVITATION_SENT_DESCRIPTION =
-		'They will receive an email with instructions to join this workspace.';
+	const INVITATION_SENT_DESCRIPTION = TEAM_INVITATION_SENT_DESCRIPTION;
 
 	let { data } = $props();
 
@@ -81,16 +82,18 @@
 	<PageHeader
 		eyebrow="Team"
 		title="Invitations"
-		description="Invite teammates by email and track pending workspace invitations."
+		description="Invite teammates by email. They must accept the invitation before they appear under Members."
 	/>
 
 	<Card.Root>
 		<Card.Header>
 			<Card.Title>Invite teammate</Card.Title>
-			<Card.Description>Send an email invitation to join this workspace.</Card.Description>
+			<Card.Description>
+				Send an email invitation. The invitee must create an account and accept before joining.
+			</Card.Description>
 		</Card.Header>
 		<Card.Content>
-			<form method="POST" use:enhance class="max-w-xl space-y-5">
+			<form method="POST" action="?/send" use:enhance class="max-w-xl space-y-5">
 				{#if showSuccess}
 					<StatusAlert
 						variant="success"
@@ -169,7 +172,7 @@
 	<Card.Root>
 		<Card.Header>
 			<Card.Title>Pending invitations</Card.Title>
-			<Card.Description>Track invitations that have not been accepted yet.</Card.Description>
+			<Card.Description>{TEAM_PENDING_INVITATIONS_DESCRIPTION}</Card.Description>
 		</Card.Header>
 		<Card.Content>
 			{#if data.pendingInvitations.length > 0}

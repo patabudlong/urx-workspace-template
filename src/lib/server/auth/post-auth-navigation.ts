@@ -2,10 +2,7 @@ import { isSuperadminUser } from '$lib/server/auth/platform-admin';
 import { resolveCrossHostWorkspaceRedirect } from '$lib/server/auth/session-handoff';
 import { getOnboardingAccessState } from '$lib/server/onboarding/workspace-onboarding';
 import { findUserById } from '$lib/server/repositories/users';
-import {
-	isAcceptInvitationPath,
-	resolveInvitationAwareLandingPath
-} from '$lib/server/team/invitation-redirect';
+import { isAcceptInvitationPath } from '$lib/server/team/invitation-redirect';
 
 export const PLATFORM_ADMIN_HOME = '/admin/workspace-requests';
 
@@ -35,19 +32,6 @@ export async function resolveAuthenticatedLandingPath(
 		}
 
 		return path;
-	}
-
-	if (options.requestUrl && user) {
-		const invitationLanding = await resolveInvitationAwareLandingPath({
-			userId,
-			userEmail: user.email,
-			requestedPath: path,
-			requestUrl: options.requestUrl
-		});
-
-		if (invitationLanding) {
-			return invitationLanding;
-		}
 	}
 
 	const access = await getOnboardingAccessState(userId);

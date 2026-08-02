@@ -14,7 +14,7 @@
 	<div class="space-y-1">
 		<p class="text-foreground text-sm font-medium">No pending invitations</p>
 		<p class="text-muted-foreground max-w-sm text-sm">
-			Invitations you send will appear here until they are accepted.
+			Invitations you send will appear here until the person accepts and joins the workspace.
 		</p>
 	</div>
 </div>

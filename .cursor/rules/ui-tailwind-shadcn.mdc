@@ -122,6 +122,25 @@ import { cn } from '$lib/utils.js';
 4. If theme must change globally → update `layout.css` tokens, not individual pages.
 5. Run `pnpm check` after Svelte changes.
 
+## List / table search
+
+Place search **top-right** in the card header via **`Card.Action`** — never left-aligned above the table body.
+
+- Component: **`ListSearchInput`** (`$lib/components/list/list-search-input.svelte`)
+- Width: `sm:w-52 lg:w-60`, height `h-10`, muted background (`bg-muted/40`)
+- Parent owns `searchQuery` state; pass it into the list/table component as a prop
+- Use `aria-label` (no visible label); placeholder is allowed for search fields
+
+```svelte
+<Card.Header>
+	<Card.Title>Workspace members</Card.Title>
+	<Card.Description>…</Card.Description>
+	<Card.Action>
+		<ListSearchInput bind:value={searchQuery} placeholder="Search members..." ariaLabel="Search members" />
+	</Card.Action>
+</Card.Header>
+```
+
 ## Auth forms (`src/routes/(auth)/**`)
 
 Use shared tokens from **`$lib/auth/ui.ts`** — do not invent per-page button heights or link styles.

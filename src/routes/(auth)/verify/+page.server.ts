@@ -4,9 +4,12 @@ import { zod4 } from 'sveltekit-superforms/adapters';
 import { message } from 'sveltekit-superforms';
 import type { Actions, PageServerLoad } from './$types';
 import { verifyEmailWithCode } from '$lib/server/auth/email-verification';
+import { safeRedirectPath } from '$lib/server/auth/post-auth-navigation';
+import { isAcceptInvitationPath } from '$lib/server/team/invitation-redirect';
 import { getAuthRateLimitFormFailure } from '$lib/server/security/auth-rate-limit-form';
 import { assertAuthRecaptcha } from '$lib/server/security/recaptcha';
 import { verifyEmailSchema } from '$lib/shared/schemas/auth';
+import { safeEmailPrefill } from '$lib/shared/auth-prefill';
 import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 import {
 	INVALID_VERIFICATION_CODE_MESSAGE,
@@ -15,21 +18,14 @@ import {
 	SIGNUP_VERIFICATION_SENT_MESSAGE
 } from '$lib/shared/auth-messages';
 
-function safeEmailPrefill(value: string | null): string {
-	if (!value) {
-		return '';
-	}
-
-	const trimmed = value.trim().toLowerCase();
-	return trimmed.includes('@') ? trimmed : '';
-}
-
 export const load: PageServerLoad = async ({ url }) => {
 	const prefilledEmail = safeEmailPrefill(url.searchParams.get('email'));
 
 	if (!prefilledEmail) {
 		redirect(303, '/verify/resend');
 	}
+
+	const redirectTo = safeRedirectPath(url.searchParams.get('redirectTo'));
 
 	const form = await superValidate(zod4(verifyEmailSchema), {
 		defaults: {
@@ -41,6 +37,8 @@ export const load: PageServerLoad = async ({ url }) => {
 	return {
 		form,
 		prefilledEmail,
+		redirectTo,
+		isInvitationFlow: isAcceptInvitationPath(redirectTo),
 		codeSent: url.searchParams.get('sent') === '1',
 		codeSentMessage:
 			url.searchParams.get('source') === 'signup'

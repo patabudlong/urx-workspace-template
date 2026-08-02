@@ -4,10 +4,7 @@ import { zod4 } from 'sveltekit-superforms/adapters';
 import type { Actions, PageServerLoad } from './$types';
 import { getWorkspaceInvitationPreview, acceptWorkspaceInvitation } from '$lib/server/team/workspace-invitations';
 import { resolveWorkspaceLandingUrl } from '$lib/server/workspace-host';
-import {
-	completeInvitationIfPossible,
-	invitationMatchesUser
-} from '$lib/server/team/invitation-redirect';
+import { invitationMatchesUser } from '$lib/server/team/invitation-redirect';
 import { acceptInvitationSchema } from '$lib/shared/schemas/accept-invitation';
 import {
 	TEAM_INVITATION_ACCEPT_FAILED_MESSAGE,
@@ -20,23 +17,6 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	const invitation = token ? await getWorkspaceInvitationPreview(token) : null;
 	const tokenValid = invitation !== null;
 	const userEmail = locals.user?.email?.trim().toLowerCase() ?? null;
-
-	if (
-		locals.user &&
-		invitation &&
-		invitationMatchesUser(invitation, userEmail)
-	) {
-		const completed = await completeInvitationIfPossible({
-			token,
-			userId: locals.user.id,
-			userEmail: locals.user.email,
-			requestUrl: url
-		});
-
-		if (completed.ok) {
-			redirect(303, completed.landingPath);
-		}
-	}
 
 	const form = await superValidate(zod4(acceptInvitationSchema), {
 		defaults: { token }

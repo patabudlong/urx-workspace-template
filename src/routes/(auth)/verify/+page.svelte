@@ -12,7 +12,7 @@
 	import { verifyEmailClientSchema, type VerifyEmailInput } from '$lib/shared/schemas/auth';
 	import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 	import { warmRecaptcha } from '$lib/recaptcha/client';
-	import { AUTH_ACTION_BUTTON_CLASS } from '$lib/auth/ui';
+	import { AUTH_ACTION_BUTTON_CLASS, AUTH_INLINE_LINK_CLASS } from '$lib/auth/ui';
 	import { cn } from '$lib/utils.js';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import { get } from 'svelte/store';
@@ -77,15 +77,39 @@
 
 	const verified = $derived(typeof $formMessage === 'string' && $formMessage === 'verified');
 
-	const resendHref = $derived(
-		`/verify/resend?email=${encodeURIComponent(data.prefilledEmail)}`
+	const formAction = $derived(
+		data.redirectTo !== '/' ? `?redirectTo=${encodeURIComponent(data.redirectTo)}` : undefined
 	);
+
+	const loginHref = $derived.by(() => {
+		const params = new URLSearchParams();
+
+		if (data.redirectTo !== '/') {
+			params.set('redirectTo', data.redirectTo);
+		}
+
+		params.set('email', data.prefilledEmail);
+
+		return `/login?${params.toString()}`;
+	});
+
+	const resendHref = $derived.by(() => {
+		const params = new URLSearchParams({ email: data.prefilledEmail });
+
+		if (data.redirectTo !== '/') {
+			params.set('redirectTo', data.redirectTo);
+		}
+
+		return `/verify/resend?${params.toString()}`;
+	});
 </script>
 
 <AuthFormPanel
 	title={verified ? 'Email verified' : 'Verify your email'}
 	description={verified
-		? 'Your email address has been confirmed. You can sign in to your workspace.'
+		? data.isInvitationFlow
+			? 'Your email address has been confirmed. Sign in to accept your workspace invitation.'
+			: 'Your email address has been confirmed. You can sign in to your workspace.'
 		: 'Enter the 6-digit code from your email.'}
 >
 	<div class="space-y-6">
@@ -93,9 +117,13 @@
 			<StatusAlert
 				variant="success"
 				title="You're all set"
-				description="Sign in to continue to Urixoft Workspace."
+				description={data.isInvitationFlow
+					? 'Sign in to accept your workspace invitation.'
+					: 'Sign in to continue to Urixoft Workspace.'}
 			/>
-			<Button href="/login" class={AUTH_ACTION_BUTTON_CLASS}>Sign in</Button>
+			<Button href={loginHref} class={AUTH_ACTION_BUTTON_CLASS}>
+				{data.isInvitationFlow ? 'Sign in to accept invitation' : 'Sign in'}
+			</Button>
 		{:else}
 			{#if recaptchaError}
 				<AuthFormMessageAlert message={recaptchaError} />
@@ -109,7 +137,7 @@
 				/>
 			{/if}
 
-			<form method="POST" use:enhance class="space-y-5" novalidate>
+			<form method="POST" action={formAction} use:enhance class="space-y-5" novalidate>
 				<div class="space-y-5">
 					<input type="hidden" name="email" bind:value={$form.email} />
 
@@ -155,9 +183,11 @@
 	{#snippet footer()}
 		{#if verified}
 			<p class="text-center text-sm">
-				<a href="/login" class="hover:text-foreground hover:underline">Back to sign in</a>
+				<a href={loginHref} class={AUTH_INLINE_LINK_CLASS}>
+					{data.isInvitationFlow ? 'Sign in to accept invitation' : 'Back to sign in'}
+				</a>
 				<span class="text-muted-foreground px-2" aria-hidden="true">|</span>
-				<a href="/verify/resend" class="hover:text-foreground hover:underline">
+				<a href={resendHref} class="hover:text-foreground hover:underline">
 					Resend verification email
 				</a>
 			</p>

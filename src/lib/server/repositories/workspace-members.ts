@@ -1,4 +1,5 @@
 import type { WorkspaceMemberDocument } from '$lib/shared/models/workspace-member';
+import { WORKSPACE_MEMBER_ROLES } from '$lib/shared/models/workspace-member';
 import { getWorkspaceMembersCollection } from '$lib/server/db/collections';
 import { ObjectId } from 'mongodb';
 
@@ -71,6 +72,17 @@ export async function findWorkspaceMemberByWorkspaceAndUserId(input: {
 	);
 }
 
+export async function listWorkspaceMembersByWorkspaceId(
+	workspaceId: string
+): Promise<WorkspaceMemberDocument[]> {
+	const members = await getWorkspaceMembersCollection<WorkspaceMemberDocument>();
+
+	return members
+		.find({ workspaceId: new ObjectId(workspaceId) }, { projection: memberProjection })
+		.sort({ joinedAt: 1 })
+		.toArray();
+}
+
 export async function createWorkspaceMember(input: {
 	userId: string;
 	workspaceId: string;
@@ -92,4 +104,34 @@ export async function createWorkspaceMember(input: {
 	await members.insertOne(document);
 
 	return document;
+}
+
+export async function findWorkspaceMemberById(input: {
+	memberId: string;
+	workspaceId: string;
+}): Promise<WorkspaceMemberDocument | null> {
+	const members = await getWorkspaceMembersCollection<WorkspaceMemberDocument>();
+
+	return members.findOne(
+		{
+			_id: new ObjectId(input.memberId),
+			workspaceId: new ObjectId(input.workspaceId)
+		},
+		{ projection: memberProjection }
+	);
+}
+
+export async function removeWorkspaceMember(input: {
+	memberId: string;
+	workspaceId: string;
+}): Promise<boolean> {
+	const members = await getWorkspaceMembersCollection();
+
+	const result = await members.deleteOne({
+		_id: new ObjectId(input.memberId),
+		workspaceId: new ObjectId(input.workspaceId),
+		role: { $ne: WORKSPACE_MEMBER_ROLES.OWNER }
+	});
+
+	return result.deletedCount === 1;
 }

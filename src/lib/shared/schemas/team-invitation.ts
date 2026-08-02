@@ -19,3 +19,15 @@ export const teamInvitationDefaults: TeamInvitationInput = {
 	email: '',
 	role: DEFAULT_TEAM_INVITE_ROLE
 };
+
+export const cancelTeamInvitationSchema = z.object({
+	invitationId: z.string().trim().min(1, 'Invitation is required.')
+});
+
+export type CancelTeamInvitationInput = z.infer<typeof cancelTeamInvitationSchema>;
+
+export const removeTeamMemberSchema = z.object({
+	memberId: z.string().trim().min(1, 'Member is required.')
+});
+
+export type RemoveTeamMemberInput = z.infer<typeof removeTeamMemberSchema>;

@@ -1,6 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import type { Cookies } from '@sveltejs/kit';
 import { clearSessionCookie } from '$lib/server/auth/session';
+import { safeRedirectPath } from '$lib/server/auth/post-auth-navigation';
 import { getPlatformAuthOrigin } from '$lib/server/workspace-host';
 
 /**
@@ -10,11 +11,20 @@ import { getPlatformAuthOrigin } from '$lib/server/workspace-host';
 export function completeLogout(cookies: Cookies, url: URL): never {
 	clearSessionCookie(cookies);
 
+	const redirectTo = safeRedirectPath(url.searchParams.get('redirectTo'));
+	const destination = redirectTo !== '/' ? redirectTo : '/login?signedOut=1';
+
 	const platformOrigin = getPlatformAuthOrigin(url);
 
 	if (url.origin !== platformOrigin) {
-		redirect(303, `${platformOrigin}/logout`);
+		const platformLogout = new URL('/logout', platformOrigin);
+
+		if (redirectTo !== '/') {
+			platformLogout.searchParams.set('redirectTo', redirectTo);
+		}
+
+		redirect(303, platformLogout.toString());
 	}
 
-	redirect(303, '/login?signedOut=1');
+	redirect(303, destination);
 }

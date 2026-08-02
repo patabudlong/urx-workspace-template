@@ -18,6 +18,7 @@ import {
 	INVALID_CREDENTIALS_MESSAGE
 } from '$lib/shared/auth-messages';
 import { getGoogleAuthErrorMessage } from '$lib/shared/google-auth';
+import { safeEmailPrefill } from '$lib/shared/auth-prefill';
 import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
@@ -31,9 +32,11 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		);
 	}
 
+	const prefilledEmail = safeEmailPrefill(url.searchParams.get('email'));
+
 	const form = await superValidate(zod4(loginSchema), {
 		defaults: {
-			email: '',
+			email: prefilledEmail,
 			password: ''
 		}
 	});
