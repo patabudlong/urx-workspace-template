@@ -1,4 +1,5 @@
 import { findUsersByIds } from '$lib/server/repositories/users';
+import { resolveUserPresenceStatus } from '$lib/server/presence';
 import {
 	ensureWorkspaceMemberIndexes,
 	listWorkspaceMembersByWorkspaceId
@@ -6,6 +7,7 @@ import {
 import { WORKSPACE_MEMBER_ROLES } from '$lib/shared/models/workspace-member';
 import { getWorkspaceMemberRoleLabel } from '$lib/shared/team/member-roles';
 import { buildUserDisplay } from '$lib/shared/user-display';
+import type { PresenceStatus } from '$lib/shared/presence';
 
 export type WorkspaceMemberListItem = {
 	id: string;
@@ -16,6 +18,7 @@ export type WorkspaceMemberListItem = {
 	initials: string;
 	role: string;
 	roleLabel: string;
+	presenceStatus: PresenceStatus;
 	joinedAt: string;
 };
 
@@ -55,7 +58,8 @@ export async function listWorkspaceMembersForDisplay(
 						email: user.email,
 						firstName: user.firstName,
 						lastName: user.lastName,
-						avatarUrl: user.avatarUrl
+						avatarUrl: user.avatarUrl,
+						presenceStatus: resolveUserPresenceStatus(user)
 					})
 				: null;
 			const name = display?.fullName ?? 'Unknown member';
@@ -69,6 +73,7 @@ export async function listWorkspaceMembersForDisplay(
 				initials: display?.initials ?? '?',
 				role: membership.role,
 				roleLabel: getWorkspaceMemberRoleLabel(membership.role),
+				presenceStatus: display?.presenceStatus ?? 'offline',
 				joinedAt: membership.joinedAt.toISOString()
 			};
 		})

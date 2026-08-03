@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { isE164PhoneNumber, normalizePhoneNumber } from '$lib/shared/phone';
+import type { PresenceStatus } from '$lib/shared/presence';
 
 const personNameSchema = z
 	.string()
@@ -49,5 +50,7 @@ export type UserProfile = {
 	phoneVerified: boolean;
 	emailVerified: boolean;
 	hasGoogleAccount: boolean;
+	presenceStatus: PresenceStatus;
+	lastSeenAt: string | null;
 	createdAt: string;
 };

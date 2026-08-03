@@ -1,4 +1,5 @@
 import { findUserById } from '$lib/server/repositories/users';
+import { resolveUserPresenceStatus } from '$lib/server/presence';
 import { buildUserDisplay, type UserDisplay } from '$lib/shared/user-display';
 
 export async function loadUserDisplay(
@@ -11,6 +12,7 @@ export async function loadUserDisplay(
 		email: user?.email ?? fallbackEmail,
 		firstName: user?.firstName,
 		lastName: user?.lastName,
-		avatarUrl: user?.avatarUrl
+		avatarUrl: user?.avatarUrl,
+		presenceStatus: user ? resolveUserPresenceStatus(user) : 'offline'
 	});
 }

@@ -1,4 +1,5 @@
 import type { UserDocument, TermsConsent } from '$lib/shared/models/user';
+import type { PresenceStatus } from '$lib/shared/presence';
 import { buildNextPasswordHistory } from '$lib/shared/password-policy';
 import { getUsersCollection } from '$lib/server/db/collections';
 import { ObjectId } from 'mongodb';
@@ -35,6 +36,8 @@ const userProjection = {
 	emailVerifiedAt: 1,
 	termsConsent: 1,
 	platformRole: 1,
+	presenceStatus: 1,
+	lastSeenAt: 1,
 	createdAt: 1,
 	updatedAt: 1
 } as const;
@@ -295,4 +298,62 @@ export async function updateUserGoogleAvatar(
 			}
 		}
 	);
+}
+
+export async function updateUserPresenceStatus(
+	userId: string,
+	status: PresenceStatus
+): Promise<UserDocument | null> {
+	const users = await getUsersCollection<UserDocument>();
+	const now = new Date();
+
+	const update =
+		status === 'offline'
+			? {
+					$set: {
+						presenceStatus: status,
+						updatedAt: now
+					},
+					$unset: { lastSeenAt: '' as const }
+				}
+			: {
+					$set: {
+						presenceStatus: status,
+						lastSeenAt: now,
+						updatedAt: now
+					}
+				};
+
+	const result = await users.findOneAndUpdate(
+		{ _id: new ObjectId(userId) },
+		update,
+		{ returnDocument: 'after', projection: userProjection }
+	);
+
+	return result ?? null;
+}
+
+export async function touchUserPresence(userId: string): Promise<UserDocument | null> {
+	const user = await findUserById(userId);
+
+	if (!user || user.presenceStatus === 'offline') {
+		return user;
+	}
+
+	const users = await getUsersCollection<UserDocument>();
+	const now = new Date();
+
+	const result = await users.findOneAndUpdate(
+		{ _id: new ObjectId(userId) },
+		{
+			$set: {
+				presenceStatus: user.presenceStatus ?? 'online',
+				lastSeenAt: now,
+				updatedAt: now
+			}
+		},
+		{ returnDocument: 'after', projection: userProjection }
+	);
+
+	return result ?? null;
 }

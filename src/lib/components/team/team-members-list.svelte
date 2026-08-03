@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ListPagination from '$lib/components/list/list-pagination.svelte';
+	import PresenceStatusIndicator from '$lib/components/presence-status-indicator.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import UserAvatar from '$lib/components/user-avatar.svelte';
 	import EditTeamMemberDialog from '$lib/components/team/edit-team-member-dialog.svelte';
@@ -16,6 +17,8 @@
 	} from '$lib/shared/team/member-messages';
 	import { getWorkspaceMemberRoleLabel } from '$lib/shared/team/member-roles';
 	import { getTeamRoleTooltip } from '$lib/shared/team/role-permissions';
+	import type { PresenceStatus } from '$lib/shared/presence';
+	import { PRESENCE_STATUS_LABELS } from '$lib/shared/presence';
 	import { invalidateAll } from '$app/navigation';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import CrownIcon from '@lucide/svelte/icons/crown';
@@ -31,6 +34,7 @@
 		initials: string;
 		role: string;
 		roleLabel: string;
+		presenceStatus: PresenceStatus;
 		joinedAt: string;
 	};
 
@@ -247,6 +251,7 @@
 			<thead class="bg-muted/40 border-b">
 				<tr>
 					<th class="text-muted-foreground min-w-32 px-4 py-3 text-left font-medium">Name</th>
+					<th class="text-muted-foreground min-w-28 px-4 py-3 text-left font-medium">Status</th>
 					<th class="text-muted-foreground min-w-48 px-4 py-3 text-left font-medium">Email</th>
 					<th class="text-muted-foreground min-w-28 px-4 py-3 text-left font-medium">Role</th>
 					<th class="text-muted-foreground min-w-28 px-4 py-3 text-left font-medium">Joined</th>
@@ -265,10 +270,17 @@
 								<UserAvatar
 									avatarUrl={member.avatarUrl}
 									initials={member.initials}
+									presenceStatus={member.presenceStatus}
 									class="size-8"
 								/>
 								<span class="truncate font-medium">{member.name}</span>
 							</div>
+						</td>
+						<td class="px-4 py-3">
+							<span class="text-muted-foreground inline-flex items-center gap-1.5 text-sm">
+								<PresenceStatusIndicator status={member.presenceStatus} class="size-2.5" />
+								{PRESENCE_STATUS_LABELS[member.presenceStatus]}
+							</span>
 						</td>
 						<td class="text-muted-foreground px-4 py-3">{member.email}</td>
 						<td class="px-4 py-3">

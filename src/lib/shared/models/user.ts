@@ -1,4 +1,5 @@
 import type { ObjectId } from 'mongodb';
+import type { PresenceStatus } from '$lib/shared/presence';
 
 export type TermsConsent = {
 	acceptedAt: Date;
@@ -26,6 +27,8 @@ export type UserDocument = {
 	emailVerifiedAt?: Date;
 	termsConsent?: TermsConsent;
 	platformRole?: PlatformRole;
+	presenceStatus?: PresenceStatus;
+	lastSeenAt?: Date;
 	createdAt: Date;
 	updatedAt: Date;
 };

@@ -17,7 +17,8 @@
 			email: profile.email,
 			firstName: profile.firstName,
 			lastName: profile.lastName,
-			avatarUrl: profile.avatarUrl
+			avatarUrl: profile.avatarUrl,
+			presenceStatus: profile.presenceStatus
 		})
 	);
 

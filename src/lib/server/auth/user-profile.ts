@@ -4,6 +4,7 @@ import {
 	isUserEmailVerified,
 	isUserPhoneVerified
 } from '$lib/server/repositories/users';
+import { resolveUserPresenceStatus } from '$lib/server/presence';
 
 export function toUserProfile(user: UserDocument): UserProfile {
 	return {
@@ -16,6 +17,8 @@ export function toUserProfile(user: UserDocument): UserProfile {
 		phoneVerified: isUserPhoneVerified(user),
 		emailVerified: isUserEmailVerified(user),
 		hasGoogleAccount: Boolean(user.googleId),
+		presenceStatus: resolveUserPresenceStatus(user),
+		lastSeenAt: user.lastSeenAt?.toISOString() ?? null,
 		createdAt: user.createdAt.toISOString()
 	};
 }

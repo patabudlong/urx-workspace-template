@@ -766,6 +766,150 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						}
 					}
 				}
+			},
+			'/users/me/presence': {
+				patch: {
+					tags: ['Users'],
+					summary: 'Update presence status',
+					description:
+						'Sets the authenticated user visibility status for workspace members (online, away, busy, offline).',
+					operationId: 'updateCurrentUserPresence',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{
+							$ref: '#/components/parameters/XRequestId'
+						}
+					],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: {
+									$ref: '#/components/schemas/UpdatePresenceStatusRequest'
+								}
+							}
+						}
+					},
+					responses: {
+						'200': {
+							description: 'Updated user profile with new presence status',
+							content: {
+								'application/json': {
+									schema: {
+										type: 'object',
+										required: ['data', 'meta'],
+										properties: {
+											data: {
+												type: 'object',
+												required: ['profile'],
+												properties: {
+													profile: {
+														$ref: '#/components/schemas/UserProfile'
+													}
+												}
+											},
+											meta: {
+												$ref: '#/components/schemas/ApiMeta'
+											}
+										}
+									}
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ApiErrorResponse'
+									}
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ApiErrorResponse'
+									}
+								}
+							}
+						},
+						'404': {
+							description: 'User not found',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ApiErrorResponse'
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			'/users/me/presence/heartbeat': {
+				post: {
+					tags: ['Users'],
+					summary: 'Presence heartbeat',
+					description:
+						'Updates last-seen timestamp while the user is active. Clients should call periodically when the app is in the foreground.',
+					operationId: 'sendPresenceHeartbeat',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{
+							$ref: '#/components/parameters/XRequestId'
+						}
+					],
+					responses: {
+						'200': {
+							description: 'Heartbeat accepted',
+							content: {
+								'application/json': {
+									schema: {
+										type: 'object',
+										required: ['data', 'meta'],
+										properties: {
+											data: {
+												type: 'object',
+												required: ['profile'],
+												properties: {
+													profile: {
+														$ref: '#/components/schemas/UserProfile'
+													}
+												}
+											},
+											meta: {
+												$ref: '#/components/schemas/ApiMeta'
+											}
+										}
+									}
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ApiErrorResponse'
+									}
+								}
+							}
+						},
+						'404': {
+							description: 'User not found',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ApiErrorResponse'
+									}
+								}
+							}
+						}
+					}
+				}
 			}
 		},
 		components: {
@@ -1026,6 +1170,8 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						'phoneVerified',
 						'emailVerified',
 						'hasGoogleAccount',
+						'presenceStatus',
+						'lastSeenAt',
 						'createdAt'
 					],
 					properties: {
@@ -1065,6 +1211,16 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 							type: 'boolean',
 							description: 'Whether Google sign-in is linked'
 						},
+						presenceStatus: {
+							type: 'string',
+							enum: ['online', 'away', 'busy', 'offline'],
+							description: 'Effective presence status visible to workspace members'
+						},
+						lastSeenAt: {
+							type: ['string', 'null'],
+							format: 'date-time',
+							description: 'Last heartbeat timestamp when not offline'
+						},
 						createdAt: {
 							type: 'string',
 							format: 'date-time'
@@ -1086,6 +1242,17 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 							minLength: 1,
 							maxLength: 60,
 							example: 'Smith'
+						}
+					}
+				},
+				UpdatePresenceStatusRequest: {
+					type: 'object',
+					required: ['status'],
+					properties: {
+						status: {
+							type: 'string',
+							enum: ['online', 'away', 'busy', 'offline'],
+							example: 'online'
 						}
 					}
 				},

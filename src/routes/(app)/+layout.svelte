@@ -3,6 +3,7 @@
 	import AppSidebar from '$lib/components/app-sidebar.svelte';
 	import AppSidebarViewport from '$lib/components/app-sidebar-viewport.svelte';
 	import PreventStaleAuthView from '$lib/components/prevent-stale-auth-view.svelte';
+	import PresenceHeartbeat from '$lib/components/presence-heartbeat.svelte';
 	import SiteHeader from '$lib/components/site-header.svelte';
 	import { SIDEBAR_WIDTH, SIDEBAR_WIDTH_TEAM_SECONDARY } from '$lib/components/ui/sidebar/constants.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
@@ -24,6 +25,7 @@
 </script>
 
 <PreventStaleAuthView />
+<PresenceHeartbeat />
 
 <Sidebar.Provider
 	bind:open={sidebarOpen}

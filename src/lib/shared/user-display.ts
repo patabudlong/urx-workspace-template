@@ -1,8 +1,11 @@
+import type { PresenceStatus } from '$lib/shared/presence';
+
 export type UserDisplay = {
 	email: string;
 	fullName: string;
 	avatarUrl: string | null;
 	initials: string;
+	presenceStatus: PresenceStatus;
 };
 
 export function buildUserDisplay(input: {
@@ -10,6 +13,7 @@ export function buildUserDisplay(input: {
 	firstName?: string | null;
 	lastName?: string | null;
 	avatarUrl?: string | null;
+	presenceStatus?: PresenceStatus;
 }): UserDisplay {
 	const firstName = input.firstName?.trim() ?? '';
 	const lastName = input.lastName?.trim() ?? '';
@@ -20,6 +24,7 @@ export function buildUserDisplay(input: {
 		email: input.email,
 		fullName,
 		avatarUrl: input.avatarUrl?.trim() || null,
-		initials
+		initials,
+		presenceStatus: input.presenceStatus ?? 'offline'
 	};
 }
