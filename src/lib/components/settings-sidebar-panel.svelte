@@ -13,7 +13,7 @@
 	</p>
 </Sidebar.Header>
 
-<Sidebar.Content class="min-h-0 flex-1 gap-1 ps-1 pt-1">
+<Sidebar.Content class="min-h-0 flex-1 gap-1 overflow-visible ps-1 pt-1">
 	<Sidebar.Group>
 		<Sidebar.GroupLabel>Settings</Sidebar.GroupLabel>
 		<Sidebar.Menu>
