@@ -187,6 +187,30 @@ export async function linkGoogleAccount(
 	return result ?? null;
 }
 
+export async function updateUserProfile(
+	userId: string,
+	input: { firstName: string; lastName: string }
+): Promise<UserDocument | null> {
+	const users = await getUsersCollection<UserDocument>();
+	const now = new Date();
+	const firstName = input.firstName.trim();
+	const lastName = input.lastName.trim();
+
+	const result = await users.findOneAndUpdate(
+		{ _id: new ObjectId(userId) },
+		{
+			$set: {
+				firstName,
+				lastName,
+				updatedAt: now
+			}
+		},
+		{ returnDocument: 'after', projection: userProjection }
+	);
+
+	return result ?? null;
+}
+
 export async function updateUserGoogleAvatar(
 	userId: string,
 	avatarUrl?: string

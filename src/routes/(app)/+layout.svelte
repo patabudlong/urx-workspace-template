@@ -15,6 +15,12 @@
 	const isTeamSection = $derived(
 		page.url.pathname === '/team' || page.url.pathname.startsWith('/team/')
 	);
+	const isSettingsSection = $derived(
+		page.url.pathname === '/account' ||
+			page.url.pathname === '/security' ||
+			page.url.pathname === '/billing'
+	);
+	const isNestedAppSection = $derived(isTeamSection || isSettingsSection);
 </script>
 
 <PreventStaleAuthView />
@@ -39,7 +45,7 @@
 		<div
 			class={cn(
 				'flex min-h-0 w-full min-w-0 flex-1 flex-col',
-				!isTeamSection && 'gap-6 overflow-x-auto overflow-y-auto p-4 md:gap-8 md:p-6'
+				!isNestedAppSection && 'gap-6 overflow-x-auto overflow-y-auto p-4 md:gap-8 md:p-6'
 			)}
 		>
 			{@render children()}

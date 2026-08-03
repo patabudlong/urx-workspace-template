@@ -6,5 +6,9 @@ export const load: PageServerLoad = async ({ parent }) => {
 
 	requireWorkspaceMember(workspace);
 
-	return {};
+	return {
+		meta: {
+			title: 'Security'
+		}
+	};
 };

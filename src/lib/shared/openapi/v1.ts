@@ -44,6 +44,10 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 			{
 				name: 'Workspaces',
 				description: 'Workspace onboarding and availability'
+			},
+			{
+				name: 'Users',
+				description: 'Authenticated user profile'
 			}
 		],
 		paths: {
@@ -622,6 +626,146 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						}
 					}
 				}
+			},
+			'/users/me': {
+				get: {
+					tags: ['Users'],
+					summary: 'Get current user profile',
+					description: 'Returns the authenticated user profile for account settings screens.',
+					operationId: 'getCurrentUserProfile',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{
+							$ref: '#/components/parameters/XRequestId'
+						}
+					],
+					responses: {
+						'200': {
+							description: 'Current user profile',
+							content: {
+								'application/json': {
+									schema: {
+										type: 'object',
+										required: ['data', 'meta'],
+										properties: {
+											data: {
+												type: 'object',
+												required: ['profile'],
+												properties: {
+													profile: {
+														$ref: '#/components/schemas/UserProfile'
+													}
+												}
+											},
+											meta: {
+												$ref: '#/components/schemas/ApiMeta'
+											}
+										}
+									}
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ApiErrorResponse'
+									}
+								}
+							}
+						},
+						'404': {
+							description: 'User not found',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ApiErrorResponse'
+									}
+								}
+							}
+						}
+					}
+				},
+				patch: {
+					tags: ['Users'],
+					summary: 'Update current user profile',
+					description: 'Updates the authenticated user first and last name.',
+					operationId: 'updateCurrentUserProfile',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{
+							$ref: '#/components/parameters/XRequestId'
+						}
+					],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: {
+									$ref: '#/components/schemas/UpdateProfileRequest'
+								}
+							}
+						}
+					},
+					responses: {
+						'200': {
+							description: 'Updated user profile',
+							content: {
+								'application/json': {
+									schema: {
+										type: 'object',
+										required: ['data', 'meta'],
+										properties: {
+											data: {
+												type: 'object',
+												required: ['profile'],
+												properties: {
+													profile: {
+														$ref: '#/components/schemas/UserProfile'
+													}
+												}
+											},
+											meta: {
+												$ref: '#/components/schemas/ApiMeta'
+											}
+										}
+									}
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ApiErrorResponse'
+									}
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ApiErrorResponse'
+									}
+								}
+							}
+						},
+						'404': {
+							description: 'User not found',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ApiErrorResponse'
+									}
+								}
+							}
+						}
+					}
+				}
 			}
 		},
 		components: {
@@ -867,6 +1011,71 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						emailVerified: {
 							type: 'boolean',
 							description: 'Whether the user has confirmed their email address'
+						}
+					}
+				},
+				UserProfile: {
+					type: 'object',
+					required: [
+						'id',
+						'email',
+						'firstName',
+						'lastName',
+						'avatarUrl',
+						'emailVerified',
+						'hasGoogleAccount',
+						'createdAt'
+					],
+					properties: {
+						id: {
+							type: 'string',
+							description: 'User id (Mongo ObjectId as string)'
+						},
+						email: {
+							type: 'string',
+							format: 'email'
+						},
+						firstName: {
+							type: 'string',
+							example: 'Jane'
+						},
+						lastName: {
+							type: 'string',
+							example: 'Smith'
+						},
+						avatarUrl: {
+							type: ['string', 'null'],
+							format: 'uri',
+							description: 'Profile image URL when available'
+						},
+						emailVerified: {
+							type: 'boolean'
+						},
+						hasGoogleAccount: {
+							type: 'boolean',
+							description: 'Whether Google sign-in is linked'
+						},
+						createdAt: {
+							type: 'string',
+							format: 'date-time'
+						}
+					}
+				},
+				UpdateProfileRequest: {
+					type: 'object',
+					required: ['firstName', 'lastName'],
+					properties: {
+						firstName: {
+							type: 'string',
+							minLength: 1,
+							maxLength: 60,
+							example: 'Jane'
+						},
+						lastName: {
+							type: 'string',
+							minLength: 1,
+							maxLength: 60,
+							example: 'Smith'
 						}
 					}
 				},
