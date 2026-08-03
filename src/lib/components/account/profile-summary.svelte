@@ -5,6 +5,7 @@
 	import type { UserProfile } from '$lib/shared/schemas/account';
 	import { formatFullName } from '$lib/shared/user';
 	import CircleCheckIcon from '@lucide/svelte/icons/circle-check';
+	import PhoneIcon from '@lucide/svelte/icons/phone';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 
 	let { profile }: { profile: UserProfile } = $props();
@@ -56,6 +57,20 @@
 
 			{#if profile.hasGoogleAccount}
 				<Badge variant="outline">Google connected</Badge>
+			{/if}
+
+			{#if profile.phoneNumber}
+				{#if profile.phoneVerified}
+					<Badge variant="secondary" class="gap-1">
+						<PhoneIcon class="size-3" aria-hidden="true" />
+						Phone verified
+					</Badge>
+				{:else}
+					<Badge variant="outline" class="gap-1">
+						<TriangleAlertIcon class="size-3" aria-hidden="true" />
+						Phone not verified
+					</Badge>
+				{/if}
 			{/if}
 		</div>
 

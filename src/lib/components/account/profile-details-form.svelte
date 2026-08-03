@@ -22,6 +22,7 @@
 	let showSuccess = $state(false);
 
 	const superform = superForm(untrack(() => data.form), {
+		id: 'profileForm',
 		validators: zod4Client(updateProfileSchema),
 		resetForm: false,
 		onSubmit: () => {

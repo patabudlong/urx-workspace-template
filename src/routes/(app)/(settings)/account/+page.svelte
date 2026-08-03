@@ -2,6 +2,7 @@
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
 	import ProfileDetailsForm from '$lib/components/account/profile-details-form.svelte';
 	import ProfileEmailCard from '$lib/components/account/profile-email-card.svelte';
+	import ProfilePhoneCard from '$lib/components/account/profile-phone-card.svelte';
 	import ProfileSummary from '$lib/components/account/profile-summary.svelte';
 	import * as Card from '$lib/components/ui/card/index.js';
 
@@ -28,5 +29,6 @@
 	</Card.Root>
 
 	<ProfileDetailsForm {data} />
+	<ProfilePhoneCard {data} profile={data.profile} />
 	<ProfileEmailCard profile={data.profile} />
 </div>

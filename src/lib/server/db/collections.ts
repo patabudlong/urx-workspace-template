@@ -7,6 +7,7 @@ export const CollectionNames = {
 	consentEvents: 'consent_events',
 	passwordResetTokens: 'password_reset_tokens',
 	emailVerificationTokens: 'email_verification_tokens',
+	phoneVerificationTokens: 'phone_verification_tokens',
 	workspaces: 'workspaces',
 	workspaceMembers: 'workspace_members',
 	workspaceInvitations: 'workspace_invitations'
@@ -41,6 +42,12 @@ export async function getEmailVerificationTokensCollection<T extends Document = 
 	Collection<T>
 > {
 	return getCollection<T>('emailVerificationTokens');
+}
+
+export async function getPhoneVerificationTokensCollection<T extends Document = Document>(): Promise<
+	Collection<T>
+> {
+	return getCollection<T>('phoneVerificationTokens');
 }
 
 export async function getWorkspacesCollection<T extends Document = Document>(): Promise<Collection<T>> {

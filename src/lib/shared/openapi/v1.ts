@@ -1022,6 +1022,8 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						'firstName',
 						'lastName',
 						'avatarUrl',
+						'phoneNumber',
+						'phoneVerified',
 						'emailVerified',
 						'hasGoogleAccount',
 						'createdAt'
@@ -1047,6 +1049,14 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 							type: ['string', 'null'],
 							format: 'uri',
 							description: 'Profile image URL when available'
+						},
+						phoneNumber: {
+							type: ['string', 'null'],
+							description: 'E.164 mobile number when set'
+						},
+						phoneVerified: {
+							type: 'boolean',
+							description: 'Whether the mobile number has been verified'
 						},
 						emailVerified: {
 							type: 'boolean'

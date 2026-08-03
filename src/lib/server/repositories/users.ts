@@ -11,6 +11,7 @@ export async function ensureUserIndexes(): Promise<void> {
 			const users = await getUsersCollection();
 			await users.createIndex({ email: 1 }, { unique: true });
 			await users.createIndex({ googleId: 1 }, { unique: true, sparse: true });
+			await users.createIndex({ phoneNumber: 1 }, { unique: true, sparse: true });
 		})().catch((error) => {
 			userIndexesPromise = null;
 			throw error;
@@ -29,6 +30,8 @@ const userProjection = {
 	firstName: 1,
 	lastName: 1,
 	avatarUrl: 1,
+	phoneNumber: 1,
+	phoneVerifiedAt: 1,
 	emailVerifiedAt: 1,
 	termsConsent: 1,
 	platformRole: 1,
@@ -38,6 +41,10 @@ const userProjection = {
 
 export function isUserEmailVerified(user: UserDocument): boolean {
 	return user.emailVerifiedAt != null;
+}
+
+export function isUserPhoneVerified(user: UserDocument): boolean {
+	return user.phoneNumber != null && user.phoneVerifiedAt != null;
 }
 
 export async function findUserById(userId: string): Promise<UserDocument | null> {
@@ -71,6 +78,12 @@ export async function findUserByGoogleId(googleId: string): Promise<UserDocument
 	const users = await getUsersCollection<UserDocument>();
 
 	return users.findOne({ googleId }, { projection: userProjection });
+}
+
+export async function findUserByPhoneNumber(phoneNumber: string): Promise<UserDocument | null> {
+	const users = await getUsersCollection<UserDocument>();
+
+	return users.findOne({ phoneNumber }, { projection: userProjection });
 }
 
 export async function createUser(input: {
@@ -209,6 +222,58 @@ export async function updateUserProfile(
 	);
 
 	return result ?? null;
+}
+
+export async function updateUserPhoneNumber(
+	userId: string,
+	phoneNumber: string | null
+): Promise<UserDocument | null> {
+	const users = await getUsersCollection<UserDocument>();
+	const now = new Date();
+
+	if (!phoneNumber) {
+		const result = await users.findOneAndUpdate(
+			{ _id: new ObjectId(userId) },
+			{
+				$set: { updatedAt: now },
+				$unset: { phoneNumber: '', phoneVerifiedAt: '' }
+			},
+			{ returnDocument: 'after', projection: userProjection }
+		);
+
+		return result ?? null;
+	}
+
+	const result = await users.findOneAndUpdate(
+		{ _id: new ObjectId(userId) },
+		{
+			$set: {
+				phoneNumber,
+				updatedAt: now
+			},
+			$unset: { phoneVerifiedAt: '' }
+		},
+		{ returnDocument: 'after', projection: userProjection }
+	);
+
+	return result ?? null;
+}
+
+export async function markUserPhoneVerified(userId: string): Promise<boolean> {
+	const users = await getUsersCollection<UserDocument>();
+	const now = new Date();
+
+	const result = await users.updateOne(
+		{ _id: new ObjectId(userId), phoneNumber: { $exists: true, $ne: '' } },
+		{
+			$set: {
+				phoneVerifiedAt: now,
+				updatedAt: now
+			}
+		}
+	);
+
+	return result.matchedCount === 1;
 }
 
 export async function updateUserGoogleAvatar(

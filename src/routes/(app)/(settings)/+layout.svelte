@@ -22,7 +22,7 @@
 	<div class="flex min-h-0 min-w-0 flex-1 flex-col gap-6 overflow-x-auto overflow-y-auto p-4 lg:gap-8 lg:p-6">
 		<div class="lg:hidden">
 			<SectionSidebar
-				title="Profile"
+				title="Account"
 				description="Manage your personal account, security, and billing preferences."
 				items={settingsNavItems}
 			/>

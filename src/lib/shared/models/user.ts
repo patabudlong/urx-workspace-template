@@ -21,6 +21,8 @@ export type UserDocument = {
 	firstName: string;
 	lastName: string;
 	avatarUrl?: string;
+	phoneNumber?: string;
+	phoneVerifiedAt?: Date;
 	emailVerifiedAt?: Date;
 	termsConsent?: TermsConsent;
 	platformRole?: PlatformRole;

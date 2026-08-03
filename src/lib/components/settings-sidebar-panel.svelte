@@ -7,7 +7,7 @@
 </script>
 
 <Sidebar.Header class="border-sidebar-border shrink-0 gap-1 border-b p-4">
-	<h2 class="text-sm font-semibold">Profile</h2>
+	<h2 class="text-sm font-semibold">Account</h2>
 	<p class="text-muted-foreground mt-1 text-xs leading-relaxed">
 		Manage your personal account, security, and billing preferences.
 	</p>
