@@ -4,6 +4,7 @@ import { getSessionCookieDomain } from '$lib/server/workspace-host';
 
 export const SESSION_COOKIE_NAME = 'urx_session';
 export const ACCESS_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
+export const TWO_FACTOR_PENDING_TTL_SECONDS = 60 * 10; // 10 minutes
 export const MIN_JWT_SECRET_LENGTH = 32;
 
 type SessionCookieOptions = {

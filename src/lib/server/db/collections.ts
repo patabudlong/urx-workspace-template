@@ -10,7 +10,8 @@ export const CollectionNames = {
 	phoneVerificationTokens: 'phone_verification_tokens',
 	workspaces: 'workspaces',
 	workspaceMembers: 'workspace_members',
-	workspaceInvitations: 'workspace_invitations'
+	workspaceInvitations: 'workspace_invitations',
+	twoFactorOtpTokens: 'two_factor_otp_tokens'
 } as const;
 
 type CollectionName = keyof typeof CollectionNames;
@@ -64,4 +65,10 @@ export async function getWorkspaceInvitationsCollection<T extends Document = Doc
 	Collection<T>
 > {
 	return getCollection<T>('workspaceInvitations');
+}
+
+export async function getTwoFactorOtpTokensCollection<T extends Document = Document>(): Promise<
+	Collection<T>
+> {
+	return getCollection<T>('twoFactorOtpTokens');
 }

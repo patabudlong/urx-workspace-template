@@ -9,6 +9,10 @@ import {
 	safeRedirectPath
 } from '$lib/server/auth/post-auth-navigation';
 import { getSessionCookieOptions, SESSION_COOKIE_NAME } from '$lib/server/auth/session';
+import {
+	getTwoFactorPendingCookieOptions,
+	TWO_FACTOR_PENDING_COOKIE_NAME
+} from '$lib/server/auth/two-factor/challenge';
 import { getAuthRateLimitFormFailure } from '$lib/server/security/auth-rate-limit-form';
 import { assertAuthRecaptcha } from '$lib/server/security/recaptcha';
 import { loginSchema } from '$lib/shared/schemas/auth';
@@ -95,7 +99,7 @@ export const actions: Actions = {
 				action: RECAPTCHA_ACTIONS.LOGIN,
 				remoteIp: getClientAddress()
 			}),
-			authenticateWithCredentials(form.data.email, form.data.password)
+			authenticateWithCredentials(form.data.email, form.data.password, cookies)
 		]);
 
 		if (!recaptcha.ok) {
@@ -116,11 +120,28 @@ export const actions: Actions = {
 			return message(form, INVALID_CREDENTIALS_MESSAGE, { status: 401 });
 		}
 
-		cookies.set(SESSION_COOKIE_NAME, result.accessToken, getSessionCookieOptions());
+		if ('twoFactorRequired' in result && result.twoFactorRequired) {
+			cookies.set(
+				TWO_FACTOR_PENDING_COOKIE_NAME,
+				result.pendingToken,
+				getTwoFactorPendingCookieOptions()
+			);
+
+			const redirectTo = safeRedirectPath(url.searchParams.get('redirectTo'));
+			const twoFactorUrl =
+				redirectTo === '/'
+					? '/login/2fa'
+					: `/login/2fa?redirectTo=${encodeURIComponent(redirectTo)}`;
+
+			redirect(303, twoFactorUrl);
+		}
+
+		const session = result as { accessToken: string; user: { id: string } };
+		cookies.set(SESSION_COOKIE_NAME, session.accessToken, getSessionCookieOptions());
 
 		redirect(
 			303,
-			await resolveAuthenticatedLandingPath(result.user.id, {
+			await resolveAuthenticatedLandingPath(session.user.id, {
 				requestedPath: url.searchParams.get('redirectTo'),
 				requestUrl: url
 			})

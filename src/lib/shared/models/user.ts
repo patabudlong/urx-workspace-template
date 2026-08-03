@@ -1,5 +1,6 @@
 import type { ObjectId } from 'mongodb';
 import type { PresenceStatus } from '$lib/shared/presence';
+import type { UserTwoFactorDocument } from '$lib/shared/models/two-factor';
 
 export type TermsConsent = {
 	acceptedAt: Date;
@@ -30,6 +31,7 @@ export type UserDocument = {
 	platformRole?: PlatformRole;
 	presenceStatus?: PresenceStatus;
 	lastSeenAt?: Date;
+	twoFactor?: UserTwoFactorDocument;
 	createdAt: Date;
 	updatedAt: Date;
 };

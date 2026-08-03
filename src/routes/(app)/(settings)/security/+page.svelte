@@ -1,6 +1,7 @@
 <script lang="ts">
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
 	import SecurityPasswordCard from '$lib/components/security/security-password-card.svelte';
+	import SecurityTwoFactorCard from '$lib/components/security/security-two-factor-card.svelte';
 
 	let { data } = $props();
 </script>
@@ -13,4 +14,5 @@
 	/>
 
 	<SecurityPasswordCard {data} security={data.security} />
+	<SecurityTwoFactorCard {data} security={data.security} />
 </div>

@@ -4,7 +4,16 @@ import { zod4 } from 'sveltekit-superforms/adapters';
 import type { Actions, PageServerLoad } from './$types';
 import { changePasswordForUser } from '$lib/server/auth/change-password';
 import { toSecurityProfile } from '$lib/server/auth/security-profile';
+import { disableTwoFactorWithPassword } from '$lib/server/auth/two-factor/disable';
+import {
+	confirmSetupOtp,
+	confirmTotpSetup,
+	regenerateUserBackupCodes,
+	sendSetupOtpCode,
+	startTotpSetup
+} from '$lib/server/auth/two-factor/setup';
 import { findUserById } from '$lib/server/repositories/users';
+import { removeTrustedDevice } from '$lib/server/repositories/user-two-factor';
 import { consumeChangePasswordRateLimit } from '$lib/server/security/account-security-rate-limit';
 import { requireWorkspaceMember } from '$lib/server/workspace-access';
 import {
@@ -16,9 +25,26 @@ import {
 	CURRENT_PASSWORD_INVALID_MESSAGE,
 	PASSWORD_CHANGE_FAILED_MESSAGE,
 	PASSWORD_CHANGE_NOT_AVAILABLE_MESSAGE,
-	PASSWORD_CHANGED_MESSAGE
+	PASSWORD_CHANGED_MESSAGE,
+	TWO_FACTOR_ALREADY_ENABLED_MESSAGE,
+	TWO_FACTOR_BACKUP_CODES_REGENERATED_MESSAGE,
+	TWO_FACTOR_CODE_SENT_MESSAGE,
+	TWO_FACTOR_DISABLED_MESSAGE,
+	TWO_FACTOR_DISABLE_PASSWORD_REQUIRED_MESSAGE,
+	TWO_FACTOR_INVALID_CODE_MESSAGE,
+	TWO_FACTOR_PHONE_REQUIRED_MESSAGE,
+	TWO_FACTOR_SEND_FAILED_MESSAGE,
+	TWO_FACTOR_SETUP_FAILED_MESSAGE,
+	TWO_FACTOR_SMS_NOT_CONFIGURED_MESSAGE,
+	TWO_FACTOR_TRUSTED_DEVICE_REVOKED_MESSAGE
 } from '$lib/shared/security-messages';
-import { changePasswordSchema } from '$lib/shared/schemas/security';
+import {
+	changePasswordSchema,
+	twoFactorDisableSchema,
+	twoFactorRegenerateBackupCodesSchema,
+	twoFactorSetupOtpConfirmSchema,
+	twoFactorSetupTotpConfirmSchema
+} from '$lib/shared/schemas/security';
 
 export const load: PageServerLoad = async ({ parent, locals }) => {
 	const { workspace } = await parent();
@@ -40,9 +66,44 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 		{ id: 'changePasswordForm', errors: false }
 	);
 
+	const confirmTotpForm = await superValidate(
+		{ code: '' },
+		zod4(twoFactorSetupTotpConfirmSchema),
+		{ id: 'confirmTotpForm', errors: false }
+	);
+
+	const confirmSmsForm = await superValidate(
+		{ code: '' },
+		zod4(twoFactorSetupOtpConfirmSchema),
+		{ id: 'confirmSmsForm', errors: false }
+	);
+
+	const confirmEmailForm = await superValidate(
+		{ code: '' },
+		zod4(twoFactorSetupOtpConfirmSchema),
+		{ id: 'confirmEmailForm', errors: false }
+	);
+
+	const disableTwoFactorForm = await superValidate(
+		{ password: '' },
+		zod4(twoFactorDisableSchema),
+		{ id: 'disableTwoFactorForm', errors: false }
+	);
+
+	const regenerateBackupCodesForm = await superValidate(
+		{ password: '' },
+		zod4(twoFactorRegenerateBackupCodesSchema),
+		{ id: 'regenerateBackupCodesForm', errors: false }
+	);
+
 	return {
 		security: toSecurityProfile(user),
 		changePasswordForm,
+		confirmTotpForm,
+		confirmSmsForm,
+		confirmEmailForm,
+		disableTwoFactorForm,
+		regenerateBackupCodesForm,
 		meta: {
 			title: 'Security'
 		}
@@ -102,5 +163,251 @@ export const actions: Actions = {
 		}
 
 		return message(form, PASSWORD_CHANGED_MESSAGE);
+	},
+
+	startTotpSetup: async ({ locals }) => {
+		if (!locals.user) {
+			return fail(401);
+		}
+
+		const result = await startTotpSetup(locals.user.id);
+
+		if (!result.ok) {
+			if (result.reason === 'ALREADY_ENABLED') {
+				return fail(400, { error: TWO_FACTOR_ALREADY_ENABLED_MESSAGE });
+			}
+
+			return fail(500, { error: TWO_FACTOR_SETUP_FAILED_MESSAGE });
+		}
+
+		return {
+			totpSetup: {
+				qrDataUrl: result.qrDataUrl,
+				manualKey: result.manualKey
+			}
+		};
+	},
+
+	confirmTotpSetup: async ({ request, locals }) => {
+		const form = await superValidate(request, zod4(twoFactorSetupTotpConfirmSchema), {
+			id: 'confirmTotpForm'
+		});
+
+		if (!locals.user) {
+			return fail(401, { confirmTotpForm: form });
+		}
+
+		if (!form.valid) {
+			return fail(400, { confirmTotpForm: form });
+		}
+
+		const result = await confirmTotpSetup({
+			userId: locals.user.id,
+			code: form.data.code
+		});
+
+		if (!result.ok) {
+			if (result.reason === 'NO_PENDING_SETUP') {
+				return message(form, TWO_FACTOR_SETUP_FAILED_MESSAGE, { status: 400 });
+			}
+
+			return message(form, TWO_FACTOR_INVALID_CODE_MESSAGE, { status: 400 });
+		}
+
+		return {
+			confirmTotpForm: form,
+			backupCodes: result.backupCodes ?? []
+		};
+	},
+
+	sendSmsSetupCode: async ({ locals }) => {
+		if (!locals.user) {
+			return fail(401);
+		}
+
+		const result = await sendSetupOtpCode({ userId: locals.user.id, method: 'sms' });
+
+		if (!result.ok) {
+			if (result.reason === 'ALREADY_ENABLED') {
+				return fail(400, { error: TWO_FACTOR_ALREADY_ENABLED_MESSAGE });
+			}
+
+			if (result.reason === 'PHONE_NOT_VERIFIED') {
+				return fail(400, { error: TWO_FACTOR_PHONE_REQUIRED_MESSAGE });
+			}
+
+			if (result.reason === 'SMS_NOT_CONFIGURED') {
+				return fail(400, { error: TWO_FACTOR_SMS_NOT_CONFIGURED_MESSAGE });
+			}
+
+			return fail(500, { error: TWO_FACTOR_SEND_FAILED_MESSAGE });
+		}
+
+		return { sent: true, message: TWO_FACTOR_CODE_SENT_MESSAGE };
+	},
+
+	confirmSmsSetup: async ({ request, locals }) => {
+		const form = await superValidate(request, zod4(twoFactorSetupOtpConfirmSchema), {
+			id: 'confirmSmsForm'
+		});
+
+		if (!locals.user) {
+			return fail(401, { confirmSmsForm: form });
+		}
+
+		if (!form.valid) {
+			return fail(400, { confirmSmsForm: form });
+		}
+
+		const result = await confirmSetupOtp({
+			userId: locals.user.id,
+			method: 'sms',
+			code: form.data.code
+		});
+
+		if (!result.ok) {
+			return message(form, TWO_FACTOR_INVALID_CODE_MESSAGE, { status: 400 });
+		}
+
+		return {
+			confirmSmsForm: form,
+			backupCodes: result.backupCodes ?? []
+		};
+	},
+
+	sendEmailSetupCode: async ({ locals }) => {
+		if (!locals.user) {
+			return fail(401);
+		}
+
+		const result = await sendSetupOtpCode({ userId: locals.user.id, method: 'email' });
+
+		if (!result.ok) {
+			if (result.reason === 'ALREADY_ENABLED') {
+				return fail(400, { error: TWO_FACTOR_ALREADY_ENABLED_MESSAGE });
+			}
+
+			return fail(500, { error: TWO_FACTOR_SEND_FAILED_MESSAGE });
+		}
+
+		return { sent: true, message: TWO_FACTOR_CODE_SENT_MESSAGE };
+	},
+
+	confirmEmailSetup: async ({ request, locals }) => {
+		const form = await superValidate(request, zod4(twoFactorSetupOtpConfirmSchema), {
+			id: 'confirmEmailForm'
+		});
+
+		if (!locals.user) {
+			return fail(401, { confirmEmailForm: form });
+		}
+
+		if (!form.valid) {
+			return fail(400, { confirmEmailForm: form });
+		}
+
+		const result = await confirmSetupOtp({
+			userId: locals.user.id,
+			method: 'email',
+			code: form.data.code
+		});
+
+		if (!result.ok) {
+			return message(form, TWO_FACTOR_INVALID_CODE_MESSAGE, { status: 400 });
+		}
+
+		return {
+			confirmEmailForm: form,
+			backupCodes: result.backupCodes ?? []
+		};
+	},
+
+	disableTwoFactor: async ({ request, locals, cookies }) => {
+		const form = await superValidate(request, zod4(twoFactorDisableSchema), {
+			id: 'disableTwoFactorForm'
+		});
+
+		if (!locals.user) {
+			return fail(401, { disableTwoFactorForm: form });
+		}
+
+		if (!form.valid) {
+			return fail(400, { disableTwoFactorForm: form });
+		}
+
+		const result = await disableTwoFactorWithPassword({
+			userId: locals.user.id,
+			password: form.data.password,
+			cookies
+		});
+
+		if (!result.ok) {
+			if (result.reason === 'PASSWORD_REQUIRED') {
+				return message(form, TWO_FACTOR_DISABLE_PASSWORD_REQUIRED_MESSAGE, { status: 400 });
+			}
+
+			if (result.reason === 'INVALID_PASSWORD') {
+				return message(form, CURRENT_PASSWORD_INVALID_MESSAGE, { status: 400 });
+			}
+
+			return message(form, TWO_FACTOR_SETUP_FAILED_MESSAGE, { status: 500 });
+		}
+
+		return message(form, TWO_FACTOR_DISABLED_MESSAGE);
+	},
+
+	regenerateBackupCodes: async ({ request, locals }) => {
+		const form = await superValidate(request, zod4(twoFactorRegenerateBackupCodesSchema), {
+			id: 'regenerateBackupCodesForm'
+		});
+
+		if (!locals.user) {
+			return fail(401, { regenerateBackupCodesForm: form });
+		}
+
+		if (!form.valid) {
+			return fail(400, { regenerateBackupCodesForm: form });
+		}
+
+		const user = await findUserById(locals.user.id);
+
+		if (!user?.passwordHash) {
+			return message(form, TWO_FACTOR_DISABLE_PASSWORD_REQUIRED_MESSAGE, { status: 400 });
+		}
+
+		const { verifyPassword } = await import('$lib/server/auth/password');
+
+		if (!(await verifyPassword(form.data.password, user.passwordHash))) {
+			return message(form, CURRENT_PASSWORD_INVALID_MESSAGE, { status: 400 });
+		}
+
+		const result = await regenerateUserBackupCodes(locals.user.id);
+
+		if (!result.ok) {
+			return message(form, TWO_FACTOR_SETUP_FAILED_MESSAGE, { status: 500 });
+		}
+
+		return {
+			regenerateBackupCodesForm: form,
+			backupCodes: result.backupCodes,
+			message: TWO_FACTOR_BACKUP_CODES_REGENERATED_MESSAGE
+		};
+	},
+
+	revokeTrustedDevice: async ({ request, locals }) => {
+		if (!locals.user) {
+			return fail(401);
+		}
+
+		const formData = await request.formData();
+		const deviceId = formData.get('deviceId')?.toString() ?? '';
+
+		if (!deviceId) {
+			return fail(400, { error: 'Device id is required' });
+		}
+
+		await removeTrustedDevice(locals.user.id, deviceId);
+
+		return { ok: true, message: TWO_FACTOR_TRUSTED_DEVICE_REVOKED_MESSAGE };
 	}
 };

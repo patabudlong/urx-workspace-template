@@ -1,4 +1,4 @@
-import { redirect } from '@sveltejs/kit';
+import { isRedirect, redirect } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { authenticateWithGoogle } from '$lib/server/auth/google';
 import { resolveAuthenticatedLandingPath } from '$lib/server/auth/post-auth-navigation';
@@ -13,6 +13,10 @@ import {
 	isGoogleAuthConfigured
 } from '$lib/server/auth/google-oauth';
 import { getSessionCookieOptions, SESSION_COOKIE_NAME } from '$lib/server/auth/session';
+import {
+	getTwoFactorPendingCookieOptions,
+	TWO_FACTOR_PENDING_COOKIE_NAME
+} from '$lib/server/auth/two-factor/challenge';
 import { getPlatformAuthOrigin, getSessionCookieDomain } from '$lib/server/workspace-host';
 import { CONSENT_CONTEXTS, type ConsentContext } from '$lib/shared/models/consent-event';
 
@@ -83,7 +87,7 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			codeVerifier
 		});
 		const profile = await fetchGoogleProfile(accessToken);
-		const result = await authenticateWithGoogle(profile);
+		const result = await authenticateWithGoogle(profile, cookies);
 
 		if (!result.ok) {
 			if (result.reason === 'AUTH_NOT_CONFIGURED') {
@@ -93,16 +97,39 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 			authErrorRedirect(context, 'google_account_conflict');
 		}
 
-		cookies.set(SESSION_COOKIE_NAME, result.accessToken, getSessionCookieOptions());
+		if ('twoFactorRequired' in result && result.twoFactorRequired) {
+			cookies.set(
+				TWO_FACTOR_PENDING_COOKIE_NAME,
+				result.pendingToken,
+				getTwoFactorPendingCookieOptions()
+			);
+
+			const twoFactorUrl =
+				redirectTo === '/'
+					? '/login/2fa'
+					: `/login/2fa?redirectTo=${encodeURIComponent(redirectTo)}`;
+
+			redirect(303, twoFactorUrl);
+		}
+
+		const session = result as typeof result & {
+			accessToken: string;
+			user: { id: string };
+		};
+		cookies.set(SESSION_COOKIE_NAME, session.accessToken, getSessionCookieOptions());
 
 		redirect(
 			303,
-			await resolveAuthenticatedLandingPath(result.user.id, {
+			await resolveAuthenticatedLandingPath(session.user.id, {
 				requestedPath: redirectTo,
 				requestUrl: url
 			})
 		);
-	} catch {
+	} catch (error) {
+		if (isRedirect(error)) {
+			throw error;
+		}
+
 		authErrorRedirect(context, 'google_auth_failed');
 	}
 };

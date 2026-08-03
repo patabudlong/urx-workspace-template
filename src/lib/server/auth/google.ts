@@ -1,5 +1,9 @@
-import { createAuthSession, type AuthSession } from '$lib/server/auth/session-user';
+import type { Cookies } from '@sveltejs/kit';
+import { resolveAuthSessionOrChallenge } from '$lib/server/auth/two-factor/challenge';
 import type { GoogleProfile } from '$lib/server/auth/google-oauth';
+import type { AuthSession } from '$lib/server/auth/session-user';
+import { ACCESS_TOKEN_TTL_SECONDS } from '$lib/server/auth/session';
+import type { TwoFactorMethod } from '$lib/shared/models/two-factor';
 import {
 	createUser,
 	ensureUserIndexes,
@@ -12,11 +16,47 @@ import {
 export type GoogleAuthResult =
 	| ({ ok: true; isNewUser: boolean } & AuthSession)
 	| {
+			ok: true;
+			isNewUser: boolean;
+			twoFactorRequired: true;
+			pendingToken: string;
+			methods: TwoFactorMethod[];
+			expiresIn: number;
+	  }
+	| {
 			ok: false;
 			reason: 'AUTH_NOT_CONFIGURED' | 'ACCOUNT_EXISTS_WITH_DIFFERENT_PROVIDER';
 	  };
 
-export async function authenticateWithGoogle(profile: GoogleProfile): Promise<GoogleAuthResult> {
+async function resolveGoogleUserSession(
+	user: Awaited<ReturnType<typeof findUserByGoogleId>>,
+	isNewUser: boolean,
+	cookies?: Cookies
+): Promise<GoogleAuthResult> {
+	const authResult = await resolveAuthSessionOrChallenge(user!, cookies);
+
+	if (authResult.status === 'two_factor_required') {
+		return {
+			ok: true,
+			isNewUser,
+			twoFactorRequired: true,
+			pendingToken: authResult.pendingToken,
+			methods: authResult.methods,
+			expiresIn: ACCESS_TOKEN_TTL_SECONDS
+		};
+	}
+
+	return {
+		ok: true,
+		isNewUser,
+		...authResult.session
+	};
+}
+
+export async function authenticateWithGoogle(
+	profile: GoogleProfile,
+	cookies?: Cookies
+): Promise<GoogleAuthResult> {
 	try {
 		await ensureUserIndexes();
 
@@ -24,13 +64,7 @@ export async function authenticateWithGoogle(profile: GoogleProfile): Promise<Go
 
 		if (existingByGoogleId) {
 			await updateUserGoogleAvatar(existingByGoogleId._id.toString(), profile.pictureUrl);
-			const session = await createAuthSession(existingByGoogleId);
-
-			return {
-				ok: true,
-				isNewUser: false,
-				...session
-			};
+			return resolveGoogleUserSession(existingByGoogleId, false, cookies);
 		}
 
 		const existingByEmail = await findUserByEmail(profile.email);
@@ -54,13 +88,7 @@ export async function authenticateWithGoogle(profile: GoogleProfile): Promise<Go
 			}
 
 			await updateUserGoogleAvatar(linkedUser._id.toString(), profile.pictureUrl);
-			const session = await createAuthSession(linkedUser);
-
-			return {
-				ok: true,
-				isNewUser: false,
-				...session
-			};
+			return resolveGoogleUserSession(linkedUser, false, cookies);
 		}
 
 		const user = await createUser({
@@ -72,13 +100,7 @@ export async function authenticateWithGoogle(profile: GoogleProfile): Promise<Go
 			emailVerifiedAt: new Date()
 		});
 
-		const session = await createAuthSession(user);
-
-		return {
-			ok: true,
-			isNewUser: true,
-			...session
-		};
+		return resolveGoogleUserSession(user, true, cookies);
 	} catch (error) {
 		if (error instanceof Error && error.message.includes('JWT_SECRET')) {
 			return { ok: false, reason: 'AUTH_NOT_CONFIGURED' };

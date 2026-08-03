@@ -39,6 +39,7 @@ const userProjection = {
 	platformRole: 1,
 	presenceStatus: 1,
 	lastSeenAt: 1,
+	twoFactor: 1,
 	createdAt: 1,
 	updatedAt: 1
 } as const;

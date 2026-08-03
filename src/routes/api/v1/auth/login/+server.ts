@@ -54,12 +54,31 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 		return jsonError('UNAUTHORIZED', 'Invalid email or password', { requestId });
 	}
 
+	if ('twoFactorRequired' in result && result.twoFactorRequired) {
+		return jsonOk(
+			{
+				twoFactorRequired: true,
+				pendingToken: result.pendingToken,
+				tokenType: 'Bearer',
+				expiresIn: result.expiresIn,
+				methods: result.methods
+			},
+			{ requestId }
+		);
+	}
+
+	const session = result as {
+		accessToken: string;
+		expiresIn: number;
+		user: import('$lib/shared/schemas/auth').AuthUser;
+	};
+
 	return jsonOk(
 		{
-			accessToken: result.accessToken,
+			accessToken: session.accessToken,
 			tokenType: 'Bearer',
-			expiresIn: result.expiresIn,
-			user: result.user
+			expiresIn: session.expiresIn,
+			user: session.user
 		},
 		{ requestId }
 	);
