@@ -18,6 +18,7 @@ export type UserDocument = {
 	email: string;
 	passwordHash?: string;
 	passwordHistory?: string[];
+	passwordChangedAt?: Date;
 	googleId?: string;
 	firstName: string;
 	lastName: string;

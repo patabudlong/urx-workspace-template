@@ -27,6 +27,7 @@ const userProjection = {
 	email: 1,
 	passwordHash: 1,
 	passwordHistory: 1,
+	passwordChangedAt: 1,
 	googleId: 1,
 	firstName: 1,
 	lastName: 1,
@@ -107,7 +108,9 @@ export async function createUser(input: {
 
 	const result = await users.insertOne({
 		email,
-		...(input.passwordHash ? { passwordHash: input.passwordHash } : {}),
+		...(input.passwordHash
+			? { passwordHash: input.passwordHash, passwordChangedAt: now }
+			: {}),
 		...(input.googleId ? { googleId: input.googleId } : {}),
 		firstName,
 		lastName,
@@ -171,6 +174,7 @@ export async function rotateUserPassword(
 			$set: {
 				passwordHash: input.newPasswordHash,
 				passwordHistory,
+				passwordChangedAt: now,
 				updatedAt: now
 			}
 		}
