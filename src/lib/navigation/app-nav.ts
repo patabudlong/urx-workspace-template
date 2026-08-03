@@ -59,7 +59,7 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
 	}
 ];
 
-export const OWNER_PROFILE_NAV_ITEMS: AppNavItem[] = [
+export const USER_PROFILE_NAV_ITEMS: AppNavItem[] = [
 	{
 		title: 'Account',
 		href: '/account',
@@ -71,7 +71,21 @@ export const OWNER_PROFILE_NAV_ITEMS: AppNavItem[] = [
 		href: '/security',
 		icon: ShieldIcon,
 		match: 'exact'
-	},
+	}
+];
+
+/** @deprecated Use USER_PROFILE_NAV_ITEMS or getProfileNavItems instead */
+export const OWNER_PROFILE_NAV_ITEMS: AppNavItem[] = [
+	...USER_PROFILE_NAV_ITEMS,
+	{
+		title: 'Billing',
+		href: '/billing',
+		icon: CreditCardIcon,
+		match: 'exact'
+	}
+];
+
+export const WORKSPACE_OWNER_PROFILE_NAV_ITEMS: AppNavItem[] = [
 	{
 		title: 'Billing',
 		href: '/billing',
@@ -104,6 +118,17 @@ export function isWorkspaceOwner(role: string | null | undefined): boolean {
 	return role === WORKSPACE_MEMBER_ROLES.OWNER;
 }
 
+export function getProfileNavItems(workspaceRole: string | null | undefined): AppNavItem[] {
+	const items = [...USER_PROFILE_NAV_ITEMS];
+
+	if (isWorkspaceOwner(workspaceRole)) {
+		items.push(...WORKSPACE_OWNER_PROFILE_NAV_ITEMS);
+	}
+
+	return items;
+}
+
+/** @deprecated Use getProfileNavItems instead */
 export function getOwnerProfileNavItems(workspaceRole: string | null | undefined): AppNavItem[] {
-	return isWorkspaceOwner(workspaceRole) ? OWNER_PROFILE_NAV_ITEMS : [];
+	return getProfileNavItems(workspaceRole);
 }

@@ -4,18 +4,24 @@
 	import SiteHeaderGlobalSearch from '$lib/components/site-header-global-search.svelte';
 	import SiteHeaderWorkspaceSwitcher from '$lib/components/site-header-workspace-switcher.svelte';
 	import ThemeToggle from '$lib/components/theme-toggle.svelte';
+	import UserProfileMenu from '$lib/components/user-profile-menu.svelte';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import type { UserDisplay } from '$lib/shared/user-display';
 	import type { WorkspaceContext } from '$lib/shared/workspace-context';
 
 	let {
+		userDisplay,
 		workspace = null,
 		workspaces = [],
-		workspaceHostSuffix = ''
+		workspaceHostSuffix = '',
+		workspaceRole = null
 	}: {
+		userDisplay: UserDisplay;
 		workspace?: WorkspaceContext | null;
 		workspaces?: WorkspaceContext[];
 		workspaceHostSuffix?: string;
+		workspaceRole?: string | null;
 	} = $props();
 </script>
 
@@ -29,8 +35,9 @@
 	</div>
 
 	<div class="flex shrink-0 items-center gap-1 sm:gap-2">
-		<SiteHeaderGlobalSearch workspaceRole={workspace?.role ?? null} />
+		<SiteHeaderGlobalSearch workspaceRole={workspaceRole} />
 		<NotificationBellButton />
 		<ThemeToggle />
+		<UserProfileMenu {userDisplay} {workspaceRole} />
 	</div>
 </header>

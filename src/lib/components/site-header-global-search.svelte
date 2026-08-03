@@ -1,6 +1,6 @@
 <script lang="ts">
 	import * as Command from '$lib/components/ui/command/index.js';
-	import { APP_NAV_GROUPS, getOwnerProfileNavItems } from '$lib/navigation/app-nav';
+	import { APP_NAV_GROUPS, getProfileNavItems } from '$lib/navigation/app-nav';
 	import { cn } from '$lib/utils.js';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import { onMount } from 'svelte';
@@ -14,7 +14,7 @@
 	let open = $state(false);
 
 	const navGroups = $derived(APP_NAV_GROUPS);
-	const ownerNavItems = $derived(getOwnerProfileNavItems(workspaceRole));
+	const profileNavItems = $derived(getProfileNavItems(workspaceRole));
 
 	const isMac = $derived(
 		typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.platform)
@@ -99,9 +99,9 @@
 				{/each}
 			</Command.Group>
 		{/each}
-		{#if ownerNavItems.length > 0}
+		{#if profileNavItems.length > 0}
 			<Command.Group heading="Settings">
-				{#each ownerNavItems as item (item.href)}
+				{#each profileNavItems as item (item.href)}
 					<Command.LinkItem
 						href={item.href}
 						onSelect={() => {

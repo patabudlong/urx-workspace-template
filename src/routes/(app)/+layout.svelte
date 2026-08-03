@@ -25,14 +25,16 @@
 	style="--sidebar-width: {SIDEBAR_WIDTH}; --team-secondary-sidebar-width: {SIDEBAR_WIDTH_TEAM_SECONDARY};"
 >
 	<AppSidebarViewport />
-	<AppSidebar userDisplay={data.userDisplay} workspaceRole={data.workspace?.role ?? null} />
+	<AppSidebar />
 	<Sidebar.Inset
 		class="h-full min-h-0 min-w-0 overflow-hidden md:peer-data-[variant=inset]:m-0 md:peer-data-[variant=inset]:rounded-none md:peer-data-[variant=inset]:shadow-none"
 	>
 		<SiteHeader
+			userDisplay={data.userDisplay}
 			workspace={data.workspace}
 			workspaces={data.workspaces}
 			workspaceHostSuffix={data.workspaceHostSuffix}
+			workspaceRole={data.workspace?.role ?? null}
 		/>
 		<div
 			class={cn(

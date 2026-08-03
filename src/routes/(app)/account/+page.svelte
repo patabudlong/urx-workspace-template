@@ -7,17 +7,17 @@
 	<PageHeader
 		eyebrow="Settings"
 		title="Account"
-		description="Manage your workspace profile, contact details, and branding."
+		description="Manage your profile, contact details, and preferences."
 	/>
 
 	<Card.Root>
 		<Card.Header>
-			<Card.Title>Workspace account</Card.Title>
-			<Card.Description>Account settings for this workspace will be available here.</Card.Description>
+			<Card.Title>Your account</Card.Title>
+			<Card.Description>Personal account settings will be available here.</Card.Description>
 		</Card.Header>
 		<Card.Content>
 			<p class="text-muted-foreground text-sm">
-				Update workspace name, logo, contact information, and public-facing details.
+				Update your name, email, avatar, and other personal details.
 			</p>
 		</Card.Content>
 	</Card.Root>

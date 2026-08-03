@@ -1,13 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import SidebarNavUser from '$lib/components/sidebar-nav-user.svelte';
 	import SiteBrandMark from '$lib/components/site-brand-mark.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { APP_NAV_GROUPS, isAppNavActive, type AppNavItem } from '$lib/navigation/app-nav';
-	import type { UserDisplay } from '$lib/shared/user-display';
-
-	let { userDisplay, workspaceRole = null }: { userDisplay: UserDisplay; workspaceRole?: string | null } =
-		$props();
 
 	function navTarget(item: AppNavItem): string | undefined {
 		return item.external ? '_blank' : undefined;
@@ -55,10 +50,6 @@
 			</Sidebar.Group>
 		{/each}
 	</Sidebar.Content>
-
-	<Sidebar.Footer>
-		<SidebarNavUser {userDisplay} {workspaceRole} />
-	</Sidebar.Footer>
 
 	<Sidebar.Rail />
 </Sidebar.Root>

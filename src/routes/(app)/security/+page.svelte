@@ -7,17 +7,17 @@
 	<PageHeader
 		eyebrow="Settings"
 		title="Security"
-		description="Review access controls, authentication policies, and workspace security settings."
+		description="Review your sign-in methods, password, and personal security settings."
 	/>
 
 	<Card.Root>
 		<Card.Header>
-			<Card.Title>Workspace security</Card.Title>
-			<Card.Description>Security controls for this workspace will be available here.</Card.Description>
+			<Card.Title>Your security</Card.Title>
+			<Card.Description>Personal security settings will be available here.</Card.Description>
 		</Card.Header>
 		<Card.Content>
 			<p class="text-muted-foreground text-sm">
-				Manage sign-in requirements, session policies, and team access safeguards.
+				Manage your password, connected accounts, and sign-in preferences.
 			</p>
 		</Card.Content>
 	</Card.Root>
