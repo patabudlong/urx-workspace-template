@@ -19,6 +19,7 @@
 	import PhoneIcon from '@lucide/svelte/icons/phone';
 	import { invalidateAll } from '$app/navigation';
 	import { deserialize } from '$app/forms';
+	import { resetSuperformDialogState, whenDialogCloses } from '$lib/forms/superform-dialog';
 	import { untrack } from 'svelte';
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
@@ -73,7 +74,7 @@
 		}
 	);
 
-	const { enhance, form, message: formMessage } = superform;
+	const { enhance, form, message: formMessage, errors, reset } = superform;
 
 	const formError = $derived(
 		$formMessage && !isAuthRateLimitMessage($formMessage) ? $formMessage : null
@@ -118,16 +119,19 @@
 			sendCode();
 		}
 	});
+
+	function resetDialogState() {
+		resetSuperformDialogState({ reset, errors });
+		submitting = false;
+		formRateLimited = false;
+		codeSent = false;
+		sendError = null;
+	}
 </script>
 
 <Dialog.Root
 	bind:open
-	onOpenChange={(value) => {
-		if (!value) {
-			codeSent = false;
-			sendError = null;
-		}
-	}}
+	onOpenChange={(value) => whenDialogCloses(value, resetDialogState)}
 >
 	<Dialog.Content
 		class="gap-0 overflow-hidden p-0 sm:max-w-md"

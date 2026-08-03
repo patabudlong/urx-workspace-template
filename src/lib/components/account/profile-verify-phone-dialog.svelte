@@ -21,6 +21,7 @@
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import PhoneIcon from '@lucide/svelte/icons/phone';
 	import { invalidateAll } from '$app/navigation';
+	import { resetSuperformDialogState, whenDialogCloses } from '$lib/forms/superform-dialog';
 	import { untrack } from 'svelte';
 	import { superForm, formFieldProxy } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
@@ -79,10 +80,17 @@
 
 	const {
 		enhance: enhanceVerify,
-		message: verifyFormMessage
+		message: verifyFormMessage,
+		errors: verifyErrors,
+		reset: resetVerifyForm
 	} = verifySuperform;
 	const { value: verifyCodeField } = formFieldProxy(verifySuperform, 'code');
-	const { enhance: enhanceResend, message: resendFormMessage } = resendSuperform;
+	const {
+		enhance: enhanceResend,
+		message: resendFormMessage,
+		errors: resendErrors,
+		reset: resetResendForm
+	} = resendSuperform;
 
 	const verifyFormError = $derived(
 		typeof $verifyFormMessage === 'string' &&
@@ -113,18 +121,25 @@
 		verifyingCode || resendingCode || verifyFormRateLimited || resendFormRateLimited
 	);
 
-	$effect(() => {
-		if (!open) {
-			verifySuccess = false;
-		}
-	});
+	function resetDialogState() {
+		resetSuperformDialogState({ reset: resetVerifyForm, errors: verifyErrors });
+		resetSuperformDialogState({ reset: resetResendForm, errors: resendErrors });
+		verifyingCode = false;
+		resendingCode = false;
+		verifySuccess = false;
+		verifyFormRateLimited = false;
+		resendFormRateLimited = false;
+	}
 
 	function closeDialog() {
 		open = false;
 	}
 </script>
 
-<Dialog.Root bind:open>
+<Dialog.Root
+	bind:open
+	onOpenChange={(value) => whenDialogCloses(value, resetDialogState)}
+>
 	<Dialog.Content class="gap-0 overflow-hidden p-0 sm:max-w-md">
 		<div class="bg-primary/5 border-primary/10 border-b px-6 pt-8 pb-6 text-center">
 			<div

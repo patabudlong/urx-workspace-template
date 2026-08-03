@@ -17,7 +17,8 @@
 	import KeyRoundIcon from '@lucide/svelte/icons/key-round';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import { invalidateAll } from '$app/navigation';
-	import { onMount, untrack } from 'svelte';
+	import { resetSuperformDialogState, whenDialogCloses } from '$lib/forms/superform-dialog';
+	import { untrack } from 'svelte';
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
 
@@ -79,13 +80,17 @@
 				: 'Could not update password'
 	);
 
-	onMount(() => {
-		reset();
-		errors.clear();
-	});
+	function resetDialogState() {
+		resetSuperformDialogState({ reset, errors });
+		submitting = false;
+		formRateLimited = false;
+	}
 </script>
 
-<Dialog.Root bind:open>
+<Dialog.Root
+	bind:open
+	onOpenChange={(value) => whenDialogCloses(value, resetDialogState)}
+>
 	<Dialog.Content
 		class="gap-0 overflow-hidden p-0 sm:max-w-md"
 		onOpenAutoFocus={(event) => event.preventDefault()}

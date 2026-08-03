@@ -23,6 +23,7 @@
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import KeyRoundIcon from '@lucide/svelte/icons/key-round';
 	import { invalidateAll } from '$app/navigation';
+	import { resetSuperformDialogState, whenDialogCloses } from '$lib/forms/superform-dialog';
 	import { untrack } from 'svelte';
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
@@ -75,7 +76,7 @@
 		}
 	});
 
-	const { enhance, form, message: formMessage } = superform;
+	const { enhance, form, message: formMessage, errors, reset } = superform;
 
 	const formError = $derived(
 		$formMessage &&
@@ -88,6 +89,12 @@
 		isAuthRateLimitMessage($formMessage) ? $formMessage : null
 	);
 
+	function resetDialogState() {
+		resetSuperformDialogState({ reset, errors });
+		submitting = false;
+		formRateLimited = false;
+	}
+
 	$effect(() => {
 		if (!requiresPassword) {
 			$form.method = 'totp';
@@ -95,12 +102,15 @@
 	});
 </script>
 
-<Dialog.Root bind:open>
+<Dialog.Root
+	bind:open
+	onOpenChange={(value) => whenDialogCloses(value, resetDialogState)}
+>
 	<Dialog.Content
 		class="gap-0 overflow-hidden p-0 sm:max-w-md"
 		onOpenAutoFocus={(event) => event.preventDefault()}
 	>
-		<div class="border-b px-6 pt-8 pb-6 text-center">
+		<div class="bg-primary/5 border-primary/10 border-b px-6 pt-8 pb-6 text-center">
 			<div
 				class="bg-primary/10 mx-auto mb-4 flex size-14 items-center justify-center rounded-full"
 			>

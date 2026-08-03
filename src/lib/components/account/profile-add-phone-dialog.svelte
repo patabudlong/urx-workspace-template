@@ -17,6 +17,7 @@
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import PhoneIcon from '@lucide/svelte/icons/phone';
 	import { invalidateAll } from '$app/navigation';
+	import { resetSuperformDialogState, whenDialogCloses } from '$lib/forms/superform-dialog';
 	import { untrack } from 'svelte';
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
@@ -60,7 +61,9 @@
 	const {
 		enhance: enhancePhone,
 		form: phoneForm,
-		message: phoneFormMessage
+		message: phoneFormMessage,
+		errors: phoneErrors,
+		reset: resetPhoneForm
 	} = phoneSuperform;
 
 	const phoneFormError = $derived(
@@ -84,9 +87,18 @@
 			: 'Update your mobile number. Verification is required after any change.'
 	);
 	const submitLabel = $derived(mode === 'add' ? 'Add contact number' : 'Save contact number');
+
+	function resetDialogState() {
+		resetSuperformDialogState({ reset: resetPhoneForm, errors: phoneErrors });
+		savingPhone = false;
+		phoneFormRateLimited = false;
+	}
 </script>
 
-<Dialog.Root bind:open>
+<Dialog.Root
+	bind:open
+	onOpenChange={(value) => whenDialogCloses(value, resetDialogState)}
+>
 	<Dialog.Content class="gap-0 overflow-hidden p-0 sm:max-w-md">
 		<div class="bg-primary/5 border-primary/10 border-b px-6 pt-8 pb-6 text-center">
 			<div
