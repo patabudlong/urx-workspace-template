@@ -1,84 +1,49 @@
 <script lang="ts">
+	import ProfileAddPhoneDialog from '$lib/components/account/profile-add-phone-dialog.svelte';
 	import ProfileVerifyPhoneDialog from '$lib/components/account/profile-verify-phone-dialog.svelte';
-	import AuthFormMessageAlert from '$lib/components/auth/auth-form-message-alert.svelte';
-	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
-	import PhoneCountryInput from '$lib/components/onboarding/phone-country-input.svelte';
 	import PhoneNumberDisplay from '$lib/components/phone-number-display.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
-	import * as Form from '$lib/components/ui/form/index.js';
-	import {
-		PHONE_ALREADY_IN_USE_MESSAGE,
-		PHONE_UPDATED_MESSAGE,
-		PHONE_UPDATE_FAILED_MESSAGE
-	} from '$lib/shared/account-messages';
+	import { Label } from '$lib/components/ui/label/index.js';
 	import { ACCOUNT_WARNING_BADGE_CLASS } from '$lib/shared/account-ui';
-	import { isAuthRateLimitMessage } from '$lib/shared/auth-messages';
 	import type { PageData } from '../../../routes/(app)/(settings)/account/$types';
-	import { updatePhoneNumberSchema, type UserProfile } from '$lib/shared/schemas/account';
+	import type { UserProfile } from '$lib/shared/schemas/account';
 	import { cn } from '$lib/utils.js';
-	import Loader2Icon from '@lucide/svelte/icons/loader-2';
+	import PencilIcon from '@lucide/svelte/icons/pencil';
+	import PhoneIcon from '@lucide/svelte/icons/phone';
+	import PlusIcon from '@lucide/svelte/icons/plus';
 	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
-	import { invalidateAll } from '$app/navigation';
-	import { untrack } from 'svelte';
-	import { superForm } from 'sveltekit-superforms';
-	import { zod4Client } from 'sveltekit-superforms/adapters';
 
 	let { data, profile }: { data: PageData; profile: UserProfile } = $props();
 
-	let savingPhone = $state(false);
-	let phoneSaveSuccess = $state(false);
+	let addDialogOpen = $state(false);
 	let verifyDialogOpen = $state(false);
-	let phoneFormRateLimited = $state(false);
-
-	const phoneSuperform = superForm(untrack(() => data.phoneForm), {
-		id: 'phoneForm',
-		validators: zod4Client(updatePhoneNumberSchema),
-		resetForm: false,
-		onSubmit: () => {
-			savingPhone = true;
-			phoneSaveSuccess = false;
-		},
-		onUpdated: async ({ form: updatedForm }) => {
-			savingPhone = false;
-
-			if (updatedForm.message === PHONE_UPDATED_MESSAGE) {
-				phoneSaveSuccess = true;
-				await invalidateAll();
-			}
-		},
-		onError: () => {
-			savingPhone = false;
-		}
-	});
-
-	const {
-		enhance: enhancePhone,
-		form: phoneForm,
-		message: phoneFormMessage
-	} = phoneSuperform;
-
-	const phoneFormError = $derived(
-		$phoneFormMessage &&
-			$phoneFormMessage !== PHONE_UPDATED_MESSAGE &&
-			!isAuthRateLimitMessage($phoneFormMessage)
-			? typeof $phoneFormMessage === 'string'
-				? $phoneFormMessage
-				: null
-			: null
-	);
-
-	const phoneRateLimitMessage = $derived(
-		isAuthRateLimitMessage($phoneFormMessage) ? $phoneFormMessage : null
-	);
+	let phoneDialogMode = $state<'add' | 'change'>('add');
+	let pendingVerification = $state(false);
 
 	const needsVerification = $derived(Boolean(profile.phoneNumber) && !profile.phoneVerified);
+	const hasPhone = $derived(Boolean(profile.phoneNumber));
+
+	function openAddDialog() {
+		phoneDialogMode = 'add';
+		addDialogOpen = true;
+	}
+
+	function openChangeDialog() {
+		phoneDialogMode = 'change';
+		addDialogOpen = true;
+	}
+
+	function handlePhoneSaved() {
+		pendingVerification = true;
+	}
 
 	$effect(() => {
-		if (needsVerification && phoneSaveSuccess) {
+		if (pendingVerification && needsVerification) {
 			verifyDialogOpen = true;
+			pendingVerification = false;
 		}
 	});
 </script>
@@ -109,10 +74,16 @@
 					</div>
 					<PhoneNumberDisplay phoneNumber={profile.phoneNumber} class="text-base font-medium" />
 				</div>
-				<Button type="button" class="h-10 shrink-0" onclick={() => (verifyDialogOpen = true)}>
-					<ShieldCheckIcon class="size-4" aria-hidden="true" />
-					Verify now
-				</Button>
+				<div class="flex shrink-0 flex-wrap gap-2">
+					<Button type="button" variant="outline" class="h-10" onclick={openChangeDialog}>
+						<PencilIcon class="size-4" aria-hidden="true" />
+						Change
+					</Button>
+					<Button type="button" class="h-10" onclick={() => (verifyDialogOpen = true)}>
+						<ShieldCheckIcon class="size-4" aria-hidden="true" />
+						Verify now
+					</Button>
+				</div>
 			</div>
 		{:else if profile.phoneNumber && profile.phoneVerified}
 			<div
@@ -122,75 +93,44 @@
 					<p class="text-sm font-medium">Verified contact number</p>
 					<PhoneNumberDisplay phoneNumber={profile.phoneNumber} class="text-base font-medium" />
 				</div>
-				<Badge variant="secondary" class="w-fit shrink-0 gap-1">
-					<ShieldCheckIcon class="size-3" aria-hidden="true" />
-					Verified
-				</Badge>
+				<div class="flex shrink-0 items-center gap-2">
+					<Badge variant="secondary" class="w-fit gap-1">
+						<ShieldCheckIcon class="size-3" aria-hidden="true" />
+						Verified
+					</Badge>
+					<Button type="button" variant="outline" class="h-10" onclick={openChangeDialog}>
+						<PencilIcon class="size-4" aria-hidden="true" />
+						Change
+					</Button>
+				</div>
+			</div>
+		{:else}
+			<div class="max-w-xl space-y-4">
+				<div class="space-y-2">
+					<Label>Mobile number</Label>
+					<div
+						class="bg-muted/40 text-muted-foreground flex h-10 items-center gap-2 rounded-lg border px-3 text-sm"
+					>
+						<PhoneIcon class="size-4 shrink-0 opacity-60" aria-hidden="true" />
+						No contact number added
+					</div>
+				</div>
+				<Button type="button" class="h-10" onclick={openAddDialog}>
+					<PlusIcon class="size-4" aria-hidden="true" />
+					Add contact number
+				</Button>
 			</div>
 		{/if}
-
-		<form method="POST" action="?/updatePhoneNumber" use:enhancePhone class="max-w-xl space-y-5">
-			{#if phoneSaveSuccess && needsVerification}
-				<StatusAlert
-					variant="info"
-					title="Code sent"
-					description="Enter the verification code in the dialog to confirm your number."
-				/>
-			{:else if phoneSaveSuccess}
-				<StatusAlert
-					variant="success"
-					title="Contact number saved"
-					description="Your contact number has been updated."
-				/>
-			{:else if phoneRateLimitMessage}
-				<AuthFormMessageAlert
-					message={phoneRateLimitMessage}
-					bind:limited={phoneFormRateLimited}
-				/>
-			{:else if phoneFormError}
-				<StatusAlert
-					variant="danger"
-					title={phoneFormError === PHONE_ALREADY_IN_USE_MESSAGE
-						? 'Number already in use'
-						: 'Could not save contact number'}
-					description={phoneFormError}
-				/>
-			{/if}
-
-			<Form.Field form={phoneSuperform} name="phoneNumber">
-				<Form.Control>
-					{#snippet children({ props })}
-						<Form.Label>Mobile number</Form.Label>
-						<PhoneCountryInput
-							id={props.id}
-							name={props.name}
-							aria-invalid={props['aria-invalid']}
-							aria-describedby={props['aria-describedby']}
-							disabled={savingPhone}
-							bind:value={$phoneForm.phoneNumber}
-						/>
-					{/snippet}
-				</Form.Control>
-				<SingleFieldErrors />
-			</Form.Field>
-
-			<p class="text-muted-foreground text-xs leading-relaxed">
-				Choose your country and enter your mobile number. Local dev SMS appears in SMSPit at
-				http://localhost:2875 when SMS_PROVIDER=smspitt.
-			</p>
-
-			<Button type="submit" class="h-10" disabled={savingPhone || phoneFormRateLimited}>
-				{#if savingPhone}
-					<Loader2Icon class="size-4 animate-spin" aria-hidden="true" />
-					Saving…
-				{:else}
-					Save contact number
-				{/if}
-			</Button>
-		</form>
 	</Card.Content>
 </Card.Root>
 
-{#if needsVerification}
+<ProfileAddPhoneDialog
+	bind:open={addDialogOpen}
+	{data}
+	mode={phoneDialogMode}
+	onSaved={handlePhoneSaved}
+/>
+
+{#if hasPhone}
 	<ProfileVerifyPhoneDialog bind:open={verifyDialogOpen} {data} phoneNumber={profile.phoneNumber} />
 {/if}

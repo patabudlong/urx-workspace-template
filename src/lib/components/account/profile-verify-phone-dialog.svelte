@@ -19,7 +19,7 @@
 	import type { PageData } from '../../../routes/(app)/(settings)/account/$types';
 	import { cn } from '$lib/utils.js';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
-	import SmartphoneIcon from '@lucide/svelte/icons/smartphone';
+	import PhoneIcon from '@lucide/svelte/icons/phone';
 	import { invalidateAll } from '$app/navigation';
 	import { untrack } from 'svelte';
 	import { superForm, formFieldProxy } from 'sveltekit-superforms';
@@ -130,7 +130,7 @@
 			<div
 				class="bg-primary/10 mx-auto mb-4 flex size-14 items-center justify-center rounded-full"
 			>
-				<SmartphoneIcon class="text-primary size-7" aria-hidden="true" />
+				<PhoneIcon class="text-primary size-7" aria-hidden="true" />
 			</div>
 			<Dialog.Header class="space-y-2 text-center sm:text-center">
 				<Dialog.Title class="text-xl">Verify your number</Dialog.Title>
