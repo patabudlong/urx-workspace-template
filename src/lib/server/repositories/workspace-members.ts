@@ -135,3 +135,27 @@ export async function removeWorkspaceMember(input: {
 
 	return result.deletedCount === 1;
 }
+
+export async function updateWorkspaceMemberRole(input: {
+	memberId: string;
+	workspaceId: string;
+	role: WorkspaceMemberDocument['role'];
+}): Promise<boolean> {
+	const members = await getWorkspaceMembersCollection();
+
+	const result = await members.updateOne(
+		{
+			_id: new ObjectId(input.memberId),
+			workspaceId: new ObjectId(input.workspaceId),
+			role: { $ne: WORKSPACE_MEMBER_ROLES.OWNER }
+		},
+		{
+			$set: {
+				role: input.role,
+				updatedAt: new Date()
+			}
+		}
+	);
+
+	return result.matchedCount === 1;
+}

@@ -6,6 +6,8 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import UserPlusIcon from '@lucide/svelte/icons/user-plus';
 
+	import { page } from '$app/state';
+
 	let { data } = $props();
 
 	let searchQuery = $state('');
@@ -48,6 +50,8 @@
 				<TeamMembersList
 					members={data.members}
 					canManageMembers={data.canManageMembers}
+					actorRole={page.data.workspace?.role ?? ''}
+					currentUserId={page.data.user?.id ?? ''}
 					{searchQuery}
 				/>
 			{:else}

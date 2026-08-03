@@ -1,18 +1,25 @@
 <script lang="ts">
 	import ListPagination from '$lib/components/list/list-pagination.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
+	import UserAvatar from '$lib/components/user-avatar.svelte';
+	import EditTeamMemberDialog from '$lib/components/team/edit-team-member-dialog.svelte';
 	import RemoveTeamMemberDialog from '$lib/components/team/remove-team-member-dialog.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { WORKSPACE_MEMBER_ROLES } from '$lib/shared/models/workspace-member';
 	import { filterTeamMembers } from '$lib/shared/team/filter-team-members';
+	import { canUpdateWorkspaceMember } from '$lib/shared/team/member-management';
 	import {
 		formatTeamMemberRemovedMessage,
-		TEAM_MEMBER_REMOVE_FAILED_MESSAGE
+		formatTeamMemberUpdatedMessage,
+		TEAM_MEMBER_REMOVE_FAILED_MESSAGE,
+		TEAM_MEMBER_UPDATE_FAILED_MESSAGE
 	} from '$lib/shared/team/member-messages';
+	import { getWorkspaceMemberRoleLabel } from '$lib/shared/team/member-roles';
 	import { getTeamRoleTooltip } from '$lib/shared/team/role-permissions';
 	import { invalidateAll } from '$app/navigation';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import CrownIcon from '@lucide/svelte/icons/crown';
+	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import UserMinusIcon from '@lucide/svelte/icons/user-minus';
 
 	export type TeamMemberItem = {
@@ -20,6 +27,8 @@
 		userId: string;
 		name: string;
 		email: string;
+		avatarUrl: string | null;
+		initials: string;
 		role: string;
 		roleLabel: string;
 		joinedAt: string;
@@ -28,10 +37,14 @@
 	let {
 		members,
 		canManageMembers = false,
+		actorRole = '',
+		currentUserId = '',
 		searchQuery = ''
 	}: {
 		members: TeamMemberItem[];
 		canManageMembers?: boolean;
+		actorRole?: string;
+		currentUserId?: string;
 		searchQuery?: string;
 	} = $props();
 
@@ -39,11 +52,17 @@
 
 	let currentPage = $state(1);
 	let removingId = $state<string | null>(null);
+	let updatingId = $state<string | null>(null);
 	let removeMessage = $state<string | null>(null);
 	let removeError = $state<string | null>(null);
+	let updateMessage = $state<string | null>(null);
+	let updateError = $state<string | null>(null);
 	let removeDialogOpen = $state(false);
+	let editDialogOpen = $state(false);
 	let memberToRemove = $state<TeamMemberItem | null>(null);
+	let memberToEdit = $state<TeamMemberItem | null>(null);
 	let removeEnhanceAction = $state<SubmitFunction | undefined>(undefined);
+	let editEnhanceAction = $state<SubmitFunction | undefined>(undefined);
 
 	const filteredMembers = $derived(filterTeamMembers(members, searchQuery));
 	const isSearching = $derived(searchQuery.trim().length > 0);
@@ -62,6 +81,27 @@
 		return canManageMembers && member.role !== WORKSPACE_MEMBER_ROLES.OWNER;
 	}
 
+	function canEditMember(member: TeamMemberItem): boolean {
+		return canUpdateWorkspaceMember({
+			actorRole,
+			actorUserId: currentUserId,
+			targetUserId: member.userId,
+			targetRole: member.role
+		});
+	}
+
+	function openEditDialog(member: TeamMemberItem) {
+		memberToEdit = member;
+		editEnhanceAction = createEditEnhance(member.id);
+		editDialogOpen = true;
+	}
+
+	function closeEditDialog() {
+		editDialogOpen = false;
+		memberToEdit = null;
+		editEnhanceAction = undefined;
+	}
+
 	function openRemoveDialog(member: TeamMemberItem) {
 		memberToRemove = member;
 		removeEnhanceAction = createRemoveEnhance(member.id);
@@ -72,6 +112,49 @@
 		removeDialogOpen = false;
 		memberToRemove = null;
 		removeEnhanceAction = undefined;
+	}
+
+	function createEditEnhance(memberId: string): SubmitFunction {
+		return () => {
+			updatingId = memberId;
+			updateMessage = null;
+			updateError = null;
+			removeMessage = null;
+			removeError = null;
+
+			return async ({ result, update }) => {
+				updatingId = null;
+
+				if (result.type === 'success') {
+					const data = result.data as {
+						updateChanged?: boolean;
+						updateForm?: { data?: { role?: string } };
+					};
+					const editedMember = memberToEdit;
+
+					if (data?.updateChanged && editedMember) {
+						const roleLabel = getWorkspaceMemberRoleLabel(
+							data.updateForm?.data?.role ?? editedMember.role
+						);
+						updateMessage = formatTeamMemberUpdatedMessage({
+							memberName: editedMember.name,
+							roleLabel
+						});
+					}
+
+					updateError = null;
+					closeEditDialog();
+					await invalidateAll();
+				} else if (result.type === 'failure') {
+					const data = result.data as { updateMessage?: string } | undefined;
+					updateError = data?.updateMessage ?? TEAM_MEMBER_UPDATE_FAILED_MESSAGE;
+					updateMessage = null;
+					closeEditDialog();
+				}
+
+				await update();
+			};
+		};
 	}
 
 	function createRemoveEnhance(memberId: string): SubmitFunction {
@@ -87,6 +170,8 @@
 					const removedName = memberToRemove?.name ?? '';
 					removeMessage = formatTeamMemberRemovedMessage(removedName);
 					removeError = null;
+					updateMessage = null;
+					updateError = null;
 					closeRemoveDialog();
 					await invalidateAll();
 				} else if (result.type === 'failure') {
@@ -109,6 +194,13 @@
 	});
 
 	$effect(() => {
+		if (!editDialogOpen) {
+			memberToEdit = null;
+			editEnhanceAction = undefined;
+		}
+	});
+
+	$effect(() => {
 		searchQuery;
 		currentPage = 1;
 	});
@@ -123,8 +215,12 @@
 <div class="space-y-4">
 	{#if removeMessage}
 		<StatusAlert variant="success" title="Member removed" description={removeMessage} />
+	{:else if updateMessage}
+		<StatusAlert variant="success" title="Member updated" description={updateMessage} />
 	{:else if removeError}
 		<StatusAlert variant="danger" title="Could not remove member" description={removeError} />
+	{:else if updateError}
+		<StatusAlert variant="danger" title="Could not update member" description={updateError} />
 	{/if}
 
 	{#if isSearching}
@@ -147,7 +243,7 @@
 		</div>
 	{:else}
 	<div class="overflow-x-auto rounded-lg border">
-		<table class="w-full min-w-[40rem] text-sm">
+		<table class="w-full min-w-[48rem] text-sm">
 			<thead class="bg-muted/40 border-b">
 				<tr>
 					<th class="text-muted-foreground min-w-32 px-4 py-3 text-left font-medium">Name</th>
@@ -164,7 +260,16 @@
 			<tbody>
 				{#each paginatedMembers as member (member.id)}
 					<tr class="border-b last:border-b-0">
-						<td class="px-4 py-3 font-medium">{member.name}</td>
+						<td class="px-4 py-3">
+							<div class="flex min-w-0 items-center gap-3">
+								<UserAvatar
+									avatarUrl={member.avatarUrl}
+									initials={member.initials}
+									class="size-8"
+								/>
+								<span class="truncate font-medium">{member.name}</span>
+							</div>
+						</td>
 						<td class="text-muted-foreground px-4 py-3">{member.email}</td>
 						<td class="px-4 py-3">
 							{#if member.role === WORKSPACE_MEMBER_ROLES.OWNER}
@@ -185,19 +290,34 @@
 						<td class="text-muted-foreground px-4 py-3">{formatJoinedAt(member.joinedAt)}</td>
 						{#if canManageMembers}
 							<td class="px-4 py-3 text-right">
-								{#if canRemoveMember(member)}
-									<Button
-										type="button"
-										variant="outline"
-										size="sm"
-										class="text-muted-foreground hover:border-destructive/30 hover:bg-destructive/5 hover:text-destructive h-8 px-2.5"
-										onclick={() => openRemoveDialog(member)}
-										aria-label={`Remove ${member.name} from workspace`}
-									>
-										<UserMinusIcon class="size-4" aria-hidden="true" />
-										Remove
-									</Button>
-								{/if}
+								<div class="flex items-center justify-end gap-2">
+									{#if canEditMember(member)}
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											class="text-muted-foreground h-8 px-2.5"
+											onclick={() => openEditDialog(member)}
+											aria-label={`Edit ${member.name}'s role`}
+										>
+											<PencilIcon class="size-4" aria-hidden="true" />
+											Edit
+										</Button>
+									{/if}
+									{#if canRemoveMember(member)}
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											class="text-muted-foreground hover:border-destructive/30 hover:bg-destructive/5 hover:text-destructive h-8 px-2.5"
+											onclick={() => openRemoveDialog(member)}
+											aria-label={`Remove ${member.name} from workspace`}
+										>
+											<UserMinusIcon class="size-4" aria-hidden="true" />
+											Remove
+										</Button>
+									{/if}
+								</div>
 							</td>
 						{/if}
 					</tr>
@@ -208,6 +328,15 @@
 	<ListPagination bind:page={currentPage} pageSize={PAGE_SIZE} total={filteredMembers.length} />
 	{/if}
 </div>
+
+{#if memberToEdit && editEnhanceAction}
+	<EditTeamMemberDialog
+		bind:open={editDialogOpen}
+		member={memberToEdit}
+		submitting={updatingId === memberToEdit.id}
+		enhanceAction={editEnhanceAction}
+	/>
+{/if}
 
 {#if memberToRemove && removeEnhanceAction}
 	<RemoveTeamMemberDialog

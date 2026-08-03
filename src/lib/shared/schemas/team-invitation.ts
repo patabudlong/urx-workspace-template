@@ -31,3 +31,10 @@ export const removeTeamMemberSchema = z.object({
 });
 
 export type RemoveTeamMemberInput = z.infer<typeof removeTeamMemberSchema>;
+
+export const updateTeamMemberSchema = z.object({
+	memberId: z.string().trim().min(1, 'Member is required.'),
+	role: z.enum(TEAM_INVITE_ROLE_VALUES)
+});
+
+export type UpdateTeamMemberInput = z.infer<typeof updateTeamMemberSchema>;

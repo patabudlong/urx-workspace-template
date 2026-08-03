@@ -5,26 +5,20 @@ import {
 } from '$lib/server/repositories/workspace-members';
 import { WORKSPACE_MEMBER_ROLES } from '$lib/shared/models/workspace-member';
 import { getWorkspaceMemberRoleLabel } from '$lib/shared/team/member-roles';
+import { buildUserDisplay } from '$lib/shared/user-display';
 
 export type WorkspaceMemberListItem = {
 	id: string;
 	userId: string;
 	name: string;
 	email: string;
+	avatarUrl: string | null;
+	initials: string;
 	role: string;
 	roleLabel: string;
 	joinedAt: string;
 };
 
-function formatMemberName(input: {
-	firstName: string;
-	lastName: string;
-	email: string;
-}): string {
-	const name = `${input.firstName} ${input.lastName}`.trim();
-
-	return name || input.email;
-}
 
 function compareMembers(a: WorkspaceMemberListItem, b: WorkspaceMemberListItem): number {
 	if (a.role === WORKSPACE_MEMBER_ROLES.OWNER) {
@@ -56,19 +50,23 @@ export async function listWorkspaceMembersForDisplay(
 		.map((membership) => {
 			const user = usersById.get(membership.userId.toString());
 			const email = user?.email ?? 'Unknown member';
-			const name = user
-				? formatMemberName({
+			const display = user
+				? buildUserDisplay({
+						email: user.email,
 						firstName: user.firstName,
 						lastName: user.lastName,
-						email: user.email
+						avatarUrl: user.avatarUrl
 					})
-				: 'Unknown member';
+				: null;
+			const name = display?.fullName ?? 'Unknown member';
 
 			return {
 				id: membership._id.toString(),
 				userId: membership.userId.toString(),
 				name,
 				email,
+				avatarUrl: display?.avatarUrl ?? null,
+				initials: display?.initials ?? '?',
 				role: membership.role,
 				roleLabel: getWorkspaceMemberRoleLabel(membership.role),
 				joinedAt: membership.joinedAt.toISOString()
