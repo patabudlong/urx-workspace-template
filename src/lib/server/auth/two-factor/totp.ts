@@ -32,7 +32,17 @@ export async function createTotpQrDataUrl(otpauthUri: string): Promise<string> {
 }
 
 export async function verifyTotpCode(secret: string, code: string): Promise<boolean> {
-	const result = await verify({ secret, token: code.trim() });
+	const token = code.trim().replace(/\D/g, '');
 
-	return result.valid;
+	if (token.length !== 6) {
+		return false;
+	}
+
+	try {
+		const result = await verify({ secret, token });
+
+		return result.valid;
+	} catch {
+		return false;
+	}
 }

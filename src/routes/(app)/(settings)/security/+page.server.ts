@@ -4,7 +4,8 @@ import { zod4 } from 'sveltekit-superforms/adapters';
 import type { Actions, PageServerLoad } from './$types';
 import { changePasswordForUser } from '$lib/server/auth/change-password';
 import { toSecurityProfile } from '$lib/server/auth/security-profile';
-import { disableTwoFactorWithPassword } from '$lib/server/auth/two-factor/disable';
+import { disableTwoFactor } from '$lib/server/auth/two-factor/disable';
+import { verifySensitiveActionIdentity } from '$lib/server/auth/two-factor/verify-identity';
 import {
 	confirmSetupOtp,
 	confirmTotpSetup,
@@ -41,7 +42,11 @@ import {
 import {
 	changePasswordSchema,
 	twoFactorDisableSchema,
+	twoFactorDisableWithCodeSchema,
+	twoFactorDisableWithPasswordSchema,
 	twoFactorRegenerateBackupCodesSchema,
+	twoFactorRegenerateBackupCodesWithCodeSchema,
+	twoFactorRegenerateBackupCodesWithPasswordSchema,
 	twoFactorSetupOtpConfirmSchema,
 	twoFactorSetupTotpConfirmSchema
 } from '$lib/shared/schemas/security';
@@ -56,6 +61,8 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 	if (!user) {
 		error(404, 'User not found');
 	}
+
+	const security = toSecurityProfile(user);
 
 	const changePasswordForm = await superValidate(
 		{
@@ -85,19 +92,31 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 	);
 
 	const disableTwoFactorForm = await superValidate(
-		{ password: '' },
+		{
+			password: '',
+			code: '',
+			method: user.passwordHash
+				? undefined
+				: security.twoFactor.totpEnabled
+					? 'totp'
+					: 'backup'
+		},
 		zod4(twoFactorDisableSchema),
 		{ id: 'disableTwoFactorForm', errors: false }
 	);
 
 	const regenerateBackupCodesForm = await superValidate(
-		{ password: '' },
+		{
+			password: '',
+			code: '',
+			method: user.passwordHash ? undefined : 'totp'
+		},
 		zod4(twoFactorRegenerateBackupCodesSchema),
 		{ id: 'regenerateBackupCodesForm', errors: false }
 	);
 
 	return {
-		security: toSecurityProfile(user),
+		security,
 		changePasswordForm,
 		confirmTotpForm,
 		confirmSmsForm,
@@ -323,7 +342,15 @@ export const actions: Actions = {
 	},
 
 	disableTwoFactor: async ({ request, locals, cookies }) => {
-		const form = await superValidate(request, zod4(twoFactorDisableSchema), {
+		const user = locals.user
+			? await findUserById(locals.user.id)
+			: null;
+
+		const schema = user?.passwordHash
+			? twoFactorDisableWithPasswordSchema
+			: twoFactorDisableWithCodeSchema;
+
+		const form = await superValidate(request, zod4(schema), {
 			id: 'disableTwoFactorForm'
 		});
 
@@ -335,19 +362,29 @@ export const actions: Actions = {
 			return fail(400, { disableTwoFactorForm: form });
 		}
 
-		const result = await disableTwoFactorWithPassword({
+		const result = await disableTwoFactor({
 			userId: locals.user.id,
 			password: form.data.password,
+			code: form.data.code,
+			method: form.data.method,
 			cookies
 		});
 
 		if (!result.ok) {
-			if (result.reason === 'PASSWORD_REQUIRED') {
+			if (result.reason === 'PASSWORD_REQUIRED' || result.reason === 'CODE_REQUIRED') {
 				return message(form, TWO_FACTOR_DISABLE_PASSWORD_REQUIRED_MESSAGE, { status: 400 });
 			}
 
 			if (result.reason === 'INVALID_PASSWORD') {
 				return message(form, CURRENT_PASSWORD_INVALID_MESSAGE, { status: 400 });
+			}
+
+			if (result.reason === 'INVALID_CODE') {
+				return message(form, TWO_FACTOR_INVALID_CODE_MESSAGE, { status: 400 });
+			}
+
+			if (result.reason === 'METHOD_NOT_ENABLED') {
+				return message(form, TWO_FACTOR_SETUP_FAILED_MESSAGE, { status: 400 });
 			}
 
 			return message(form, TWO_FACTOR_SETUP_FAILED_MESSAGE, { status: 500 });
@@ -357,7 +394,13 @@ export const actions: Actions = {
 	},
 
 	regenerateBackupCodes: async ({ request, locals }) => {
-		const form = await superValidate(request, zod4(twoFactorRegenerateBackupCodesSchema), {
+		const user = locals.user ? await findUserById(locals.user.id) : null;
+
+		const schema = user?.passwordHash
+			? twoFactorRegenerateBackupCodesWithPasswordSchema
+			: twoFactorRegenerateBackupCodesWithCodeSchema;
+
+		const form = await superValidate(request, zod4(schema), {
 			id: 'regenerateBackupCodesForm'
 		});
 
@@ -369,16 +412,28 @@ export const actions: Actions = {
 			return fail(400, { regenerateBackupCodesForm: form });
 		}
 
-		const user = await findUserById(locals.user.id);
+		const verification = await verifySensitiveActionIdentity({
+			userId: locals.user.id,
+			password: form.data.password,
+			code: form.data.code,
+			method: 'totp',
+			allowBackupCode: false
+		});
 
-		if (!user?.passwordHash) {
-			return message(form, TWO_FACTOR_DISABLE_PASSWORD_REQUIRED_MESSAGE, { status: 400 });
-		}
+		if (!verification.ok) {
+			if (verification.reason === 'PASSWORD_REQUIRED' || verification.reason === 'CODE_REQUIRED') {
+				return message(form, TWO_FACTOR_DISABLE_PASSWORD_REQUIRED_MESSAGE, { status: 400 });
+			}
 
-		const { verifyPassword } = await import('$lib/server/auth/password');
+			if (verification.reason === 'INVALID_PASSWORD') {
+				return message(form, CURRENT_PASSWORD_INVALID_MESSAGE, { status: 400 });
+			}
 
-		if (!(await verifyPassword(form.data.password, user.passwordHash))) {
-			return message(form, CURRENT_PASSWORD_INVALID_MESSAGE, { status: 400 });
+			if (verification.reason === 'INVALID_CODE') {
+				return message(form, TWO_FACTOR_INVALID_CODE_MESSAGE, { status: 400 });
+			}
+
+			return message(form, TWO_FACTOR_SETUP_FAILED_MESSAGE, { status: 400 });
 		}
 
 		const result = await regenerateUserBackupCodes(locals.user.id);

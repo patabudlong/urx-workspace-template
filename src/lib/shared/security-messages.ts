@@ -18,6 +18,14 @@ export const TWO_FACTOR_PHONE_REQUIRED_MESSAGE =
 export const TWO_FACTOR_ALREADY_ENABLED_MESSAGE = 'This verification method is already enabled.';
 export const TWO_FACTOR_DISABLE_PASSWORD_REQUIRED_MESSAGE =
 	'Set an app password before you can disable two-factor authentication.';
+export const TWO_FACTOR_DISABLE_GOOGLE_DESCRIPTION =
+	'Confirm with your authenticator app code. Your account will only use Google sign-in.';
+export const TWO_FACTOR_DISABLE_PASSWORD_DESCRIPTION =
+	'Confirm with your app password. Your account will only use your password to sign in.';
+export const TWO_FACTOR_REGENERATE_GOOGLE_DESCRIPTION =
+	'This replaces your existing backup codes. Confirm with your authenticator app code.';
+export const TWO_FACTOR_REGENERATE_PASSWORD_DESCRIPTION =
+	'This replaces your existing backup codes. Confirm with your app password.';
 export const TWO_FACTOR_BACKUP_CODES_REGENERATED_MESSAGE = 'New backup codes generated.';
 export const TWO_FACTOR_TRUSTED_DEVICE_REVOKED_MESSAGE = 'Trusted device removed.';
 export const TWO_FACTOR_LOGIN_REQUIRED_MESSAGE = 'Sign in again to continue.';

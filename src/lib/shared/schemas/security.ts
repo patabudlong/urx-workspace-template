@@ -30,11 +30,43 @@ export const twoFactorSetupOtpConfirmSchema = z.object({
 		.regex(/^\d{6}$/, 'Enter the 6-digit code')
 });
 
+const sensitiveActionMethodSchema = z.enum(['totp', 'backup']);
+
 export const twoFactorDisableSchema = z.object({
-	password: z.string().min(1, 'Password is required')
+	password: z.string().optional(),
+	code: z.string().optional(),
+	method: sensitiveActionMethodSchema.optional()
 });
 
-export const twoFactorRegenerateBackupCodesSchema = twoFactorDisableSchema;
+export const twoFactorDisableWithPasswordSchema = z.object({
+	password: z.string().min(1, 'Password is required'),
+	code: z.string().optional(),
+	method: sensitiveActionMethodSchema.optional()
+});
+
+export const twoFactorDisableWithCodeSchema = z.object({
+	password: z.string().optional(),
+	code: z.string().min(1, 'Verification code is required'),
+	method: sensitiveActionMethodSchema.optional()
+});
+
+export const twoFactorRegenerateBackupCodesSchema = z.object({
+	password: z.string().optional(),
+	code: z.string().optional(),
+	method: z.enum(['totp']).optional()
+});
+
+export const twoFactorRegenerateBackupCodesWithPasswordSchema = z.object({
+	password: z.string().min(1, 'Password is required'),
+	code: z.string().optional(),
+	method: z.enum(['totp']).optional()
+});
+
+export const twoFactorRegenerateBackupCodesWithCodeSchema = z.object({
+	password: z.string().optional(),
+	code: z.string().min(1, 'Verification code is required'),
+	method: z.enum(['totp']).optional()
+});
 
 export const twoFactorLoginChallengeSchema = z.object({
 	method: z.enum([

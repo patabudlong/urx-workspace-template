@@ -23,6 +23,12 @@ export function generateBackupCodes(): { codes: string[]; hashes: string[] } {
 	return { codes, hashes };
 }
 
+export function looksLikeBackupCode(code: string): boolean {
+	const normalized = code.trim().toUpperCase().replace(/\s+/g, '');
+
+	return normalized.includes('-') || normalized.length !== 6 || /[A-F]/.test(normalized);
+}
+
 export function verifyBackupCode(code: string, hashes: string[]): boolean {
 	const normalized = code.trim().toUpperCase().replace(/\s+/g, '');
 	const hash = hashBackupCode(normalized);

@@ -1,16 +1,24 @@
 <script lang="ts">
 	import AuthFormMessageAlert from '$lib/components/auth/auth-form-message-alert.svelte';
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
+	import VerificationCodeInput from '$lib/components/auth/verification-code-input.svelte';
 	import PasswordInput from '$lib/components/password-input.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as Form from '$lib/components/ui/form/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
 	import { isAuthRateLimitMessage } from '$lib/shared/auth-messages';
-	import { twoFactorDisableSchema } from '$lib/shared/schemas/security';
+	import {
+		twoFactorDisableWithCodeSchema,
+		twoFactorDisableWithPasswordSchema
+	} from '$lib/shared/schemas/security';
 	import {
 		CURRENT_PASSWORD_INVALID_MESSAGE,
-		TWO_FACTOR_DISABLED_MESSAGE
+		TWO_FACTOR_DISABLE_GOOGLE_DESCRIPTION,
+		TWO_FACTOR_DISABLE_PASSWORD_DESCRIPTION,
+		TWO_FACTOR_DISABLED_MESSAGE,
+		TWO_FACTOR_INVALID_CODE_MESSAGE
 	} from '$lib/shared/security-messages';
 	import type { PageData } from '../../../routes/(app)/(settings)/security/$types';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
@@ -30,10 +38,22 @@
 
 	let submitting = $state(false);
 	let formRateLimited = $state(false);
+	let useBackupCode = $state(false);
+
+	const requiresPassword = $derived(data.security.hasAppPassword);
+	const totpEnabled = $derived(data.security.twoFactor.totpEnabled);
+	const hasBackupCodes = $derived(data.security.twoFactor.hasBackupCodes);
+	const description = $derived(
+		requiresPassword ? TWO_FACTOR_DISABLE_PASSWORD_DESCRIPTION : TWO_FACTOR_DISABLE_GOOGLE_DESCRIPTION
+	);
 
 	const superform = superForm(untrack(() => data.disableTwoFactorForm), {
 		id: 'disableTwoFactorForm',
-		validators: zod4Client(twoFactorDisableSchema),
+		validators: zod4Client(
+			data.security.hasAppPassword
+				? twoFactorDisableWithPasswordSchema
+				: twoFactorDisableWithCodeSchema
+		),
 		validationMethod: 'submit-only',
 		onSubmit: () => {
 			submitting = true;
@@ -63,6 +83,26 @@
 	const rateLimitMessage = $derived(
 		isAuthRateLimitMessage($formMessage) ? $formMessage : null
 	);
+
+	$effect(() => {
+		if (!open) {
+			useBackupCode = false;
+		}
+	});
+
+	function toggleBackupMode() {
+		useBackupCode = !useBackupCode;
+		$form.code = '';
+	}
+
+	$effect(() => {
+		if (requiresPassword) {
+			$form.method = undefined;
+			return;
+		}
+
+		$form.method = useBackupCode ? 'backup' : totpEnabled ? 'totp' : 'backup';
+	});
 </script>
 
 <Dialog.Root bind:open>
@@ -79,7 +119,7 @@
 			<Dialog.Header class="space-y-2 text-center sm:text-center">
 				<Dialog.Title class="text-xl">Disable two-factor authentication</Dialog.Title>
 				<Dialog.Description class="text-muted-foreground text-sm leading-relaxed">
-					Confirm with your app password. Your account will only use your password to sign in.
+					{description}
 				</Dialog.Description>
 			</Dialog.Header>
 		</div>
@@ -90,28 +130,80 @@
 			{:else if formError}
 				<StatusAlert
 					variant="danger"
-					title={formError === CURRENT_PASSWORD_INVALID_MESSAGE
-						? 'Password is incorrect'
-						: 'Could not disable 2FA'}
+					title={
+						formError === CURRENT_PASSWORD_INVALID_MESSAGE
+							? 'Password is incorrect'
+							: formError === TWO_FACTOR_INVALID_CODE_MESSAGE
+								? 'Verification failed'
+								: 'Could not disable 2FA'
+					}
 					description={formError}
 				/>
 			{/if}
 
 			<form method="POST" action="?/disableTwoFactor" use:enhance class="space-y-5">
-				<Form.Field form={superform} name="password">
-					<Form.Control>
-						{#snippet children({ props })}
-							<Form.Label required>App password</Form.Label>
-							<PasswordInput
-								{...props}
-								disabled={submitting || formRateLimited}
-								bind:value={$form.password}
-								autocomplete="current-password"
-							/>
-						{/snippet}
-					</Form.Control>
-					<SingleFieldErrors />
-				</Form.Field>
+				{#if !requiresPassword}
+					<input type="hidden" name="method" value={$form.method ?? ''} />
+				{/if}
+
+				{#if requiresPassword}
+					<Form.Field form={superform} name="password">
+						<Form.Control>
+							{#snippet children({ props })}
+								<Form.Label required>App password</Form.Label>
+								<PasswordInput
+									{...props}
+									disabled={submitting || formRateLimited}
+									bind:value={$form.password}
+									autocomplete="current-password"
+								/>
+							{/snippet}
+						</Form.Control>
+						<SingleFieldErrors />
+					</Form.Field>
+				{:else if useBackupCode}
+					<Form.Field form={superform} name="code">
+						<Form.Control>
+							{#snippet children({ props })}
+								<Form.Label required>Backup code</Form.Label>
+								<Input
+									{...props}
+									disabled={submitting || formRateLimited}
+									bind:value={$form.code}
+									autocomplete="one-time-code"
+									class="font-mono uppercase"
+								/>
+							{/snippet}
+						</Form.Control>
+						<SingleFieldErrors />
+					</Form.Field>
+				{:else}
+					<Form.Field form={superform} name="code">
+						<Form.Control>
+							{#snippet children({ props })}
+								<Form.Label required>Authenticator code</Form.Label>
+								<VerificationCodeInput
+									{...props}
+									disabled={submitting || formRateLimited}
+									bind:value={$form.code}
+								/>
+							{/snippet}
+						</Form.Control>
+						<SingleFieldErrors />
+					</Form.Field>
+				{/if}
+
+				{#if !requiresPassword && totpEnabled && hasBackupCodes}
+					<p class="text-muted-foreground text-center text-sm">
+						<button
+							type="button"
+							class="text-primary font-medium hover:underline"
+							onclick={toggleBackupMode}
+						>
+							{useBackupCode ? 'Use authenticator code instead' : 'Use a backup code instead'}
+						</button>
+					</p>
+				{/if}
 
 				<Button
 					type="submit"

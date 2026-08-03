@@ -1,38 +1,49 @@
-import { verifyPassword } from '$lib/server/auth/password';
-import { disableTwoFactorForUser, isTwoFactorEnabled } from '$lib/server/repositories/user-two-factor';
-import { findUserById } from '$lib/server/repositories/users';
+import {
+	disableTwoFactorForUser,
+	isTwoFactorEnabled
+} from '$lib/server/repositories/user-two-factor';
 import { clearTrustedDeviceCookie } from '$lib/server/auth/two-factor/trusted-devices';
+import {
+	defaultSensitiveActionMethod,
+	verifySensitiveActionIdentity,
+	type SensitiveActionVerificationMethod
+} from '$lib/server/auth/two-factor/verify-identity';
 import type { Cookies } from '@sveltejs/kit';
 
-export async function disableTwoFactorWithPassword(input: {
+export async function disableTwoFactor(input: {
 	userId: string;
-	password: string;
+	password?: string;
+	code?: string;
+	method?: SensitiveActionVerificationMethod;
 	cookies: Cookies;
 }): Promise<
 	| { ok: true }
 	| {
 			ok: false;
-			reason: 'USER_NOT_FOUND' | 'TWO_FACTOR_DISABLED' | 'INVALID_PASSWORD' | 'PASSWORD_REQUIRED';
+			reason:
+				| 'USER_NOT_FOUND'
+				| 'TWO_FACTOR_DISABLED'
+				| 'PASSWORD_REQUIRED'
+				| 'CODE_REQUIRED'
+				| 'INVALID_PASSWORD'
+				| 'INVALID_CODE'
+				| 'METHOD_NOT_ENABLED';
 	  }
 > {
-	const user = await findUserById(input.userId);
+	const verification = await verifySensitiveActionIdentity({
+		userId: input.userId,
+		password: input.password,
+		code: input.code,
+		method: input.method ?? undefined,
+		allowBackupCode: true
+	});
 
-	if (!user) {
-		return { ok: false, reason: 'USER_NOT_FOUND' };
+	if (!verification.ok) {
+		return { ok: false, reason: verification.reason };
 	}
 
-	if (!isTwoFactorEnabled(user)) {
+	if (!isTwoFactorEnabled(verification.user)) {
 		return { ok: false, reason: 'TWO_FACTOR_DISABLED' };
-	}
-
-	if (!user.passwordHash) {
-		return { ok: false, reason: 'PASSWORD_REQUIRED' };
-	}
-
-	const passwordValid = await verifyPassword(input.password, user.passwordHash);
-
-	if (!passwordValid) {
-		return { ok: false, reason: 'INVALID_PASSWORD' };
 	}
 
 	const disabled = await disableTwoFactorForUser(input.userId);

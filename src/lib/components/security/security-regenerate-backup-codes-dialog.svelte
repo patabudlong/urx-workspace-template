@@ -1,16 +1,23 @@
 <script lang="ts">
 	import AuthFormMessageAlert from '$lib/components/auth/auth-form-message-alert.svelte';
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
+	import VerificationCodeInput from '$lib/components/auth/verification-code-input.svelte';
 	import PasswordInput from '$lib/components/password-input.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as Form from '$lib/components/ui/form/index.js';
 	import { isAuthRateLimitMessage } from '$lib/shared/auth-messages';
-	import { twoFactorRegenerateBackupCodesSchema } from '$lib/shared/schemas/security';
+	import {
+		twoFactorRegenerateBackupCodesWithCodeSchema,
+		twoFactorRegenerateBackupCodesWithPasswordSchema
+	} from '$lib/shared/schemas/security';
 	import {
 		CURRENT_PASSWORD_INVALID_MESSAGE,
-		TWO_FACTOR_BACKUP_CODES_REGENERATED_MESSAGE
+		TWO_FACTOR_BACKUP_CODES_REGENERATED_MESSAGE,
+		TWO_FACTOR_INVALID_CODE_MESSAGE,
+		TWO_FACTOR_REGENERATE_GOOGLE_DESCRIPTION,
+		TWO_FACTOR_REGENERATE_PASSWORD_DESCRIPTION
 	} from '$lib/shared/security-messages';
 	import type { PageData } from '../../../routes/(app)/(settings)/security/$types';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
@@ -33,9 +40,20 @@
 	let submitting = $state(false);
 	let formRateLimited = $state(false);
 
+	const requiresPassword = $derived(data.security.hasAppPassword);
+	const description = $derived(
+		requiresPassword
+			? TWO_FACTOR_REGENERATE_PASSWORD_DESCRIPTION
+			: TWO_FACTOR_REGENERATE_GOOGLE_DESCRIPTION
+	);
+
 	const superform = superForm(untrack(() => data.regenerateBackupCodesForm), {
 		id: 'regenerateBackupCodesForm',
-		validators: zod4Client(twoFactorRegenerateBackupCodesSchema),
+		validators: zod4Client(
+			data.security.hasAppPassword
+				? twoFactorRegenerateBackupCodesWithPasswordSchema
+				: twoFactorRegenerateBackupCodesWithCodeSchema
+		),
 		validationMethod: 'submit-only',
 		onSubmit: () => {
 			submitting = true;
@@ -69,6 +87,12 @@
 	const rateLimitMessage = $derived(
 		isAuthRateLimitMessage($formMessage) ? $formMessage : null
 	);
+
+	$effect(() => {
+		if (!requiresPassword) {
+			$form.method = 'totp';
+		}
+	});
 </script>
 
 <Dialog.Root bind:open>
@@ -85,7 +109,7 @@
 			<Dialog.Header class="space-y-2 text-center sm:text-center">
 				<Dialog.Title class="text-xl">Regenerate backup codes</Dialog.Title>
 				<Dialog.Description class="text-muted-foreground text-sm leading-relaxed">
-					This replaces your existing backup codes. Confirm with your app password.
+					{description}
 				</Dialog.Description>
 			</Dialog.Header>
 		</div>
@@ -96,28 +120,48 @@
 			{:else if formError}
 				<StatusAlert
 					variant="danger"
-					title={formError === CURRENT_PASSWORD_INVALID_MESSAGE
-						? 'Password is incorrect'
-						: 'Could not regenerate codes'}
+					title={
+						formError === CURRENT_PASSWORD_INVALID_MESSAGE
+							? 'Password is incorrect'
+							: formError === TWO_FACTOR_INVALID_CODE_MESSAGE
+								? 'Verification failed'
+								: 'Could not regenerate codes'
+					}
 					description={formError}
 				/>
 			{/if}
 
 			<form method="POST" action="?/regenerateBackupCodes" use:enhance class="space-y-5">
-				<Form.Field form={superform} name="password">
-					<Form.Control>
-						{#snippet children({ props })}
-							<Form.Label required>App password</Form.Label>
-							<PasswordInput
-								{...props}
-								disabled={submitting || formRateLimited}
-								bind:value={$form.password}
-								autocomplete="current-password"
-							/>
-						{/snippet}
-					</Form.Control>
-					<SingleFieldErrors />
-				</Form.Field>
+				{#if requiresPassword}
+					<Form.Field form={superform} name="password">
+						<Form.Control>
+							{#snippet children({ props })}
+								<Form.Label required>App password</Form.Label>
+								<PasswordInput
+									{...props}
+									disabled={submitting || formRateLimited}
+									bind:value={$form.password}
+									autocomplete="current-password"
+								/>
+							{/snippet}
+						</Form.Control>
+						<SingleFieldErrors />
+					</Form.Field>
+				{:else}
+					<Form.Field form={superform} name="code">
+						<Form.Control>
+							{#snippet children({ props })}
+								<Form.Label required>Authenticator code</Form.Label>
+								<VerificationCodeInput
+									{...props}
+									disabled={submitting || formRateLimited}
+									bind:value={$form.code}
+								/>
+							{/snippet}
+						</Form.Control>
+						<SingleFieldErrors />
+					</Form.Field>
+				{/if}
 
 				<Button
 					type="submit"
