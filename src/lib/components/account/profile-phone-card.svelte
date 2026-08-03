@@ -1,31 +1,26 @@
 <script lang="ts">
+	import ProfileVerifyPhoneDialog from '$lib/components/account/profile-verify-phone-dialog.svelte';
+	import AuthFormMessageAlert from '$lib/components/auth/auth-form-message-alert.svelte';
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
-	import VerificationCodeInput from '$lib/components/auth/verification-code-input.svelte';
+	import PhoneCountryInput from '$lib/components/onboarding/phone-country-input.svelte';
+	import PhoneNumberDisplay from '$lib/components/phone-number-display.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
+	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Form from '$lib/components/ui/form/index.js';
-	import { Input } from '$lib/components/ui/input/index.js';
 	import {
 		PHONE_ALREADY_IN_USE_MESSAGE,
-		PHONE_NUMBER_REQUIRED_MESSAGE,
 		PHONE_UPDATED_MESSAGE,
-		PHONE_UPDATE_FAILED_MESSAGE,
-		PHONE_VERIFICATION_ALREADY_VERIFIED_MESSAGE,
-		PHONE_VERIFICATION_INVALID_MESSAGE,
-		PHONE_VERIFICATION_NOT_CONFIGURED_MESSAGE,
-		PHONE_VERIFICATION_SEND_FAILED_MESSAGE,
-		PHONE_VERIFICATION_SENT_MESSAGE,
-		PHONE_VERIFICATION_THROTTLED_MESSAGE,
-		PHONE_VERIFIED_MESSAGE
+		PHONE_UPDATE_FAILED_MESSAGE
 	} from '$lib/shared/account-messages';
+	import { ACCOUNT_WARNING_BADGE_CLASS } from '$lib/shared/account-ui';
+	import { isAuthRateLimitMessage } from '$lib/shared/auth-messages';
 	import type { PageData } from '../../../routes/(app)/(settings)/account/$types';
-	import {
-		updatePhoneNumberSchema,
-		verifyPhoneSchema,
-		type UserProfile
-	} from '$lib/shared/schemas/account';
+	import { updatePhoneNumberSchema, type UserProfile } from '$lib/shared/schemas/account';
+	import { cn } from '$lib/utils.js';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
+	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
 	import { invalidateAll } from '$app/navigation';
 	import { untrack } from 'svelte';
 	import { superForm } from 'sveltekit-superforms';
@@ -34,10 +29,9 @@
 	let { data, profile }: { data: PageData; profile: UserProfile } = $props();
 
 	let savingPhone = $state(false);
-	let resendingCode = $state(false);
-	let verifyingCode = $state(false);
 	let phoneSaveSuccess = $state(false);
-	let verifySuccess = $state(false);
+	let verifyDialogOpen = $state(false);
+	let phoneFormRateLimited = $state(false);
 
 	const phoneSuperform = superForm(untrack(() => data.phoneForm), {
 		id: 'phoneForm',
@@ -52,7 +46,6 @@
 
 			if (updatedForm.message === PHONE_UPDATED_MESSAGE) {
 				phoneSaveSuccess = true;
-				verifySuccess = false;
 				await invalidateAll();
 			}
 		},
@@ -61,83 +54,33 @@
 		}
 	});
 
-	const verifySuperform = superForm(untrack(() => data.verifyPhoneForm), {
-		id: 'verifyPhoneForm',
-		validators: zod4Client(verifyPhoneSchema),
-		resetForm: true,
-		onSubmit: () => {
-			verifySuccess = false;
-			verifyingCode = true;
-		},
-		onUpdated: async ({ form: updatedForm }) => {
-			verifyingCode = false;
-
-			if (updatedForm.message === PHONE_VERIFIED_MESSAGE) {
-				verifySuccess = true;
-				phoneSaveSuccess = false;
-				await invalidateAll();
-			}
-		},
-		onError: () => {
-			verifyingCode = false;
-		}
-	});
-
-	const resendSuperform = superForm(untrack(() => data.resendPhoneForm), {
-		id: 'resendPhoneForm',
-		resetForm: false,
-		onSubmit: () => {
-			resendingCode = true;
-		},
-		onUpdated: async ({ form: updatedForm }) => {
-			resendingCode = false;
-
-			if (updatedForm.message === PHONE_VERIFICATION_SENT_MESSAGE) {
-				verifySuccess = false;
-			}
-		},
-		onError: () => {
-			resendingCode = false;
-		}
-	});
-
 	const {
 		enhance: enhancePhone,
 		form: phoneForm,
 		message: phoneFormMessage
 	} = phoneSuperform;
-	const {
-		enhance: enhanceVerify,
-		form: verifyForm,
-		message: verifyFormMessage
-	} = verifySuperform;
-	const { enhance: enhanceResend, message: resendFormMessage } = resendSuperform;
 
 	const phoneFormError = $derived(
-		typeof $phoneFormMessage === 'string' &&
-			$phoneFormMessage.length > 0 &&
-			$phoneFormMessage !== PHONE_UPDATED_MESSAGE
-			? $phoneFormMessage
+		$phoneFormMessage &&
+			$phoneFormMessage !== PHONE_UPDATED_MESSAGE &&
+			!isAuthRateLimitMessage($phoneFormMessage)
+			? typeof $phoneFormMessage === 'string'
+				? $phoneFormMessage
+				: null
 			: null
 	);
 
-	const verifyFormError = $derived(
-		typeof $verifyFormMessage === 'string' &&
-			$verifyFormMessage.length > 0 &&
-			$verifyFormMessage !== PHONE_VERIFIED_MESSAGE
-			? $verifyFormMessage
-			: null
-	);
-
-	const resendFormError = $derived(
-		typeof $resendFormMessage === 'string' &&
-			$resendFormMessage.length > 0 &&
-			$resendFormMessage !== PHONE_VERIFICATION_SENT_MESSAGE
-			? $resendFormMessage
-			: null
+	const phoneRateLimitMessage = $derived(
+		isAuthRateLimitMessage($phoneFormMessage) ? $phoneFormMessage : null
 	);
 
 	const needsVerification = $derived(Boolean(profile.phoneNumber) && !profile.phoneVerified);
+
+	$effect(() => {
+		if (needsVerification && phoneSaveSuccess) {
+			verifyDialogOpen = true;
+		}
+	});
 </script>
 
 <Card.Root>
@@ -148,14 +91,61 @@
 		</Card.Description>
 	</Card.Header>
 	<Card.Content class="space-y-6">
+		{#if needsVerification}
+			<StatusAlert
+				variant="warning"
+				title="Verification required"
+				description="We sent a 6-digit code to your phone. Verify your number to finish setup."
+			/>
+			<div
+				class="border-amber-500/20 bg-amber-500/5 flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between"
+			>
+				<div class="min-w-0 space-y-2">
+					<div class="flex flex-wrap items-center gap-2">
+						<p class="text-sm font-medium">Pending verification</p>
+						<Badge variant="outline" class={cn(ACCOUNT_WARNING_BADGE_CLASS)}>
+							Unverified
+						</Badge>
+					</div>
+					<PhoneNumberDisplay phoneNumber={profile.phoneNumber} class="text-base font-medium" />
+				</div>
+				<Button type="button" class="h-10 shrink-0" onclick={() => (verifyDialogOpen = true)}>
+					<ShieldCheckIcon class="size-4" aria-hidden="true" />
+					Verify now
+				</Button>
+			</div>
+		{:else if profile.phoneNumber && profile.phoneVerified}
+			<div
+				class="border-emerald-500/20 bg-emerald-500/5 flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between"
+			>
+				<div class="min-w-0 space-y-1">
+					<p class="text-sm font-medium">Verified contact number</p>
+					<PhoneNumberDisplay phoneNumber={profile.phoneNumber} class="text-base font-medium" />
+				</div>
+				<Badge variant="secondary" class="w-fit shrink-0 gap-1">
+					<ShieldCheckIcon class="size-3" aria-hidden="true" />
+					Verified
+				</Badge>
+			</div>
+		{/if}
+
 		<form method="POST" action="?/updatePhoneNumber" use:enhancePhone class="max-w-xl space-y-5">
-			{#if phoneSaveSuccess}
+			{#if phoneSaveSuccess && needsVerification}
+				<StatusAlert
+					variant="info"
+					title="Code sent"
+					description="Enter the verification code in the dialog to confirm your number."
+				/>
+			{:else if phoneSaveSuccess}
 				<StatusAlert
 					variant="success"
 					title="Contact number saved"
-					description={needsVerification
-						? 'We sent a verification code by SMS. Enter it below to confirm your number.'
-						: 'Your contact number has been updated.'}
+					description="Your contact number has been updated."
+				/>
+			{:else if phoneRateLimitMessage}
+				<AuthFormMessageAlert
+					message={phoneRateLimitMessage}
+					bind:limited={phoneFormRateLimited}
 				/>
 			{:else if phoneFormError}
 				<StatusAlert
@@ -171,10 +161,11 @@
 				<Form.Control>
 					{#snippet children({ props })}
 						<Form.Label>Mobile number</Form.Label>
-						<Input
-							{...props}
-							type="tel"
-							autocomplete="tel"
+						<PhoneCountryInput
+							id={props.id}
+							name={props.name}
+							aria-invalid={props['aria-invalid']}
+							aria-describedby={props['aria-describedby']}
 							disabled={savingPhone}
 							bind:value={$phoneForm.phoneNumber}
 						/>
@@ -184,11 +175,11 @@
 			</Form.Field>
 
 			<p class="text-muted-foreground text-xs leading-relaxed">
-				Use international format with country code (e.g. +639171234567). Local dev SMS appears in
-				SMSPit at http://localhost:2875 when SMS_PROVIDER=smspitt.
+				Choose your country and enter your mobile number. Local dev SMS appears in SMSPit at
+				http://localhost:2875 when SMS_PROVIDER=smspitt.
 			</p>
 
-			<Button type="submit" class="h-10" disabled={savingPhone}>
+			<Button type="submit" class="h-10" disabled={savingPhone || phoneFormRateLimited}>
 				{#if savingPhone}
 					<Loader2Icon class="size-4 animate-spin" aria-hidden="true" />
 					Saving…
@@ -197,97 +188,9 @@
 				{/if}
 			</Button>
 		</form>
-
-		{#if needsVerification}
-			<div class="border-border max-w-xl space-y-5 border-t pt-6">
-				<div class="space-y-1">
-					<h4 class="text-sm font-semibold">Verify your number</h4>
-					<p class="text-muted-foreground text-sm">
-						Enter the 6-digit code sent to {profile.phoneNumber}.
-					</p>
-				</div>
-
-				{#if verifySuccess}
-					<StatusAlert
-						variant="success"
-						title="Contact number verified"
-						description="Your mobile number is confirmed for this account."
-					/>
-				{:else if verifyFormError}
-					<StatusAlert
-						variant="danger"
-						title={verifyFormError === PHONE_VERIFICATION_INVALID_MESSAGE
-							? 'Invalid verification code'
-							: verifyFormError === PHONE_VERIFICATION_ALREADY_VERIFIED_MESSAGE
-								? 'Already verified'
-								: 'Verification failed'}
-						description={verifyFormError}
-					/>
-				{:else if resendFormError}
-					<StatusAlert
-						variant="danger"
-						title={resendFormError === PHONE_VERIFICATION_THROTTLED_MESSAGE
-							? 'Too many attempts'
-							: resendFormError === PHONE_VERIFICATION_NOT_CONFIGURED_MESSAGE
-								? 'SMS not configured'
-								: 'Could not send code'}
-						description={resendFormError}
-					/>
-				{:else if $resendFormMessage === PHONE_VERIFICATION_SENT_MESSAGE}
-					<StatusAlert
-						variant="info"
-						title="Verification code sent"
-						description="Check SMSPit (http://localhost:2875) in local dev or your phone in production."
-					/>
-				{/if}
-
-				<form method="POST" action="?/verifyPhoneNumber" use:enhanceVerify class="space-y-5">
-					<Form.Field form={verifySuperform} name="code">
-						<Form.Control>
-							{#snippet children({ props })}
-								<Form.Label>Verification code</Form.Label>
-								<VerificationCodeInput
-									{...props}
-									disabled={verifyingCode}
-									bind:value={$verifyForm.code}
-								/>
-							{/snippet}
-						</Form.Control>
-						<SingleFieldErrors />
-					</Form.Field>
-
-					<Button type="submit" class="h-10" disabled={verifyingCode}>
-						{#if verifyingCode}
-							<Loader2Icon class="size-4 animate-spin" aria-hidden="true" />
-							Verifying…
-						{:else}
-							Verify number
-						{/if}
-					</Button>
-				</form>
-
-				<form method="POST" action="?/resendPhoneVerification" use:enhanceResend>
-					<Button
-						type="submit"
-						variant="outline"
-						class="h-10"
-						disabled={resendingCode || verifyingCode}
-					>
-						{#if resendingCode}
-							<Loader2Icon class="size-4 animate-spin" aria-hidden="true" />
-							Sending…
-						{:else}
-							Resend code
-						{/if}
-					</Button>
-				</form>
-			</div>
-		{:else if profile.phoneNumber && profile.phoneVerified}
-			<StatusAlert
-				variant="success"
-				title="Contact number verified"
-				description="{profile.phoneNumber} is confirmed for this account."
-			/>
-		{/if}
 	</Card.Content>
 </Card.Root>
+
+{#if needsVerification}
+	<ProfileVerifyPhoneDialog bind:open={verifyDialogOpen} {data} phoneNumber={profile.phoneNumber} />
+{/if}

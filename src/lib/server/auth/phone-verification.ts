@@ -1,4 +1,3 @@
-import { env } from '$env/dynamic/private';
 import { createHash, randomInt } from 'node:crypto';
 import { isSmsConfigured, sendSms } from '$lib/server/sms/index';
 import {
@@ -15,18 +14,13 @@ import {
 	markUserPhoneVerified,
 	updateUserPhoneNumber
 } from '$lib/server/repositories/users';
-import { isAuthRateLimitEnabled } from '$lib/server/security/auth-rate-limit';
+import {
+	consumeVerificationSmsSend,
+	getVerificationSmsRetryAfterSeconds,
+	isVerificationSmsThrottled
+} from '$lib/server/security/phone-sms-rate-limit';
 
 const CODE_TTL_MS = 15 * 60 * 1000;
-const DEFAULT_VERIFICATION_SMS_MAX_ATTEMPTS = 3;
-const DEFAULT_VERIFICATION_SMS_WINDOW_SECONDS = 3600;
-
-type RateLimitEntry = {
-	count: number;
-	resetAt: number;
-};
-
-const store = new Map<string, RateLimitEntry>();
 
 function hashVerificationCode(code: string): string {
 	return createHash('sha256').update(code).digest('hex');
@@ -36,68 +30,6 @@ function createVerificationCode(): string {
 	return randomInt(0, 1_000_000).toString().padStart(6, '0');
 }
 
-function getVerificationSmsMaxAttempts(): number {
-	const configured = Number(env.AUTH_VERIFICATION_SMS_MAX);
-
-	if (Number.isFinite(configured) && configured > 0) {
-		return Math.floor(configured);
-	}
-
-	return DEFAULT_VERIFICATION_SMS_MAX_ATTEMPTS;
-}
-
-function getVerificationSmsWindowMs(): number {
-	const configured = Number(env.AUTH_VERIFICATION_SMS_WINDOW_SECONDS);
-
-	if (Number.isFinite(configured) && configured > 0) {
-		return Math.floor(configured) * 1000;
-	}
-
-	return DEFAULT_VERIFICATION_SMS_WINDOW_SECONDS * 1000;
-}
-
-function verificationSmsRateLimitKey(phoneNumber: string): string {
-	return `verify-sms:${phoneNumber}`;
-}
-
-function isVerificationSmsThrottled(phoneNumber: string): boolean {
-	if (!isAuthRateLimitEnabled()) {
-		return false;
-	}
-
-	const key = verificationSmsRateLimitKey(phoneNumber);
-	const entry = store.get(key);
-	const now = Date.now();
-
-	if (!entry || entry.resetAt <= now) {
-		return false;
-	}
-
-	return entry.count >= getVerificationSmsMaxAttempts();
-}
-
-function consumeVerificationSmsSend(phoneNumber: string): boolean {
-	if (!isAuthRateLimitEnabled()) {
-		return true;
-	}
-
-	const key = verificationSmsRateLimitKey(phoneNumber);
-	const now = Date.now();
-	const windowMs = getVerificationSmsWindowMs();
-	const maxAttempts = getVerificationSmsMaxAttempts();
-	let entry = store.get(key);
-
-	if (!entry || entry.resetAt <= now) {
-		entry = { count: 1, resetAt: now + windowMs };
-		store.set(key, entry);
-		return true;
-	}
-
-	entry.count += 1;
-
-	return entry.count <= maxAttempts;
-}
-
 function buildVerificationSmsBody(code: string): string {
 	return `Your Urixoft verification code is ${code}. It expires in 15 minutes.`;
 }
@@ -105,7 +37,7 @@ function buildVerificationSmsBody(code: string): string {
 export type PreparePhoneVerificationSmsResult =
 	| { ok: true; status: 'send_pending'; to: string; body: string }
 	| { ok: true; status: 'skipped' }
-	| { ok: true; status: 'throttled' }
+	| { ok: true; status: 'throttled'; retryAfterSeconds: number }
 	| { ok: false; reason: 'SMS_NOT_CONFIGURED' };
 
 async function preparePhoneVerificationSms(input: {
@@ -128,8 +60,15 @@ async function preparePhoneVerificationSms(input: {
 		return { ok: true, status: 'skipped' };
 	}
 
-	if (isVerificationSmsThrottled(input.phoneNumber)) {
-		return { ok: true, status: 'throttled' };
+	if (isVerificationSmsThrottled({ phoneNumber: input.phoneNumber, userId: input.userId })) {
+		return {
+			ok: true,
+			status: 'throttled',
+			retryAfterSeconds: getVerificationSmsRetryAfterSeconds({
+				phoneNumber: input.phoneNumber,
+				userId: input.userId
+			})
+		};
 	}
 
 	const code = createVerificationCode();
@@ -142,8 +81,17 @@ async function preparePhoneVerificationSms(input: {
 		expiresAt
 	});
 
-	if (!consumeVerificationSmsSend(input.phoneNumber)) {
-		return { ok: true, status: 'throttled' };
+	const smsRateLimit = consumeVerificationSmsSend({
+		phoneNumber: input.phoneNumber,
+		userId: input.userId
+	});
+
+	if (!smsRateLimit.ok) {
+		return {
+			ok: true,
+			status: 'throttled',
+			retryAfterSeconds: smsRateLimit.retryAfterSeconds
+		};
 	}
 
 	return {
@@ -161,7 +109,7 @@ export async function queuePhoneVerificationSmsForWeb(input: {
 	| { ok: true }
 	| { ok: false; reason: 'SMS_NOT_CONFIGURED' }
 	| { ok: false; reason: 'SEND_FAILED' }
-	| { ok: false; reason: 'THROTTLED' }
+	| { ok: false; reason: 'THROTTLED'; retryAfterSeconds: number }
 > {
 	const prepared = await preparePhoneVerificationSms(input);
 
@@ -174,7 +122,7 @@ export async function queuePhoneVerificationSmsForWeb(input: {
 	}
 
 	if (prepared.status === 'throttled') {
-		return { ok: false, reason: 'THROTTLED' };
+		return { ok: false, reason: 'THROTTLED', retryAfterSeconds: prepared.retryAfterSeconds };
 	}
 
 	try {
@@ -195,6 +143,13 @@ export async function updateUserPhoneNumberForWeb(input: {
 	phoneNumber: string | null;
 }): Promise<
 	| { ok: true; phoneNumber: string | null; verificationQueued: boolean }
+	| {
+			ok: true;
+			phoneNumber: string;
+			verificationQueued: false;
+			smsThrottled: true;
+			retryAfterSeconds: number;
+	  }
 	| { ok: false; reason: 'PHONE_IN_USE' }
 	| { ok: false; reason: 'UPDATE_FAILED' }
 > {
@@ -222,6 +177,16 @@ export async function updateUserPhoneNumberForWeb(input: {
 		userId: input.userId,
 		phoneNumber: input.phoneNumber
 	});
+
+	if (!smsResult.ok && smsResult.reason === 'THROTTLED') {
+		return {
+			ok: true,
+			phoneNumber: input.phoneNumber,
+			verificationQueued: false,
+			smsThrottled: true,
+			retryAfterSeconds: smsResult.retryAfterSeconds
+		};
+	}
 
 	return {
 		ok: true,

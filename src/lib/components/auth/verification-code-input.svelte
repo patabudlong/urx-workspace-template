@@ -5,6 +5,7 @@
 
 	let {
 		value = $bindable(''),
+		name,
 		disabled = false,
 		id,
 		'aria-invalid': ariaInvalid = undefined,
@@ -12,6 +13,7 @@
 		class: className
 	}: {
 		value?: string;
+		name?: string;
 		disabled?: boolean;
 		id?: string;
 		'aria-invalid'?: boolean | 'true' | 'false';
@@ -19,118 +21,169 @@
 		class?: string;
 	} = $props();
 
-	let inputs: HTMLInputElement[] = $state([]);
+	let inputEl = $state<HTMLInputElement | null>(null);
+	let activeIndex = $state(0);
 
 	const digits = $derived(
 		Array.from({ length: CODE_LENGTH }, (_, index) => value[index] ?? '')
 	);
 
-	function syncValue(nextDigits: string[]) {
-		value = Array.from({ length: CODE_LENGTH }, (_, index) => nextDigits[index] ?? '')
-			.join('')
-			.replace(/\D/g, '')
-			.slice(0, CODE_LENGTH);
+	function extractDigits(text: string): string {
+		const normalized = text.replace(/[\uFF10-\uFF19]/g, (character) =>
+			String.fromCharCode(character.charCodeAt(0) - 0xff10 + 0x30)
+		);
+
+		return normalized.replace(/\D/g, '').slice(0, CODE_LENGTH);
 	}
 
-	function focusInput(index: number) {
-		const input = inputs[index];
+	function setValue(next: string) {
+		value = extractDigits(next);
+	}
 
-		if (input) {
-			input.focus();
-			input.select();
+	function syncInputElement() {
+		if (inputEl && inputEl.value !== value) {
+			inputEl.value = value;
 		}
 	}
 
-	function handleInput(event: Event, index: number) {
+	function updateActiveIndex() {
+		if (!inputEl) {
+			return;
+		}
+
+		const position = inputEl.selectionStart ?? value.length;
+		activeIndex = Math.min(Math.max(position, 0), CODE_LENGTH - 1);
+	}
+
+	function focusInput(index = value.length) {
+		if (!inputEl) {
+			return;
+		}
+
+		inputEl.focus();
+		const position = Math.min(index, value.length, CODE_LENGTH - 1);
+		inputEl.setSelectionRange(position, position + 1);
+		activeIndex = position;
+	}
+
+	function handleInput(event: Event) {
 		const target = event.currentTarget as HTMLInputElement;
-		const digitsOnly = target.value.replace(/\D/g, '');
-
-		if (digitsOnly.length > 1) {
-			const merged = [...digits.slice(0, index), ...digitsOnly.split('')]
-				.join('')
-				.slice(0, CODE_LENGTH);
-			syncValue(merged.split(''));
-			target.value = merged[index] ?? '';
-			focusInput(Math.min(merged.length, CODE_LENGTH - 1));
-			return;
-		}
-
-		const digit = digitsOnly.slice(-1);
-		const nextDigits = [...digits];
-		nextDigits[index] = digit;
-		syncValue(nextDigits);
-		target.value = digit;
-
-		if (digit && index < CODE_LENGTH - 1) {
-			focusInput(index + 1);
-		}
+		setValue(target.value);
+		target.value = value;
+		updateActiveIndex();
 	}
 
-	function handleKeyDown(event: KeyboardEvent, index: number) {
-		if (event.key === 'Backspace' && !digits[index] && index > 0) {
+	function handleKeyDown(event: KeyboardEvent) {
+		if (event.key === 'ArrowLeft') {
 			event.preventDefault();
-			const nextDigits = [...digits];
-			nextDigits[index - 1] = '';
-			syncValue(nextDigits);
-			focusInput(index - 1);
+			focusInput(Math.max(0, activeIndex - 1));
 			return;
 		}
 
-		if (event.key === 'ArrowLeft' && index > 0) {
+		if (event.key === 'ArrowRight') {
 			event.preventDefault();
-			focusInput(index - 1);
-			return;
-		}
-
-		if (event.key === 'ArrowRight' && index < CODE_LENGTH - 1) {
-			event.preventDefault();
-			focusInput(index + 1);
+			focusInput(Math.min(CODE_LENGTH - 1, activeIndex + 1));
 		}
 	}
 
 	function handlePaste(event: ClipboardEvent) {
 		event.preventDefault();
-		const pasted = event.clipboardData?.getData('text').replace(/\D/g, '').slice(0, CODE_LENGTH) ?? '';
+
+		const clipboard = event.clipboardData;
+
+		if (!clipboard) {
+			return;
+		}
+
+		let pasted = extractDigits(clipboard.getData('text/plain') || clipboard.getData('text'));
+
+		if (!pasted && clipboard.types.includes('text/html')) {
+			const text = clipboard
+				.getData('text/html')
+				.replace(/<[^>]+>/g, ' ')
+				.replace(/\s+/g, ' ');
+			pasted = extractDigits(text);
+		}
 
 		if (!pasted) {
 			return;
 		}
 
-		syncValue(pasted.split(''));
-		focusInput(Math.min(pasted.length, CODE_LENGTH - 1));
+		setValue(pasted);
+		syncInputElement();
+		focusInput(Math.min(value.length, CODE_LENGTH - 1));
 	}
+
+	function handleClick(event: MouseEvent) {
+		const target = event.currentTarget;
+
+		if (!inputEl || disabled || !(target instanceof HTMLInputElement)) {
+			return;
+		}
+
+		const bounds = target.getBoundingClientRect();
+		const relativeX = event.clientX - bounds.left;
+		const gap = bounds.width >= 360 ? 12 : 8;
+		const cellWidth = (bounds.width - gap * (CODE_LENGTH - 1)) / CODE_LENGTH;
+		const index = Math.min(
+			CODE_LENGTH - 1,
+			Math.max(0, Math.floor(relativeX / (cellWidth + gap)))
+		);
+
+		focusInput(index);
+	}
+
+	$effect(() => {
+		const _code = value;
+		syncInputElement();
+	});
 </script>
 
 <div
-	{id}
-	class={cn('flex justify-center gap-2 sm:gap-3', className)}
+	class={cn('relative', className)}
 	role="group"
 	aria-label="Verification code"
 	aria-describedby={ariaDescribedBy}
-	onpaste={handlePaste}
 >
-	{#each digits as digit, index (index)}
-		<input
-			bind:this={inputs[index]}
-			type="text"
-			inputmode="numeric"
-			autocomplete={index === 0 ? 'one-time-code' : 'off'}
-			maxlength={1}
-			{disabled}
-			value={digit}
-			aria-invalid={ariaInvalid}
-			class={cn(
-				'border-input bg-background ring-offset-background',
-				'focus-visible:ring-ring size-11 rounded-lg border text-center',
-				'font-mono text-lg font-semibold tracking-tight',
-				'sm:size-12 sm:text-xl',
-				'focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
-				'disabled:cursor-not-allowed disabled:opacity-50'
-			)}
-			aria-label={`Digit ${index + 1} of ${CODE_LENGTH}`}
-			oninput={(event) => handleInput(event, index)}
-			onkeydown={(event) => handleKeyDown(event, index)}
-			onpaste={handlePaste}
-		/>
-	{/each}
+	{#if name}
+		<input type="hidden" {name} {value} />
+	{/if}
+
+	<input
+		bind:this={inputEl}
+		{id}
+		type="text"
+		inputmode="numeric"
+		autocomplete="one-time-code"
+		maxlength={CODE_LENGTH}
+		{disabled}
+		{value}
+		aria-invalid={ariaInvalid}
+		class="absolute inset-0 z-10 h-full w-full cursor-text opacity-0"
+		aria-label="Verification code"
+		oninput={handleInput}
+		onkeydown={handleKeyDown}
+		onpaste={handlePaste}
+		onfocus={updateActiveIndex}
+		onkeyup={updateActiveIndex}
+		onclick={handleClick}
+	/>
+
+	<div class="pointer-events-none flex justify-center gap-2 sm:gap-3">
+		{#each digits as digit, index (index)}
+			<div
+				class={cn(
+					'border-input bg-background ring-offset-background',
+					'size-11 rounded-lg border text-center',
+					'font-mono text-lg font-semibold tracking-tight',
+					'sm:size-12 sm:text-xl',
+					'flex items-center justify-center',
+					activeIndex === index && 'border-ring ring-ring ring-2 ring-offset-2'
+				)}
+				aria-hidden="true"
+			>
+				{digit}
+			</div>
+		{/each}
+	</div>
 </div>

@@ -17,7 +17,7 @@
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import { get } from 'svelte/store';
 	import { onMount, untrack } from 'svelte';
-	import { superForm, type SuperForm } from 'sveltekit-superforms';
+	import { superForm, type SuperForm, formFieldProxy } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
 
 	let { data } = $props();
@@ -71,6 +71,7 @@
 		}
 	});
 	const { enhance, form, message: formMessage, errors } = superform;
+	const { value: codeField } = formFieldProxy(superform, 'code');
 
 	formStore = form;
 	validateFormFn = superform.validateForm;
@@ -144,11 +145,11 @@
 					<Form.Field form={superform} name="code">
 						<Form.Control>
 							{#snippet children({ props })}
-								<input type="hidden" name={props.name} bind:value={$form.code} />
 								<Form.Label required class="sr-only">Verification code</Form.Label>
 								<VerificationCodeInput
 									id={props.id}
-									bind:value={$form.code}
+									name={props.name}
+									bind:value={$codeField}
 									disabled={submitDisabled}
 									aria-invalid={$errors.code?.length ? 'true' : undefined}
 									aria-describedby={props['aria-describedby']}

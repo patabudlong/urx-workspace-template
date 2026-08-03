@@ -64,3 +64,19 @@ export function formatContactPhone(iso: string, national: string): string {
 
 	return `${dialCodeForIso(iso)} ${digits}`;
 }
+
+export function displayContactPhone(full: string | null | undefined): {
+	flag: string;
+	formatted: string;
+} | null {
+	if (!full?.trim()) {
+		return null;
+	}
+
+	const { iso, national } = parseContactPhone(full);
+
+	return {
+		flag: countryFlag(iso),
+		formatted: formatContactPhone(iso, national) || full.trim()
+	};
+}

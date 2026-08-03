@@ -9,7 +9,12 @@ import {
 } from '$lib/server/auth/phone-verification';
 import { toUserProfile } from '$lib/server/auth/user-profile';
 import { findUserById, updateUserProfile } from '$lib/server/repositories/users';
+import {
+	consumeAccountPhoneFormRateLimit,
+	consumePhoneVerifyCodeAttempt
+} from '$lib/server/security/account-phone-rate-limit';
 import { requireWorkspaceMember } from '$lib/server/workspace-access';
+import { createAuthRateLimitMessage } from '$lib/shared/auth-messages';
 import {
 	PHONE_ALREADY_IN_USE_MESSAGE,
 	PHONE_NUMBER_REQUIRED_MESSAGE,
@@ -20,7 +25,6 @@ import {
 	PHONE_VERIFICATION_NOT_CONFIGURED_MESSAGE,
 	PHONE_VERIFICATION_SEND_FAILED_MESSAGE,
 	PHONE_VERIFICATION_SENT_MESSAGE,
-	PHONE_VERIFICATION_THROTTLED_MESSAGE,
 	PHONE_VERIFIED_MESSAGE,
 	PROFILE_UPDATE_FAILED_MESSAGE,
 	PROFILE_UPDATED_MESSAGE
@@ -94,11 +98,22 @@ export const actions: Actions = {
 
 		return message(form, PROFILE_UPDATED_MESSAGE);
 	},
-	updatePhoneNumber: async ({ request, locals }) => {
+	updatePhoneNumber: async ({ request, locals, getClientAddress }) => {
 		const form = await superValidate(request, zod4(updatePhoneNumberSchema), { id: 'phoneForm' });
 
 		if (!locals.user) {
 			return fail(401, { phoneForm: form });
+		}
+
+		const rateLimited = consumeAccountPhoneFormRateLimit({
+			clientIp: getClientAddress(),
+			action: 'update'
+		});
+
+		if (!rateLimited.ok) {
+			return message(form, createAuthRateLimitMessage(rateLimited.retryAfterSeconds), {
+				status: 429
+			});
 		}
 
 		if (!form.valid) {
@@ -119,13 +134,28 @@ export const actions: Actions = {
 			return message(form, PHONE_UPDATE_FAILED_MESSAGE, { status: 500 });
 		}
 
+		if ('smsThrottled' in result && result.smsThrottled) {
+			return message(form, createAuthRateLimitMessage(result.retryAfterSeconds), { status: 429 });
+		}
+
 		return message(form, PHONE_UPDATED_MESSAGE);
 	},
-	resendPhoneVerification: async ({ locals }) => {
+	resendPhoneVerification: async ({ locals, getClientAddress }) => {
 		const form = await superValidate(zod4(verifyPhoneSchema), { id: 'resendPhoneForm' });
 
 		if (!locals.user) {
 			return fail(401, { resendPhoneForm: form });
+		}
+
+		const rateLimited = consumeAccountPhoneFormRateLimit({
+			clientIp: getClientAddress(),
+			action: 'resend'
+		});
+
+		if (!rateLimited.ok) {
+			return message(form, createAuthRateLimitMessage(rateLimited.retryAfterSeconds), {
+				status: 429
+			});
 		}
 
 		const user = await findUserById(locals.user.id);
@@ -145,7 +175,9 @@ export const actions: Actions = {
 			}
 
 			if (result.reason === 'THROTTLED') {
-				return message(form, PHONE_VERIFICATION_THROTTLED_MESSAGE, { status: 429 });
+				return message(form, createAuthRateLimitMessage(result.retryAfterSeconds), {
+					status: 429
+				});
 			}
 
 			return message(form, PHONE_VERIFICATION_SEND_FAILED_MESSAGE, { status: 503 });
@@ -153,15 +185,34 @@ export const actions: Actions = {
 
 		return message(form, PHONE_VERIFICATION_SENT_MESSAGE);
 	},
-	verifyPhoneNumber: async ({ request, locals }) => {
+	verifyPhoneNumber: async ({ request, locals, getClientAddress }) => {
 		const form = await superValidate(request, zod4(verifyPhoneSchema), { id: 'verifyPhoneForm' });
 
 		if (!locals.user) {
 			return fail(401, { verifyPhoneForm: form });
 		}
 
+		const rateLimited = consumeAccountPhoneFormRateLimit({
+			clientIp: getClientAddress(),
+			action: 'verify'
+		});
+
+		if (!rateLimited.ok) {
+			return message(form, createAuthRateLimitMessage(rateLimited.retryAfterSeconds), {
+				status: 429
+			});
+		}
+
 		if (!form.valid) {
 			return fail(400, { verifyPhoneForm: form });
+		}
+
+		const verifyAttempt = consumePhoneVerifyCodeAttempt({ userId: locals.user.id });
+
+		if (!verifyAttempt.ok) {
+			return message(form, createAuthRateLimitMessage(verifyAttempt.retryAfterSeconds), {
+				status: 429
+			});
 		}
 
 		const result = await verifyPhoneWithCode({

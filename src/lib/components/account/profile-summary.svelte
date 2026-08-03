@@ -2,6 +2,8 @@
 	import UserAvatar from '$lib/components/user-avatar.svelte';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { buildUserDisplay } from '$lib/shared/user-display';
+	import { ACCOUNT_WARNING_BADGE_CLASS } from '$lib/shared/account-ui';
+	import { cn } from '$lib/utils.js';
 	import type { UserProfile } from '$lib/shared/schemas/account';
 	import { formatFullName } from '$lib/shared/user';
 	import CircleCheckIcon from '@lucide/svelte/icons/circle-check';
@@ -66,7 +68,7 @@
 						Phone verified
 					</Badge>
 				{:else}
-					<Badge variant="outline" class="gap-1">
+					<Badge variant="outline" class={cn(ACCOUNT_WARNING_BADGE_CLASS, 'gap-1')}>
 						<TriangleAlertIcon class="size-3" aria-hidden="true" />
 						Phone not verified
 					</Badge>
