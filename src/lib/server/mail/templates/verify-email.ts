@@ -1,21 +1,17 @@
 import { APP_NAME, URIXOFT_SOCIAL, URIXOFT_WEBSITE } from '$lib/shared/site-meta';
-
-const BRAND_PRIMARY = '#0471B7';
-const BRAND_TERTIARY = '#C8E6F7';
-const PAGE_BG = '#f4f7fb';
-const MUTED_BG = '#f9fafb';
-const TEXT_PRIMARY = '#111827';
-const TEXT_BODY = '#4b5563';
-const TEXT_MUTED = '#6b7280';
-const TEXT_FOOTER = '#9ca3af';
-const BORDER = '#e5e7eb';
-
-const COMPANY_ADDRESS_LINES = [
-	'Door 1, Lote 84 Business Hub Bldg, Palm Street, Mintal Tugbok',
-	'Davao City, 8000, Philippines'
-] as const;
-
-const BRAND_TAGLINE = 'Your business workspace, made simple.';
+import {
+	BRAND_PRIMARY,
+	BRAND_TERTIARY,
+	BRAND_TAGLINE,
+	COMPANY_ADDRESS_LINES,
+	PAGE_BG,
+	TEXT_BODY,
+	TEXT_FOOTER,
+	TEXT_PRIMARY,
+	buildMutedInfoBoxHtml,
+	buildVerificationCodeBoxHtml,
+	escapeHtml
+} from '$lib/server/mail/templates/transactional-email-layout';
 const LOGO_DISPLAY_WIDTH = 52;
 const LOGO_DISPLAY_HEIGHT = 46;
 const LOGO_BORDER_RADIUS = 6;
@@ -35,22 +31,22 @@ export type VerifyEmailContent = {
 const PREHEADER_TEXT =
 	'Your Urixoft Workspace verification code. It expires in 15 minutes.';
 
-function formatVerificationCode(code: string): string {
-	return code.replace(/(\d{3})(\d{3})/, '$1 $2');
-}
-
 /**
  * Keep every HTML line under 76 chars so nodemailer can send 7bit.
  */
 export function buildVerifyEmailHtml(content: VerifyEmailContent): string {
 	const greeting = escapeHtml(content.greeting);
-	const formattedCode = escapeHtml(formatVerificationCode(content.code));
 	const logoUrl = escapeHtml(content.logoUrl);
 	const illustrationUrl = escapeHtml(content.illustrationUrl);
 	const preheader = escapeHtml(PREHEADER_TEXT);
 	const appName = escapeHtml(APP_NAME);
 	const brandTagline = escapeHtml(BRAND_TAGLINE);
 	const websiteUrl = escapeHtml(URIXOFT_WEBSITE);
+	const codeBox = buildVerificationCodeBoxHtml(content.code);
+	const infoBox = buildMutedInfoBoxHtml([
+		'This code expires in <strong>15 minutes</strong>.',
+		'If you did not create an account, you can ignore this email.'
+	]);
 
 	return [
 		'<!DOCTYPE html>',
@@ -146,55 +142,8 @@ export function buildVerifyEmailHtml(content: VerifyEmailContent): string {
 		'the verification page to confirm your',
 		'email address.',
 		'</p>',
-		'<table role="presentation"',
-		'width="100%" cellpadding="0"',
-		'cellspacing="0" border="0"',
-		`style="background-color:${MUTED_BG};`,
-		'border-radius:8px;margin-bottom:20px;">',
-		'<tr>',
-		'<td align="center"',
-		'style="padding:20px 16px;',
-		'font-family:Arial,Helvetica,sans-serif;">',
-		'<p style="margin:0 0 8px 0;',
-		'font-size:12px;line-height:18px;',
-		`color:${TEXT_MUTED};`,
-		'letter-spacing:0.08em;',
-		'text-transform:uppercase;">',
-		'Verification code',
-		'</p>',
-		'<p style="margin:0;',
-		'font-size:32px;line-height:40px;',
-		'font-weight:700;letter-spacing:0.2em;',
-		`color:${BRAND_PRIMARY};`,
-		'font-family:Consolas,Monaco,monospace;">',
-		formattedCode,
-		'</p>',
-		'</td>',
-		'</tr>',
-		'</table>',
-		'<table role="presentation"',
-		'width="100%" cellpadding="0"',
-		'cellspacing="0" border="0"',
-		`style="background-color:${MUTED_BG};`,
-		'border-radius:8px;margin-bottom:24px;">',
-		'<tr>',
-		'<td style="padding:14px 16px;',
-		'font-family:Arial,Helvetica,sans-serif;">',
-		'<p style="margin:0 0 6px 0;',
-		'font-size:13px;line-height:20px;',
-		`color:${TEXT_MUTED};">`,
-		'This code expires in',
-		'<strong>15 minutes</strong>.',
-		'</p>',
-		'<p style="margin:0;',
-		'font-size:13px;line-height:20px;',
-		`color:${TEXT_MUTED};">`,
-		'If you did not create an account,',
-		'you can ignore this email.',
-		'</p>',
-		'</td>',
-		'</tr>',
-		'</table>',
+		codeBox,
+		infoBox,
 		'</td>',
 		'</tr>',
 		'<tr>',
@@ -288,13 +237,4 @@ export function buildVerifyEmailText(content: VerifyEmailContent): string {
 		`facebook: ${URIXOFT_SOCIAL.facebook}`,
 		`linkedin: ${URIXOFT_SOCIAL.linkedin}`
 	].join('\n');
-}
-
-function escapeHtml(value: string): string {
-	return value
-		.replaceAll('&', '&amp;')
-		.replaceAll('<', '&lt;')
-		.replaceAll('>', '&gt;')
-		.replaceAll('"', '&quot;')
-		.replaceAll("'", '&#39;');
 }

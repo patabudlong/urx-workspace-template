@@ -117,6 +117,7 @@ export async function resolveAuthSessionOrChallenge(
 export async function sendTwoFactorLoginCode(input: {
 	userId: string;
 	method: 'sms' | 'email';
+	origin: string;
 }): Promise<
 	| { ok: true }
 	| { ok: false; reason: 'USER_NOT_FOUND' | 'METHOD_NOT_ENABLED' | 'SMS_NOT_CONFIGURED' | 'SEND_FAILED' }
@@ -158,7 +159,12 @@ export async function sendTwoFactorLoginCode(input: {
 		if (input.method === 'sms') {
 			await sendSms({ to: user.phoneNumber!, body: buildSmsBody(code) });
 		} else {
-			await sendTwoFactorEmailCode({ email: user.email, code });
+			await sendTwoFactorEmailCode({
+				email: user.email,
+				firstName: user.firstName,
+				code,
+				origin: input.origin
+			});
 		}
 	} catch {
 		return { ok: false, reason: 'SEND_FAILED' };

@@ -127,6 +127,7 @@ export async function confirmTotpSetup(input: {
 export async function sendSetupOtpCode(input: {
 	userId: string;
 	method: 'sms' | 'email';
+	origin: string;
 }): Promise<
 	| { ok: true }
 	| {
@@ -182,7 +183,12 @@ export async function sendSetupOtpCode(input: {
 		if (input.method === 'sms') {
 			await sendSms({ to: user.phoneNumber!, body: buildSmsBody(code) });
 		} else {
-			await sendTwoFactorEmailCode({ email: user.email, code });
+			await sendTwoFactorEmailCode({
+				email: user.email,
+				firstName: user.firstName,
+				code,
+				origin: input.origin
+			});
 		}
 	} catch {
 		return { ok: false, reason: 'SEND_FAILED' };

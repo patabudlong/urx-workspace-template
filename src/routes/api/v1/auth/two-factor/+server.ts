@@ -74,7 +74,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	);
 };
 
-export const PUT: RequestHandler = async ({ request }) => {
+export const PUT: RequestHandler = async ({ request, url }) => {
 	const requestId = request.headers.get('x-request-id') ?? undefined;
 
 	let body: unknown;
@@ -109,7 +109,8 @@ export const PUT: RequestHandler = async ({ request }) => {
 
 	const sent = await sendTwoFactorLoginCode({
 		userId: payload.sub,
-		method: parsed.data.method
+		method: parsed.data.method,
+		origin: url.origin
 	});
 
 	if (!sent.ok) {

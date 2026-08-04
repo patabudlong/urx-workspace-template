@@ -333,6 +333,43 @@ export function buildPrimaryButtonHtml(label: string, url: string): string {
 	].join('\n');
 }
 
+export function formatVerificationCode(code: string): string {
+	return code.replace(/(\d{3})(\d{3})/, '$1 $2');
+}
+
+export function buildVerificationCodeBoxHtml(code: string): string {
+	const formattedCode = escapeHtml(formatVerificationCode(code));
+
+	return [
+		'<table role="presentation"',
+		'width="100%" cellpadding="0"',
+		'cellspacing="0" border="0"',
+		`style="background-color:${MUTED_BG};`,
+		'border-radius:8px;margin-bottom:20px;">',
+		'<tr>',
+		'<td align="center"',
+		'style="padding:20px 16px;',
+		'font-family:Arial,Helvetica,sans-serif;">',
+		'<p style="margin:0 0 8px 0;',
+		'font-size:12px;line-height:18px;',
+		`color:${TEXT_MUTED};`,
+		'letter-spacing:0.08em;',
+		'text-transform:uppercase;">',
+		'Verification code',
+		'</p>',
+		'<p style="margin:0;',
+		'font-size:32px;line-height:40px;',
+		'font-weight:700;letter-spacing:0.2em;',
+		`color:${BRAND_PRIMARY};`,
+		'font-family:Consolas,Monaco,monospace;">',
+		formattedCode,
+		'</p>',
+		'</td>',
+		'</tr>',
+		'</table>'
+	].join('\n');
+}
+
 export function escapeHtml(value: string): string {
 	return value
 		.replaceAll('&', '&amp;')

@@ -101,7 +101,7 @@ export const actions: Actions = {
 			})
 		);
 	},
-	sendCode: async ({ request, cookies }) => {
+	sendCode: async ({ request, cookies, url }) => {
 		const form = await superValidate(request, zod4(sendTwoFactorCodeSchema), {
 			id: 'twoFactorSendCodeForm'
 		});
@@ -119,7 +119,8 @@ export const actions: Actions = {
 
 		const sent = await sendTwoFactorLoginCode({
 			userId: payload.sub,
-			method: form.data.method as 'sms' | 'email'
+			method: form.data.method as 'sms' | 'email',
+			origin: url.origin
 		});
 
 		if (!sent.ok) {

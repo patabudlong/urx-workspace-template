@@ -239,12 +239,12 @@ export const actions: Actions = {
 		};
 	},
 
-	sendSmsSetupCode: async ({ locals }) => {
+	sendSmsSetupCode: async ({ locals, url }) => {
 		if (!locals.user) {
 			return fail(401);
 		}
 
-		const result = await sendSetupOtpCode({ userId: locals.user.id, method: 'sms' });
+		const result = await sendSetupOtpCode({ userId: locals.user.id, method: 'sms', origin: url.origin });
 
 		if (!result.ok) {
 			if (result.reason === 'ALREADY_ENABLED') {
@@ -294,12 +294,12 @@ export const actions: Actions = {
 		};
 	},
 
-	sendEmailSetupCode: async ({ locals }) => {
+	sendEmailSetupCode: async ({ locals, url }) => {
 		if (!locals.user) {
 			return fail(401);
 		}
 
-		const result = await sendSetupOtpCode({ userId: locals.user.id, method: 'email' });
+		const result = await sendSetupOtpCode({ userId: locals.user.id, method: 'email', origin: url.origin });
 
 		if (!result.ok) {
 			if (result.reason === 'ALREADY_ENABLED') {
