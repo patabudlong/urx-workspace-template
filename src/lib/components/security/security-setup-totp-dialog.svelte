@@ -12,10 +12,11 @@
 	import type { PageData } from '../../../routes/(app)/(settings)/security/$types';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import SmartphoneIcon from '@lucide/svelte/icons/smartphone';
+	import { browser } from '$app/environment';
 	import { invalidateAll } from '$app/navigation';
 	import { resetSuperformDialogState, whenDialogCloses } from '$lib/forms/superform-dialog';
 	import { untrack } from 'svelte';
-	import { superForm } from 'sveltekit-superforms';
+	import { formFieldProxy, superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
 
 	let {
@@ -32,6 +33,7 @@
 
 	let submitting = $state(false);
 	let formRateLimited = $state(false);
+	let codeInput = $state<{ focus: () => void; typeDigit: (digit: string) => void } | null>(null);
 
 	const superform = superForm(untrack(() => data.confirmTotpForm), {
 		id: 'confirmTotpForm',
@@ -57,7 +59,8 @@
 		}
 	});
 
-	const { enhance, form, message: formMessage, errors, reset } = superform;
+	const { enhance, message: formMessage, errors, reset } = superform;
+	const { value: codeField } = formFieldProxy(superform, 'code');
 
 	const formError = $derived(
 		$formMessage && !isAuthRateLimitMessage($formMessage) ? $formMessage : null
@@ -66,11 +69,66 @@
 		isAuthRateLimitMessage($formMessage) ? $formMessage : null
 	);
 
+	const codeInputReady = $derived(Boolean(totpSetup) && !submitting && !formRateLimited);
+
 	function resetDialogState() {
 		resetSuperformDialogState({ reset, errors });
 		submitting = false;
 		formRateLimited = false;
 	}
+
+	function handleOpenAutoFocus(event: Event) {
+		event.preventDefault();
+
+		if (!codeInputReady) {
+			return;
+		}
+
+		requestAnimationFrame(() => {
+			codeInput?.focus();
+		});
+	}
+
+	$effect(() => {
+		if (!browser || !open || !codeInputReady) {
+			return;
+		}
+
+		requestAnimationFrame(() => {
+			codeInput?.focus();
+		});
+	});
+
+	$effect(() => {
+		if (!browser || !open || !codeInputReady) {
+			return;
+		}
+
+		function onWindowKeyDown(event: KeyboardEvent) {
+			if (event.metaKey || event.ctrlKey || event.altKey || event.defaultPrevented) {
+				return;
+			}
+
+			if (!/^\d$/.test(event.key)) {
+				return;
+			}
+
+			const active = document.activeElement;
+
+			if (
+				active instanceof HTMLInputElement &&
+				active.hasAttribute('data-verification-code-input')
+			) {
+				return;
+			}
+
+			event.preventDefault();
+			codeInput?.typeDigit(event.key);
+		}
+
+		window.addEventListener('keydown', onWindowKeyDown);
+		return () => window.removeEventListener('keydown', onWindowKeyDown);
+	});
 </script>
 
 <Dialog.Root
@@ -79,7 +137,7 @@
 >
 	<Dialog.Content
 		class="gap-0 overflow-hidden p-0 sm:max-w-md"
-		onOpenAutoFocus={(event) => event.preventDefault()}
+		onOpenAutoFocus={handleOpenAutoFocus}
 	>
 		<div class="bg-primary/5 border-primary/10 border-b px-6 pt-8 pb-6 text-center">
 			<div
@@ -131,9 +189,14 @@
 						{#snippet children({ props })}
 							<Form.Label required class="sr-only">Verification code</Form.Label>
 							<VerificationCodeInput
-								{...props}
-								bind:value={$form.code}
-								disabled={submitting || formRateLimited || !totpSetup}
+								bind:this={codeInput}
+								id={props.id}
+								name={props.name}
+								bind:value={$codeField}
+								disabled={!codeInputReady}
+								autofocus={open && codeInputReady}
+								aria-invalid={$errors.code?.length ? 'true' : undefined}
+								aria-describedby={props['aria-describedby']}
 							/>
 						{/snippet}
 					</Form.Control>
@@ -143,7 +206,7 @@
 				<Button
 					type="submit"
 					class="h-10 w-full"
-					disabled={submitting || formRateLimited || !totpSetup}
+					disabled={!codeInputReady}
 					aria-busy={submitting}
 				>
 					{#if submitting}

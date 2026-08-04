@@ -2,7 +2,8 @@
 	import SecurityBackupCodesDialog from '$lib/components/security/security-backup-codes-dialog.svelte';
 	import SecurityDisable2faDialog from '$lib/components/security/security-disable-2fa-dialog.svelte';
 	import SecurityRegenerateBackupCodesDialog from '$lib/components/security/security-regenerate-backup-codes-dialog.svelte';
-	import SecuritySetupOtpDialog from '$lib/components/security/security-setup-otp-dialog.svelte';
+	import SecuritySetupEmailOtpDialog from '$lib/components/security/security-setup-email-otp-dialog.svelte';
+	import SecuritySetupSmsOtpDialog from '$lib/components/security/security-setup-sms-otp-dialog.svelte';
 	import SecuritySetupTotpDialog from '$lib/components/security/security-setup-totp-dialog.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Badge } from '$lib/components/ui/badge/index.js';
@@ -316,18 +317,16 @@
 	onBackupCodes={showBackupCodes}
 />
 
-<SecuritySetupOtpDialog
+<SecuritySetupSmsOtpDialog
 	bind:open={smsDialogOpen}
-	{data}
-	method="sms"
+	confirmForm={data.confirmSmsForm}
 	bind:codeSent={smsCodeSent}
 	onBackupCodes={showBackupCodes}
 />
 
-<SecuritySetupOtpDialog
+<SecuritySetupEmailOtpDialog
 	bind:open={emailDialogOpen}
-	{data}
-	method="email"
+	confirmForm={data.confirmEmailForm}
 	bind:codeSent={emailCodeSent}
 	onBackupCodes={showBackupCodes}
 />

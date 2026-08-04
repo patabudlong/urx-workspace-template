@@ -7,74 +7,48 @@
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as Form from '$lib/components/ui/form/index.js';
 	import { isAuthRateLimitMessage } from '$lib/shared/auth-messages';
-	import { twoFactorSetupOtpConfirmSchema } from '$lib/shared/schemas/security';
 	import {
 		TWO_FACTOR_CODE_SENT_MESSAGE,
 		TWO_FACTOR_INVALID_CODE_MESSAGE,
 		TWO_FACTOR_SEND_FAILED_MESSAGE
 	} from '$lib/shared/security-messages';
-	import type { PageData } from '../../../routes/(app)/(settings)/security/$types';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import MailIcon from '@lucide/svelte/icons/mail';
 	import PhoneIcon from '@lucide/svelte/icons/phone';
-	import { invalidateAll } from '$app/navigation';
+	import { browser } from '$app/environment';
 	import { deserialize } from '$app/forms';
 	import { resetSuperformDialogState, whenDialogCloses } from '$lib/forms/superform-dialog';
-	import { untrack } from 'svelte';
-	import { superForm } from 'sveltekit-superforms';
-	import { zod4Client } from 'sveltekit-superforms/adapters';
+	import type { SuperForm } from 'sveltekit-superforms';
+	import type { Writable } from 'svelte/store';
+
+	type OtpConfirmForm = { code: string };
 
 	let {
 		open = $bindable(false),
-		data,
+		submitting = $bindable(false),
 		method,
+		confirmAction,
+		sendAction,
 		codeSent = $bindable(false),
-		onBackupCodes
+		superform,
+		codeField
 	}: {
 		open?: boolean;
-		data: PageData;
+		submitting?: boolean;
 		method: 'sms' | 'email';
+		confirmAction: string;
+		sendAction: string;
 		codeSent?: boolean;
-		onBackupCodes: (codes: string[]) => void;
+		superform: SuperForm<OtpConfirmForm>;
+		codeField: Writable<string>;
 	} = $props();
 
-	let submitting = $state(false);
 	let sendingCode = $state(false);
 	let sendError = $state<string | null>(null);
 	let formRateLimited = $state(false);
+	let codeInput = $state<{ focus: () => void; typeDigit: (digit: string) => void } | null>(null);
 
-	const confirmFormId = method === 'sms' ? 'confirmSmsForm' : 'confirmEmailForm';
-	const confirmAction = method === 'sms' ? '?/confirmSmsSetup' : '?/confirmEmailSetup';
-	const sendAction = method === 'sms' ? '?/sendSmsSetupCode' : '?/sendEmailSetupCode';
-
-	const superform = superForm(
-		untrack(() => (method === 'sms' ? data.confirmSmsForm : data.confirmEmailForm)),
-		{
-			id: confirmFormId,
-			validators: zod4Client(twoFactorSetupOtpConfirmSchema),
-			validationMethod: 'submit-only',
-			onSubmit: () => {
-				submitting = true;
-			},
-			onResult: async ({ result }) => {
-				submitting = false;
-
-				if (result.type === 'success' && result.data?.backupCodes?.length) {
-					onBackupCodes(result.data.backupCodes as string[]);
-				}
-
-				if (result.type === 'success') {
-					await invalidateAll();
-					open = false;
-				}
-			},
-			onError: () => {
-				submitting = false;
-			}
-		}
-	);
-
-	const { enhance, form, message: formMessage, errors, reset } = superform;
+	const { enhance, message: formMessage, errors, reset } = superform;
 
 	const formError = $derived(
 		$formMessage && !isAuthRateLimitMessage($formMessage) ? $formMessage : null
@@ -83,7 +57,13 @@
 		isAuthRateLimitMessage($formMessage) ? $formMessage : null
 	);
 
+	const codeInputReady = $derived(codeSent && !submitting && !formRateLimited);
+
 	async function sendCode() {
+		if (!browser) {
+			return;
+		}
+
 		sendingCode = true;
 		sendError = null;
 
@@ -115,9 +95,21 @@
 	}
 
 	$effect(() => {
-		if (open && !codeSent) {
-			sendCode();
+		if (!browser || !open || codeSent || sendingCode) {
+			return;
 		}
+
+		void sendCode();
+	});
+
+	$effect(() => {
+		if (!browser || !open || !codeInputReady) {
+			return;
+		}
+
+		requestAnimationFrame(() => {
+			codeInput?.focus();
+		});
 	});
 
 	function resetDialogState() {
@@ -127,6 +119,49 @@
 		codeSent = false;
 		sendError = null;
 	}
+
+	function handleOpenAutoFocus(event: Event) {
+		event.preventDefault();
+
+		if (!codeInputReady) {
+			return;
+		}
+
+		requestAnimationFrame(() => {
+			codeInput?.focus();
+		});
+	}
+
+	$effect(() => {
+		if (!browser || !open || !codeInputReady) {
+			return;
+		}
+
+		function onWindowKeyDown(event: KeyboardEvent) {
+			if (event.metaKey || event.ctrlKey || event.altKey || event.defaultPrevented) {
+				return;
+			}
+
+			if (!/^\d$/.test(event.key)) {
+				return;
+			}
+
+			const active = document.activeElement;
+
+			if (
+				active instanceof HTMLInputElement &&
+				active.hasAttribute('data-verification-code-input')
+			) {
+				return;
+			}
+
+			event.preventDefault();
+			codeInput?.typeDigit(event.key);
+		}
+
+		window.addEventListener('keydown', onWindowKeyDown);
+		return () => window.removeEventListener('keydown', onWindowKeyDown);
+	});
 </script>
 
 <Dialog.Root
@@ -135,7 +170,7 @@
 >
 	<Dialog.Content
 		class="gap-0 overflow-hidden p-0 sm:max-w-md"
-		onOpenAutoFocus={(event) => event.preventDefault()}
+		onOpenAutoFocus={handleOpenAutoFocus}
 	>
 		<div class="bg-primary/5 border-primary/10 border-b px-6 pt-8 pb-6 text-center">
 			<div
@@ -186,9 +221,14 @@
 						{#snippet children({ props })}
 							<Form.Label required class="sr-only">Verification code</Form.Label>
 							<VerificationCodeInput
-								{...props}
-								bind:value={$form.code}
-								disabled={submitting || formRateLimited || !codeSent}
+								bind:this={codeInput}
+								id={props.id}
+								name={props.name}
+								bind:value={$codeField}
+								disabled={!codeInputReady}
+								autofocus={open && codeInputReady}
+								aria-invalid={$errors.code?.length ? 'true' : undefined}
+								aria-describedby={props['aria-describedby']}
 							/>
 						{/snippet}
 					</Form.Control>
@@ -211,7 +251,7 @@
 					<Button
 						type="submit"
 						class="h-10 flex-1"
-						disabled={submitting || formRateLimited || !codeSent}
+						disabled={!codeInputReady}
 						aria-busy={submitting}
 					>
 						{#if submitting}

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { cn } from '$lib/utils.js';
+	import { tick } from 'svelte';
 
 	const CODE_LENGTH = 6;
 
@@ -7,6 +8,7 @@
 		value = $bindable(''),
 		name,
 		disabled = false,
+		autofocus = false,
 		id,
 		'aria-invalid': ariaInvalid = undefined,
 		'aria-describedby': ariaDescribedBy = undefined,
@@ -15,6 +17,7 @@
 		value?: string;
 		name?: string;
 		disabled?: boolean;
+		autofocus?: boolean;
 		id?: string;
 		'aria-invalid'?: boolean | 'true' | 'false';
 		'aria-describedby'?: string;
@@ -46,43 +49,79 @@
 		}
 	}
 
-	function updateActiveIndex() {
-		if (!inputEl) {
+	function placeCaret(index: number) {
+		if (!inputEl || disabled) {
 			return;
 		}
 
-		const position = inputEl.selectionStart ?? value.length;
-		activeIndex = Math.min(Math.max(position, 0), CODE_LENGTH - 1);
+		const position = Math.min(Math.max(index, 0), value.length, CODE_LENGTH);
+		inputEl.focus({ preventScroll: true });
+		inputEl.setSelectionRange(position, position);
+		activeIndex = Math.min(position, CODE_LENGTH - 1);
 	}
 
-	function focusInput(index = value.length) {
-		if (!inputEl) {
+	export function focus() {
+		if (disabled || !inputEl) {
 			return;
 		}
 
-		inputEl.focus();
-		const position = Math.min(index, value.length, CODE_LENGTH - 1);
-		inputEl.setSelectionRange(position, position + 1);
-		activeIndex = position;
+		placeCaret(Math.min(value.length, CODE_LENGTH - 1));
+	}
+
+	export function typeDigit(digit: string) {
+		if (disabled || !/^\d$/.test(digit) || value.length >= CODE_LENGTH) {
+			return;
+		}
+
+		setValue(value + digit);
+		syncInputElement();
+		placeCaret(value.length);
 	}
 
 	function handleInput(event: Event) {
 		const target = event.currentTarget as HTMLInputElement;
+		const previousLength = value.length;
 		setValue(target.value);
 		target.value = value;
-		updateActiveIndex();
+
+		if (value.length >= previousLength) {
+			placeCaret(value.length);
+			return;
+		}
+
+		placeCaret(target.selectionStart ?? value.length);
 	}
 
 	function handleKeyDown(event: KeyboardEvent) {
+		if (
+			event.key === 'Backspace' &&
+			value.length > 0 &&
+			(inputEl?.selectionStart ?? 0) === (inputEl?.selectionEnd ?? 0)
+		) {
+			const caret = inputEl?.selectionStart ?? value.length;
+
+			if (caret === 0) {
+				return;
+			}
+
+			if (caret === value.length) {
+				event.preventDefault();
+				setValue(value.slice(0, -1));
+				syncInputElement();
+				placeCaret(value.length);
+				return;
+			}
+		}
+
 		if (event.key === 'ArrowLeft') {
 			event.preventDefault();
-			focusInput(Math.max(0, activeIndex - 1));
+			placeCaret(Math.max(0, activeIndex - 1));
 			return;
 		}
 
 		if (event.key === 'ArrowRight') {
 			event.preventDefault();
-			focusInput(Math.min(CODE_LENGTH - 1, activeIndex + 1));
+			placeCaret(Math.min(value.length, activeIndex + 1));
 		}
 	}
 
@@ -111,7 +150,7 @@
 
 		setValue(pasted);
 		syncInputElement();
-		focusInput(Math.min(value.length, CODE_LENGTH - 1));
+		placeCaret(value.length);
 	}
 
 	function handleClick(event: MouseEvent) {
@@ -130,12 +169,57 @@
 			Math.max(0, Math.floor(relativeX / (cellWidth + gap)))
 		);
 
-		focusInput(index);
+		placeCaret(Math.min(index, value.length));
+	}
+
+	function handleFocus() {
+		placeCaret(Math.min(value.length, CODE_LENGTH - 1));
 	}
 
 	$effect(() => {
 		const _code = value;
 		syncInputElement();
+	});
+
+	$effect(() => {
+		if (!autofocus || disabled) {
+			return;
+		}
+
+		const el = inputEl;
+
+		if (!el) {
+			return;
+		}
+
+		let cancelled = false;
+		let retryId = 0;
+
+		void tick().then(() => {
+			if (cancelled || disabled) {
+				return;
+			}
+
+			el.focus({ preventScroll: true });
+			const position = Math.min(el.value.length, CODE_LENGTH - 1);
+			el.setSelectionRange(position, position);
+			activeIndex = position;
+
+			retryId = window.setTimeout(() => {
+				if (cancelled || disabled || document.activeElement === el) {
+					return;
+				}
+
+				el.focus({ preventScroll: true });
+				el.setSelectionRange(position, position);
+				activeIndex = position;
+			}, 50);
+		});
+
+		return () => {
+			cancelled = true;
+			window.clearTimeout(retryId);
+		};
 	});
 </script>
 
@@ -158,14 +242,14 @@
 		maxlength={CODE_LENGTH}
 		{disabled}
 		{value}
+		data-verification-code-input
 		aria-invalid={ariaInvalid}
 		class="absolute inset-0 z-10 h-full w-full cursor-text opacity-0"
 		aria-label="Verification code"
 		oninput={handleInput}
 		onkeydown={handleKeyDown}
 		onpaste={handlePaste}
-		onfocus={updateActiveIndex}
-		onkeyup={updateActiveIndex}
+		onfocus={handleFocus}
 		onclick={handleClick}
 	/>
 
@@ -178,7 +262,7 @@
 					'font-mono text-lg font-semibold tracking-tight',
 					'sm:size-12 sm:text-xl',
 					'flex items-center justify-center',
-					activeIndex === index && 'border-ring ring-ring ring-2 ring-offset-2'
+					!disabled && activeIndex === index && 'border-ring ring-ring ring-2 ring-offset-2'
 				)}
 				aria-hidden="true"
 			>
