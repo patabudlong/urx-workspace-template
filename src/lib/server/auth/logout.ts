@@ -1,15 +1,17 @@
 import { redirect } from '@sveltejs/kit';
 import type { Cookies } from '@sveltejs/kit';
-import { clearSessionCookie } from '$lib/server/auth/session';
+import { clearSessionCookie } from '$lib/server/auth/session-cookie';
 import { safeRedirectPath } from '$lib/server/auth/post-auth-navigation';
-import { resolvePlatformWorkspaceOrigin } from '$lib/server/mail/platform-origin';
+import { getOnboardingAccessState } from '$lib/server/onboarding/workspace-onboarding';
 import {
-	buildWorkspaceRequestUrl,
 	getPlatformAuthOrigin,
 	getSessionCookieDomain,
-	getWorkspaceHostSuffix
+	getWorkspaceHostSuffix,
+	listLocalSessionOrigins,
+	parseWorkspaceSlugFromRequest
 } from '$lib/server/workspace-host';
 import { isLocalWorkspaceHostSuffix } from '$lib/shared/platform-auth-origin';
+import { isValidWorkspaceSlug } from '$lib/shared/workspace-slug';
 
 type CompleteLogoutOptions = {
 	workspaceSlug?: string | null;
@@ -31,20 +33,7 @@ function sanitizeWorkspaceSlug(value: string | null | undefined): string | undef
 	}
 
 	const slug = value.trim().toLowerCase();
-
-	if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
-		return undefined;
-	}
-
-	return slug;
-}
-
-function originFromUrlString(value: string): string | null {
-	try {
-		return new URL(value).origin;
-	} catch {
-		return null;
-	}
+	return isValidWorkspaceSlug(slug) ? slug : undefined;
 }
 
 function parseLogoutQueue(raw: string | null): string[] {
@@ -55,13 +44,13 @@ function parseLogoutQueue(raw: string | null): string[] {
 	return raw
 		.split(',')
 		.map((part) => part.trim())
-		.map((part) => originFromUrlString(part))
-		.filter((origin): origin is string => Boolean(origin));
-}
-
-function encodeLogoutQueue(origins: string[]): string {
-	// URLSearchParams encodes the value; origins never contain commas.
-	return origins.join(',');
+		.filter((part) => {
+			try {
+				return Boolean(new URL(part).origin);
+			} catch {
+				return false;
+			}
+		});
 }
 
 function resolveLogoutDestination(url: URL): string {
@@ -76,40 +65,36 @@ function resolveLogoutDestination(url: URL): string {
 	return redirectTo !== '/' ? redirectTo : '/login?signedOut=1';
 }
 
-/**
- * Hosts that can hold a host-only session cookie in local dev:
- * - auth origin (GOOGLE_OAUTH_ORIGIN → localhost)
- * - platform workspace origin (WORKSPACE_HOST_SUFFIX → workspace.localhost) used by email links
- * - tenant workspace host ({slug}.workspace.localhost)
- */
-function buildLocalLogoutQueue(url: URL, workspaceSlug: string | undefined): string[] {
-	const authOrigin = getPlatformAuthOrigin(url);
-	const mailOrigin = resolvePlatformWorkspaceOrigin(url.origin);
-	const queued = new Set<string>();
+export async function resolveLogoutWorkspaceSlug(
+	url: URL,
+	userId: string | undefined
+): Promise<string | undefined> {
+	const hostSlug = parseWorkspaceSlugFromRequest(url);
 
-	queued.add(authOrigin);
-
-	if (mailOrigin !== authOrigin) {
-		queued.add(mailOrigin);
+	if (hostSlug) {
+		return hostSlug;
 	}
 
-	if (workspaceSlug) {
-		const tenantOrigin = originFromUrlString(buildWorkspaceRequestUrl(workspaceSlug, url, '/'));
+	const querySlug = sanitizeWorkspaceSlug(url.searchParams.get('workspaceSlug'));
 
-		if (tenantOrigin) {
-			queued.add(tenantOrigin);
-		}
+	if (querySlug) {
+		return querySlug;
 	}
 
-	queued.delete(url.origin);
+	if (!userId) {
+		return undefined;
+	}
 
-	return [...queued];
+	const access = await getOnboardingAccessState(userId);
+
+	if (access.status === 'ready' || access.status === 'pending_review') {
+		return access.workspaceSlug;
+	}
+
+	return undefined;
 }
 
-/**
- * Clears the session on the current host, then chains across local auth / mail / tenant
- * origins so host-only cookies on *.localhost are removed.
- */
+/** Clears the current host session, then hops remaining local cookie hosts. */
 export function completeLogout(
 	cookies: Cookies,
 	url: URL,
@@ -127,14 +112,16 @@ export function completeLogout(
 	let queue = parseLogoutQueue(queueParam);
 
 	if (!chained && needsCrossHostLogoutChain()) {
-		queue = buildLocalLogoutQueue(url, workspaceSlug);
+		queue = listLocalSessionOrigins(url, workspaceSlug).filter(
+			(origin) => origin !== url.origin
+		);
 	}
 
 	const nextOrigin = queue.shift();
 
 	if (nextOrigin) {
 		const nextLogout = new URL('/logout', nextOrigin);
-		nextLogout.searchParams.set(LOGOUT_QUEUE_PARAM, encodeLogoutQueue(queue));
+		nextLogout.searchParams.set(LOGOUT_QUEUE_PARAM, queue.join(','));
 		nextLogout.searchParams.set('finalRedirect', destination);
 
 		if (workspaceSlug) {

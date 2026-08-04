@@ -7,17 +7,14 @@
 	import SiteHeader from '$lib/components/site-header.svelte';
 	import { SIDEBAR_WIDTH, SIDEBAR_WIDTH_TEAM_SECONDARY } from '$lib/components/ui/sidebar/constants.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import { normalizePathname } from '$lib/shared/url-path';
 	import { cn } from '$lib/utils.js';
 
 	let { children, data } = $props();
 
 	let sidebarOpen = $state(true);
 
-	const pathname = $derived(
-		page.url.pathname.length > 1 && page.url.pathname.endsWith('/')
-			? page.url.pathname.slice(0, -1)
-			: page.url.pathname
-	);
+	const pathname = $derived(normalizePathname(page.url.pathname));
 	const isTeamSection = $derived(pathname === '/team' || pathname.startsWith('/team/'));
 	const isSettingsSection = $derived(
 		pathname === '/account' || pathname === '/security' || pathname === '/billing'

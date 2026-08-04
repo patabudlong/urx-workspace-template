@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import type { Cookies } from '@sveltejs/kit';
-import { shouldUseSecureSessionCookie } from '$lib/server/auth/session';
+import { shouldUseSecureSessionCookie } from '$lib/server/auth/session-cookie';
 import type { TrustedDeviceDocument } from '$lib/shared/models/two-factor';
 import { TRUSTED_DEVICE_TTL_DAYS } from '$lib/shared/models/two-factor';
 

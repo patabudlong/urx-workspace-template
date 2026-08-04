@@ -1,3 +1,5 @@
+import { normalizePathname } from '$lib/shared/url-path';
+
 export const PRIVATE_NO_STORE_CACHE_CONTROL = 'private, no-cache, no-store, must-revalidate';
 
 export function applyPrivateNoStoreHeaders(headers: Headers): void {
@@ -23,14 +25,6 @@ const SENSITIVE_PATH_PREFIXES = [
 	'/auth'
 ] as const;
 
-function normalizePathname(pathname: string): string {
-	if (pathname.length > 1 && pathname.endsWith('/')) {
-		return pathname.slice(0, -1);
-	}
-
-	return pathname;
-}
-
 export function isSensitiveHtmlPath(pathname: string): boolean {
 	const path = normalizePathname(pathname);
 
@@ -52,6 +46,5 @@ export function isSensitiveHtmlRoute(
 		return true;
 	}
 
-	// Trailing-slash normalize (308) can run with a null route id — still mark private.
 	return pathname ? isSensitiveHtmlPath(pathname) : false;
 }

@@ -2,10 +2,8 @@ import { createHash, randomInt } from 'node:crypto';
 import type { Cookies } from '@sveltejs/kit';
 import { signTwoFactorPendingToken } from '$lib/server/auth/jwt';
 import { createAuthSession, type AuthSession } from '$lib/server/auth/session-user';
-import {
-	shouldUseSecureSessionCookie,
-	TWO_FACTOR_PENDING_TTL_SECONDS
-} from '$lib/server/auth/session';
+import { TWO_FACTOR_PENDING_TTL_SECONDS } from '$lib/server/auth/session';
+import { shouldUseSecureSessionCookie } from '$lib/server/auth/session-cookie';
 import {
 	removeUsedBackupCodeHash,
 	verifyBackupCode

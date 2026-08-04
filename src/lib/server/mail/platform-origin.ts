@@ -1,36 +1,15 @@
-import { env } from '$env/dynamic/private';
-import { getWorkspaceHostSuffix } from '$lib/server/workspace-host';
-import { resolveGoogleOAuthOrigin } from '$lib/shared/platform-auth-origin';
+import {
+	getPlatformAuthOrigin,
+	getPlatformWorkspaceOrigin
+} from '$lib/server/workspace-host';
 
 export function resolvePlatformWorkspaceOrigin(requestOrigin: string): string {
-	const configured = env.PLATFORM_WORKSPACE_ORIGIN?.trim();
-
-	if (configured) {
-		return configured.replace(/\/$/, '');
-	}
-
-	const requestUrl = new URL(requestOrigin);
-	const suffix = getWorkspaceHostSuffix();
-	const port = requestUrl.port ? `:${requestUrl.port}` : '';
-
-	return `${requestUrl.protocol}//${suffix}${port}`;
+	return getPlatformWorkspaceOrigin(new URL(requestOrigin));
 }
 
-/**
- * Sign-in origin for email CTAs. Must match GOOGLE_OAUTH_ORIGIN / logout clearing
- * (localhost in local dev) — not WORKSPACE_HOST_SUFFIX (workspace.localhost), which is a
- * separate cookie jar and was leaving sessions alive after sign-out.
- */
+/** Sign-in origin for email CTAs — must match GOOGLE_OAUTH_ORIGIN / logout clearing. */
 export function resolvePlatformAuthOrigin(requestOrigin: string): string {
-	const requestUrl = new URL(requestOrigin);
-
-	return resolveGoogleOAuthOrigin({
-		configuredOrigin: env.GOOGLE_OAUTH_ORIGIN,
-		hostname: requestUrl.hostname.toLowerCase(),
-		workspaceHostSuffix: getWorkspaceHostSuffix(),
-		protocol: requestUrl.protocol,
-		port: requestUrl.port
-	});
+	return getPlatformAuthOrigin(new URL(requestOrigin));
 }
 
 export function buildPlatformWorkspaceUrl(requestOrigin: string, path = '/'): string {

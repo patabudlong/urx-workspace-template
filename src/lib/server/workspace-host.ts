@@ -48,6 +48,20 @@ export function getPlatformAuthOrigin(requestUrl: URL): string {
 	});
 }
 
+/** Brand / mail asset origin (`WORKSPACE_HOST_SUFFIX`), e.g. workspace.localhost. */
+export function getPlatformWorkspaceOrigin(requestUrl: URL): string {
+	const configured = env.PLATFORM_WORKSPACE_ORIGIN?.trim();
+
+	if (configured) {
+		return configured.replace(/\/$/, '');
+	}
+
+	const suffix = getWorkspaceHostSuffix();
+	const port = requestUrl.port ? `:${requestUrl.port}` : '';
+
+	return `${requestUrl.protocol}//${suffix}${port}`;
+}
+
 export function parseWorkspaceSlugFromRequest(url: URL): string | null {
 	return parseWorkspaceSlugFromHost(url.host, getWorkspaceHostSuffix());
 }
@@ -73,4 +87,28 @@ export function resolveWorkspaceLandingUrl(
 	}
 
 	return buildWorkspaceRequestUrl(slug, requestUrl, path);
+}
+
+/**
+ * Distinct local hosts that may hold a host-only session cookie when
+ * SESSION_COOKIE_DOMAIN is unset (auth, mail/platform, optional tenant).
+ */
+export function listLocalSessionOrigins(
+	requestUrl: URL,
+	workspaceSlug?: string | null
+): string[] {
+	const origins = new Set<string>();
+
+	origins.add(getPlatformAuthOrigin(requestUrl));
+	origins.add(getPlatformWorkspaceOrigin(requestUrl));
+
+	if (workspaceSlug) {
+		try {
+			origins.add(new URL(buildWorkspaceRequestUrl(workspaceSlug, requestUrl, '/')).origin);
+		} catch {
+			// ignore invalid slug URL
+		}
+	}
+
+	return [...origins];
 }
