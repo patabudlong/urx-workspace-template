@@ -8,7 +8,12 @@ import {
 	verifyTotpCode,
 	decryptTotpSecret
 } from '$lib/server/auth/two-factor/totp';
-import { sendTwoFactorEmailCode } from '$lib/server/mail/two-factor-code';
+import {
+	sendTwoFactorEmailCode,
+	trySendTwoFactorStatusEmail,
+	type TwoFactorSecurityContext
+} from '$lib/server/mail/two-factor-email';
+import { buildTwoFactorOtpSmsBody } from '$lib/shared/two-factor-otp-message';
 import { isSmsConfigured, sendSms } from '$lib/server/sms/index';
 import {
 	createTwoFactorOtpToken,
@@ -27,6 +32,7 @@ import {
 	setPendingTotpSecret
 } from '$lib/server/repositories/user-two-factor';
 import { findUserById, isUserPhoneVerified } from '$lib/server/repositories/users';
+import { TWO_FACTOR_METHODS } from '$lib/shared/models/two-factor';
 import type { UserDocument } from '$lib/shared/models/user';
 
 const OTP_TTL_MS = 15 * 60 * 1000;
@@ -37,10 +43,6 @@ function hashOtpCode(code: string): string {
 
 function createOtpCode(): string {
 	return randomInt(0, 1_000_000).toString().padStart(6, '0');
-}
-
-function buildSmsBody(code: string): string {
-	return `Your Urixoft verification code is ${code}. It expires in 15 minutes.`;
 }
 
 function shouldIssueBackupCodes(user: UserDocument): boolean {
@@ -78,6 +80,7 @@ export async function startTotpSetup(userId: string): Promise<
 export async function confirmTotpSetup(input: {
 	userId: string;
 	code: string;
+	security?: TwoFactorSecurityContext;
 }): Promise<
 	| { ok: true; backupCodes?: string[] }
 	| { ok: false; reason: 'USER_NOT_FOUND' | 'NO_PENDING_SETUP' | 'INVALID_CODE' }
@@ -120,6 +123,15 @@ export async function confirmTotpSetup(input: {
 	}
 
 	await clearPendingTotpSecret(input.userId);
+
+	await trySendTwoFactorStatusEmail({
+		to: user.email,
+		firstName: user.firstName,
+		change: 'enabled',
+		method: TWO_FACTOR_METHODS.TOTP,
+		changedAt: new Date(),
+		security: input.security
+	});
 
 	return { ok: true, backupCodes };
 }
@@ -181,7 +193,7 @@ export async function sendSetupOtpCode(input: {
 
 	try {
 		if (input.method === 'sms') {
-			await sendSms({ to: user.phoneNumber!, body: buildSmsBody(code) });
+			await sendSms({ to: user.phoneNumber!, body: buildTwoFactorOtpSmsBody(code) });
 		} else {
 			await sendTwoFactorEmailCode({
 				email: user.email,
@@ -201,6 +213,7 @@ export async function confirmSetupOtp(input: {
 	userId: string;
 	method: 'sms' | 'email';
 	code: string;
+	security?: TwoFactorSecurityContext;
 }): Promise<
 	| { ok: true; backupCodes?: string[] }
 	| { ok: false; reason: 'USER_NOT_FOUND' | 'INVALID_CODE' }
@@ -246,6 +259,15 @@ export async function confirmSetupOtp(input: {
 	if (backupCodeHashes) {
 		await persistBackupCodes(input.userId, backupCodeHashes);
 	}
+
+	await trySendTwoFactorStatusEmail({
+		to: user.email,
+		firstName: user.firstName,
+		change: 'enabled',
+		method: input.method === 'sms' ? TWO_FACTOR_METHODS.SMS : TWO_FACTOR_METHODS.EMAIL,
+		changedAt: new Date(),
+		security: input.security
+	});
 
 	return { ok: true, backupCodes };
 }

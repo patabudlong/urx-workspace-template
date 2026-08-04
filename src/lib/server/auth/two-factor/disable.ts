@@ -1,3 +1,4 @@
+import { trySendTwoFactorStatusEmail } from '$lib/server/mail/two-factor-email';
 import {
 	disableTwoFactorForUser,
 	isTwoFactorEnabled
@@ -9,6 +10,7 @@ import {
 	type SensitiveActionVerificationMethod
 } from '$lib/server/auth/two-factor/verify-identity';
 import type { Cookies } from '@sveltejs/kit';
+import type { TwoFactorSecurityContext } from '$lib/server/mail/two-factor-email';
 
 export async function disableTwoFactor(input: {
 	userId: string;
@@ -16,6 +18,7 @@ export async function disableTwoFactor(input: {
 	code?: string;
 	method?: SensitiveActionVerificationMethod;
 	cookies: Cookies;
+	security?: TwoFactorSecurityContext;
 }): Promise<
 	| { ok: true }
 	| {
@@ -53,6 +56,14 @@ export async function disableTwoFactor(input: {
 	}
 
 	clearTrustedDeviceCookie(input.cookies);
+
+	await trySendTwoFactorStatusEmail({
+		to: verification.user.email,
+		firstName: verification.user.firstName,
+		change: 'disabled',
+		changedAt: new Date(),
+		security: input.security
+	});
 
 	return { ok: true };
 }

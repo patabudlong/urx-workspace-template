@@ -15,6 +15,7 @@ import {
 } from '$lib/server/auth/two-factor/setup';
 import { findUserById } from '$lib/server/repositories/users';
 import { removeTrustedDevice } from '$lib/server/repositories/user-two-factor';
+import type { TwoFactorSecurityContext } from '$lib/server/mail/two-factor-email';
 import { consumeChangePasswordRateLimit } from '$lib/server/security/account-security-rate-limit';
 import { requireWorkspaceMember } from '$lib/server/workspace-access';
 import {
@@ -50,6 +51,18 @@ import {
 	twoFactorSetupOtpConfirmSchema,
 	twoFactorSetupTotpConfirmSchema
 } from '$lib/shared/schemas/security';
+
+function buildTwoFactorSecurityContext(event: {
+	url: { origin: string };
+	request: Request;
+	getClientAddress: () => string;
+}): TwoFactorSecurityContext {
+	return {
+		origin: event.url.origin,
+		ipAddress: event.getClientAddress(),
+		userAgent: event.request.headers.get('user-agent') ?? undefined
+	};
+}
 
 export const load: PageServerLoad = async ({ parent, locals }) => {
 	const { workspace } = await parent();
@@ -207,7 +220,7 @@ export const actions: Actions = {
 		};
 	},
 
-	confirmTotpSetup: async ({ request, locals }) => {
+	confirmTotpSetup: async ({ request, locals, url, getClientAddress }) => {
 		const form = await superValidate(request, zod4(twoFactorSetupTotpConfirmSchema), {
 			id: 'confirmTotpForm'
 		});
@@ -222,7 +235,8 @@ export const actions: Actions = {
 
 		const result = await confirmTotpSetup({
 			userId: locals.user.id,
-			code: form.data.code
+			code: form.data.code,
+			security: buildTwoFactorSecurityContext({ url, request, getClientAddress })
 		});
 
 		if (!result.ok) {
@@ -265,7 +279,7 @@ export const actions: Actions = {
 		return { sent: true, message: TWO_FACTOR_CODE_SENT_MESSAGE };
 	},
 
-	confirmSmsSetup: async ({ request, locals }) => {
+	confirmSmsSetup: async ({ request, locals, url, getClientAddress }) => {
 		const form = await superValidate(request, zod4(twoFactorSetupOtpConfirmSchema), {
 			id: 'confirmSmsForm'
 		});
@@ -281,7 +295,8 @@ export const actions: Actions = {
 		const result = await confirmSetupOtp({
 			userId: locals.user.id,
 			method: 'sms',
-			code: form.data.code
+			code: form.data.code,
+			security: buildTwoFactorSecurityContext({ url, request, getClientAddress })
 		});
 
 		if (!result.ok) {
@@ -312,7 +327,7 @@ export const actions: Actions = {
 		return { sent: true, message: TWO_FACTOR_CODE_SENT_MESSAGE };
 	},
 
-	confirmEmailSetup: async ({ request, locals }) => {
+	confirmEmailSetup: async ({ request, locals, url, getClientAddress }) => {
 		const form = await superValidate(request, zod4(twoFactorSetupOtpConfirmSchema), {
 			id: 'confirmEmailForm'
 		});
@@ -328,7 +343,8 @@ export const actions: Actions = {
 		const result = await confirmSetupOtp({
 			userId: locals.user.id,
 			method: 'email',
-			code: form.data.code
+			code: form.data.code,
+			security: buildTwoFactorSecurityContext({ url, request, getClientAddress })
 		});
 
 		if (!result.ok) {
@@ -341,7 +357,7 @@ export const actions: Actions = {
 		};
 	},
 
-	disableTwoFactor: async ({ request, locals, cookies }) => {
+	disableTwoFactor: async ({ request, locals, cookies, url, getClientAddress }) => {
 		const user = locals.user
 			? await findUserById(locals.user.id)
 			: null;
@@ -367,7 +383,8 @@ export const actions: Actions = {
 			password: form.data.password,
 			code: form.data.code,
 			method: form.data.method,
-			cookies
+			cookies,
+			security: buildTwoFactorSecurityContext({ url, request, getClientAddress })
 		});
 
 		if (!result.ok) {

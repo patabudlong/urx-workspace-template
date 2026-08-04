@@ -14,7 +14,8 @@ import {
 	TRUSTED_DEVICE_COOKIE_NAME
 } from '$lib/server/auth/two-factor/trusted-devices';
 import { decryptTotpSecret, verifyTotpCode } from '$lib/server/auth/two-factor/totp';
-import { sendTwoFactorEmailCode } from '$lib/server/mail/two-factor-code';
+import { sendTwoFactorEmailCode } from '$lib/server/mail/two-factor-email';
+import { buildTwoFactorOtpSmsBody } from '$lib/shared/two-factor-otp-message';
 import { isSmsConfigured, sendSms } from '$lib/server/sms/index';
 import {
 	createTwoFactorOtpToken,
@@ -45,10 +46,6 @@ function hashOtpCode(code: string): string {
 
 function createOtpCode(): string {
 	return randomInt(0, 1_000_000).toString().padStart(6, '0');
-}
-
-function buildSmsBody(code: string): string {
-	return `Your Urixoft sign-in code is ${code}. It expires in 15 minutes.`;
 }
 
 export function getTwoFactorPendingCookieOptions(): {
@@ -157,7 +154,7 @@ export async function sendTwoFactorLoginCode(input: {
 
 	try {
 		if (input.method === 'sms') {
-			await sendSms({ to: user.phoneNumber!, body: buildSmsBody(code) });
+			await sendSms({ to: user.phoneNumber!, body: buildTwoFactorOtpSmsBody(code) });
 		} else {
 			await sendTwoFactorEmailCode({
 				email: user.email,
