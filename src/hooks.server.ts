@@ -94,7 +94,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 	response.headers.set('X-Frame-Options', 'DENY');
 
-	if (!isApiRoute(pathname) && isSensitiveHtmlRoute(event.route.id)) {
+	if (!isApiRoute(pathname) && isSensitiveHtmlRoute(event.route.id, pathname)) {
 		applyPrivateNoStoreHeaders(response.headers);
 	}
 

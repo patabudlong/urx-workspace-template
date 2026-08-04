@@ -2,7 +2,10 @@ import { createHash, randomInt } from 'node:crypto';
 import type { Cookies } from '@sveltejs/kit';
 import { signTwoFactorPendingToken } from '$lib/server/auth/jwt';
 import { createAuthSession, type AuthSession } from '$lib/server/auth/session-user';
-import { TWO_FACTOR_PENDING_TTL_SECONDS } from '$lib/server/auth/session';
+import {
+	shouldUseSecureSessionCookie,
+	TWO_FACTOR_PENDING_TTL_SECONDS
+} from '$lib/server/auth/session';
 import {
 	removeUsedBackupCodeHash,
 	verifyBackupCode
@@ -59,7 +62,7 @@ export function getTwoFactorPendingCookieOptions(): {
 		path: '/',
 		httpOnly: true,
 		sameSite: 'lax',
-		secure: process.env.NODE_ENV === 'production',
+		secure: shouldUseSecureSessionCookie(),
 		maxAge: TWO_FACTOR_PENDING_TTL_SECONDS
 	};
 }

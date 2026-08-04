@@ -12,6 +12,7 @@ import {
 	GOOGLE_OAUTH_VERIFIER_COOKIE,
 	isGoogleAuthConfigured
 } from '$lib/server/auth/google-oauth';
+import { shouldUseSecureSessionCookie } from '$lib/server/auth/session';
 import { getPlatformAuthOrigin, getSessionCookieDomain } from '$lib/server/workspace-host';
 import { CONSENT_CONTEXTS, type ConsentContext } from '$lib/shared/models/consent-event';
 
@@ -34,7 +35,7 @@ function getOAuthCookieOptions() {
 		path: '/',
 		httpOnly: true,
 		sameSite: 'lax' as const,
-		secure: process.env.NODE_ENV === 'production',
+		secure: shouldUseSecureSessionCookie(),
 		maxAge: GOOGLE_OAUTH_COOKIE_MAX_AGE,
 		...(domain ? { domain } : {})
 	};

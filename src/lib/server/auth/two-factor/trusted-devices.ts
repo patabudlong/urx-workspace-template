@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import type { Cookies } from '@sveltejs/kit';
+import { shouldUseSecureSessionCookie } from '$lib/server/auth/session';
 import type { TrustedDeviceDocument } from '$lib/shared/models/two-factor';
 import { TRUSTED_DEVICE_TTL_DAYS } from '$lib/shared/models/two-factor';
 
@@ -89,7 +90,7 @@ export function getTrustedDeviceCookieOptions(): {
 		path: '/',
 		httpOnly: true,
 		sameSite: 'lax',
-		secure: process.env.NODE_ENV === 'production',
+		secure: shouldUseSecureSessionCookie(),
 		maxAge: TRUSTED_DEVICE_TTL_SECONDS
 	};
 }
@@ -106,9 +107,13 @@ export function setTrustedDeviceCookie(
 }
 
 export function clearTrustedDeviceCookie(cookies: Cookies): void {
+	const options = getTrustedDeviceCookieOptions();
+
 	cookies.delete(TRUSTED_DEVICE_COOKIE_NAME, {
-		path: '/',
-		secure: process.env.NODE_ENV === 'production'
+		path: options.path,
+		httpOnly: options.httpOnly,
+		sameSite: options.sameSite,
+		secure: options.secure
 	});
 }
 

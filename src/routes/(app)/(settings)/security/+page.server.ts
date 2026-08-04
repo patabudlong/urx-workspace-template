@@ -1,4 +1,4 @@
-import { error, fail } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
 import { message, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import type { Actions, PageServerLoad } from './$types';
@@ -64,7 +64,12 @@ function buildTwoFactorSecurityContext(event: {
 	};
 }
 
-export const load: PageServerLoad = async ({ parent, locals }) => {
+export const load: PageServerLoad = async ({ parent, locals, url }) => {
+	if (!locals.user) {
+		const redirectTo = encodeURIComponent(url.pathname + url.search);
+		redirect(303, `/login?redirectTo=${redirectTo}`);
+	}
+
 	const { workspace } = await parent();
 
 	requireWorkspaceMember(workspace);

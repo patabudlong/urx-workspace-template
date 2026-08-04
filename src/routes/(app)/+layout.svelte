@@ -13,13 +13,14 @@
 
 	let sidebarOpen = $state(true);
 
-	const isTeamSection = $derived(
-		page.url.pathname === '/team' || page.url.pathname.startsWith('/team/')
+	const pathname = $derived(
+		page.url.pathname.length > 1 && page.url.pathname.endsWith('/')
+			? page.url.pathname.slice(0, -1)
+			: page.url.pathname
 	);
+	const isTeamSection = $derived(pathname === '/team' || pathname.startsWith('/team/'));
 	const isSettingsSection = $derived(
-		page.url.pathname === '/account' ||
-			page.url.pathname === '/security' ||
-			page.url.pathname === '/billing'
+		pathname === '/account' || pathname === '/security' || pathname === '/billing'
 	);
 	const isNestedAppSection = $derived(isTeamSection || isSettingsSection);
 </script>

@@ -1,6 +1,6 @@
 import { isMailConfigured, sendMail } from '$lib/server/mail/index';
 import {
-	buildPlatformWorkspaceUrl,
+	buildAuthenticatedAppPathUrl,
 	resolvePlatformWorkspaceOrigin
 } from '$lib/server/mail/platform-origin';
 import {
@@ -76,7 +76,7 @@ export async function sendTwoFactorStatusEmail(input: {
 
 	const greeting = input.firstName.trim() || 'there';
 	const assets = resolveTwoFactorEmailAssets(origin, 'status');
-	const secureAccountUrl = buildPlatformWorkspaceUrl(origin, '/security');
+	const secureAccountUrl = buildAuthenticatedAppPathUrl(origin, '/security');
 	const content = {
 		greeting,
 		change: input.change,
