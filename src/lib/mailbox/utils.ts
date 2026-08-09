@@ -1,5 +1,9 @@
 import type { Component } from 'svelte';
-import type { MailboxFolder } from '$lib/shared/mailbox/schemas';
+import type {
+	MailboxFolder,
+	MailboxMessageDetail,
+	MailboxMessageSummary
+} from '$lib/shared/mailbox/schemas';
 import ArchiveIcon from '@lucide/svelte/icons/archive';
 import FileIcon from '@lucide/svelte/icons/file';
 import FolderIcon from '@lucide/svelte/icons/folder';
@@ -88,6 +92,21 @@ export function encodeMailboxFolder(path: string): string {
 
 export function decodeMailboxFolder(encoded: string): string {
 	return decodeURIComponent(encoded);
+}
+
+/** List-row summary for instant message header while the full body streams in. */
+export function mailboxSummaryToPreviewDetail(
+	summary: MailboxMessageSummary
+): MailboxMessageDetail {
+	return {
+		...summary,
+		cc: [],
+		bcc: [],
+		messageId: null,
+		inReplyTo: null,
+		text: summary.preview,
+		html: null
+	};
 }
 
 export function getMailboxFolderIcon(folder: MailboxFolder): Component {

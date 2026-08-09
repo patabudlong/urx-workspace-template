@@ -11,10 +11,32 @@ const inflightRequests = new Map<string, Promise<MailboxMessageDetail>>();
 
 type FetchMailboxMessageOptions = {
 	signal?: AbortSignal;
+	/** When true, sets the IMAP \\Seen flag (opening a message). Prefetch must leave this false. */
+	markSeen?: boolean;
 };
 
 function cacheKey(folder: string, uid: number): string {
 	return `${folder}:${uid}`;
+}
+
+function applySeenOptimistically(
+	folder: string,
+	uid: number,
+	message: MailboxMessageDetail
+): MailboxMessageDetail {
+	if (message.seen) {
+		return message;
+	}
+
+	const previousSeen = message.seen;
+	const optimistic = { ...message, seen: true };
+	messageCache.set(cacheKey(folder, uid), optimistic);
+
+	void patchMailboxMessage(folder, uid, 'toggleRead').catch(() => {
+		updateCachedMailboxMessage(folder, uid, { seen: previousSeen });
+	});
+
+	return optimistic;
 }
 
 export function invalidateMailboxMessageCache(folder: string, uid: number): void {
@@ -110,23 +132,34 @@ export async function fetchMailboxMessage(
 	uid: number,
 	options: FetchMailboxMessageOptions = {}
 ): Promise<MailboxMessageDetail> {
-	const { signal } = options;
+	const { signal, markSeen = false } = options;
 	const key = cacheKey(folder, uid);
 	const cached = messageCache.get(key);
 	if (cached) {
+		if (markSeen && !cached.seen) {
+			return applySeenOptimistically(folder, uid, cached);
+		}
+
 		return cached;
 	}
 
 	const inflight = inflightRequests.get(key);
 	if (inflight) {
-		return inflight;
+		return inflight.then((message) => {
+			if (markSeen && !message.seen) {
+				return applySeenOptimistically(folder, uid, message);
+			}
+
+			return message;
+		});
 	}
 
 	const request = (async () => {
-		const response = await fetch(
-			`/api/v1/mailbox/messages/${uid}?folder=${encodeURIComponent(folder)}`,
-			{ signal }
-		);
+		const params = new URLSearchParams({
+			folder,
+			...(markSeen ? { markSeen: 'true' } : {})
+		});
+		const response = await fetch(`/api/v1/mailbox/messages/${uid}?${params}`, { signal });
 		const body = (await response.json()) as ApiSuccessResponse<MailboxMessageDetail> & {
 			error?: { message?: string };
 		};

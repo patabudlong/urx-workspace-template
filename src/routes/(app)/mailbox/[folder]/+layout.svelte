@@ -94,6 +94,13 @@
 
 	const targetUid = $derived(pendingUid ?? routeUid);
 	const activeUid = $derived(routeUid ?? pendingUid ?? undefined);
+	const previewMessage = $derived.by(() => {
+		if (targetUid == null || !mailbox) {
+			return null;
+		}
+
+		return mailbox.messages.find((message) => message.uid === targetUid) ?? null;
+	});
 
 	$effect(() => {
 		if (routeUid != null && routeUid === pendingUid) {
@@ -134,6 +141,29 @@
 			noScroll: true,
 			invalidateAll: false
 		}).then(restoreListScroll);
+	}
+
+	function updateMessageInList(
+		uid: number,
+		patch: Partial<Pick<MailboxMessageSummary, 'seen' | 'flagged'>>
+	) {
+		if (!mailbox) {
+			return;
+		}
+
+		const index = mailbox.messages.findIndex((message) => message.uid === uid);
+		if (index === -1) {
+			return;
+		}
+
+		const current = mailbox.messages[index];
+		if (current.seen === patch.seen && current.flagged === patch.flagged) {
+			return;
+		}
+
+		const messages = mailbox.messages.slice();
+		messages[index] = { ...current, ...patch };
+		mailbox = { ...mailbox, messages };
 	}
 </script>
 
@@ -197,6 +227,8 @@
 		<MailboxMessagePanel
 			folder={data.folder}
 			{targetUid}
+			preview={previewMessage}
+			onListUpdate={updateMessageInList}
 			class="min-h-0 flex-1 lg:h-full"
 		/>
 	</Card.Content>

@@ -1279,6 +1279,14 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 							in: 'query',
 							required: true,
 							schema: { type: 'string' }
+						},
+						{
+							name: 'markSeen',
+							in: 'query',
+							required: false,
+							description:
+								'When true, sets the IMAP \\Seen flag. Use when the user opens a message, not for prefetch.',
+							schema: { type: 'boolean', default: false }
 						}
 					],
 					responses: {

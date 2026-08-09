@@ -30,8 +30,10 @@ export const GET: RequestHandler = async ({ locals, request, params, url }) => {
 		return jsonError('BAD_REQUEST', 'folder query parameter is required', { requestId });
 	}
 
+	const markSeen = url.searchParams.get('markSeen') === 'true';
+
 	try {
-		const message = await getMailboxMessage(locals.user.id, folder, parsed.data.uid);
+		const message = await getMailboxMessage(locals.user.id, folder, parsed.data.uid, { markSeen });
 		if (!message) {
 			return jsonError('NOT_FOUND', 'Message not found', { requestId });
 		}

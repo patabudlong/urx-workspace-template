@@ -7,68 +7,93 @@
 		fetchMailboxMessage,
 		getCachedMailboxMessage
 	} from '$lib/mailbox/client';
-	import type { MailboxMessageDetail } from '$lib/shared/mailbox/schemas';
+	import { mailboxSummaryToPreviewDetail } from '$lib/mailbox/utils';
+	import type { MailboxMessageDetail, MailboxMessageSummary } from '$lib/shared/mailbox/schemas';
 	import MailOpenIcon from '@lucide/svelte/icons/mail-open';
 	import { cn } from '$lib/utils.js';
 
 	let {
 		folder,
 		targetUid,
+		preview,
+		onListUpdate,
 		class: className
 	}: {
 		folder: string;
 		targetUid: number | null;
+		preview?: MailboxMessageSummary | null;
+		onListUpdate?: (
+			uid: number,
+			patch: Partial<Pick<MailboxMessageDetail, 'seen' | 'flagged'>>
+		) => void;
 		class?: string;
 	} = $props();
 
-	let cachedMessage = $state<MailboxMessageDetail | null>(null);
-	let loadingMessage = $state(false);
+	let detailMessage = $state<MailboxMessageDetail | null>(null);
+	let loadingBody = $state(false);
 	let loadError = $state(false);
-	let loadedUid = $state<number | null>(null);
+
+	const previewDetail = $derived(preview ? mailboxSummaryToPreviewDetail(preview) : null);
+
+	function syncListUpdate(message: MailboxMessageDetail) {
+		onListUpdate?.(message.uid, { seen: message.seen, flagged: message.flagged });
+	}
 
 	$effect(() => {
 		const uid = targetUid;
+		const currentFolder = folder;
 
 		if (uid == null) {
-			cachedMessage = null;
-			loadingMessage = false;
-			loadError = false;
-			loadedUid = null;
-			return;
-		}
-
-		if (loadedUid === uid && cachedMessage) {
-			return;
-		}
-
-		const cached = getCachedMailboxMessage(folder, uid);
-		if (cached) {
-			loadedUid = uid;
-			cachedMessage = cached;
-			loadingMessage = false;
+			detailMessage = null;
+			loadingBody = false;
 			loadError = false;
 			return;
 		}
 
-		loadedUid = uid;
 		loadError = false;
-		loadingMessage = true;
-		cachedMessage = null;
+
+		const cached = getCachedMailboxMessage(currentFolder, uid);
+		if (cached) {
+			detailMessage = cached;
+			loadingBody = false;
+
+			if (!cached.seen) {
+				void fetchMailboxMessage(currentFolder, uid, { markSeen: true }).then((resolved) => {
+					if (targetUid !== uid || folder !== currentFolder) {
+						return;
+					}
+
+					detailMessage = resolved;
+					syncListUpdate(resolved);
+				});
+			}
+
+			return;
+		}
+
+		loadingBody = true;
+		if (detailMessage?.uid !== uid) {
+			detailMessage = null;
+		}
 
 		const controller = new AbortController();
 		let cancelled = false;
 
-		fetchMailboxMessage(folder, uid, { signal: controller.signal })
+		void fetchMailboxMessage(currentFolder, uid, {
+			signal: controller.signal,
+			markSeen: true
+		})
 			.then((resolved) => {
-				if (cancelled || targetUid !== uid) {
+				if (cancelled || targetUid !== uid || folder !== currentFolder) {
 					return;
 				}
 
-				cachedMessage = resolved;
-				loadingMessage = false;
+				detailMessage = resolved;
+				loadingBody = false;
+				syncListUpdate(resolved);
 			})
-			.catch((error) => {
-				if (cancelled || targetUid !== uid) {
+			.catch((error: unknown) => {
+				if (cancelled || targetUid !== uid || folder !== currentFolder) {
 					return;
 				}
 
@@ -77,8 +102,8 @@
 				}
 
 				loadError = true;
-				loadingMessage = false;
-				loadedUid = null;
+				loadingBody = false;
+				detailMessage = null;
 			});
 
 		return () => {
@@ -88,12 +113,12 @@
 	});
 
 	function handleMessageUpdated(message: MailboxMessageDetail) {
-		cachedMessage = message;
+		detailMessage = message;
+		syncListUpdate(message);
 	}
 
 	function handleMessageRemoved() {
-		cachedMessage = null;
-		loadedUid = null;
+		detailMessage = null;
 	}
 </script>
 
@@ -125,15 +150,17 @@
 				description="This message could not be loaded. It may have been moved or deleted."
 			/>
 		</div>
-	{:else if loadingMessage && !cachedMessage}
-		<MailboxMessageViewSkeleton layout="panel" />
-	{:else if cachedMessage}
+	{:else if detailMessage}
 		<MailboxMessageToolbar
 			{folder}
-			message={cachedMessage}
+			message={detailMessage}
 			onUpdated={handleMessageUpdated}
 			onRemoved={handleMessageRemoved}
 		/>
-		<MailboxMessageView message={cachedMessage} layout="panel" />
+		<MailboxMessageView message={detailMessage} layout="panel" />
+	{:else if previewDetail}
+		<MailboxMessageView message={previewDetail} layout="panel" loadingBody />
+	{:else if loadingBody}
+		<MailboxMessageViewSkeleton layout="panel" />
 	{/if}
 </section>

@@ -252,7 +252,8 @@ export async function listMailboxFolderPage(
 export async function getMailboxMessage(
 	userId: string,
 	folder: string,
-	uid: number
+	uid: number,
+	options: { markSeen?: boolean } = {}
 ): Promise<MailboxMessageDetail | null> {
 	return withImapClient(userId, async (client) => {
 		const lock = await client.getMailboxLock(folder);
@@ -280,9 +281,16 @@ export async function getMailboxMessage(
 
 			const parsed = await simpleParser(message.source);
 			const summary = mapSummary(message);
+			let seen = summary.seen;
+
+			if (options.markSeen && !seen) {
+				await client.messageFlagsAdd(uid, ['\\Seen'], { uid: true });
+				seen = true;
+			}
 
 			return {
 				...summary,
+				seen,
 				cc: formatAddressList(message.envelope?.cc),
 				bcc: formatAddressList(message.envelope?.bcc),
 				messageId: parsed.messageId ?? null,

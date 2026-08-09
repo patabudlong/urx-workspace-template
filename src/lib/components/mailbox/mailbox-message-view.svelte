@@ -4,13 +4,16 @@
 	import { formatMailboxDate } from '$lib/mailbox/utils';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
+	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 
 	let {
 		message,
-		layout = 'card'
+		layout = 'card',
+		loadingBody = false
 	}: {
 		message: MailboxMessageDetail;
 		layout?: 'card' | 'panel';
+		loadingBody?: boolean;
 	} = $props();
 </script>
 
@@ -31,7 +34,13 @@
 		</header>
 
 		<div class="bg-muted/20 p-4 sm:p-6">
-			{#if message.html}
+			{#if loadingBody}
+				<div class="space-y-3" aria-busy="true" aria-label="Loading message body">
+					{#each Array.from({ length: 6 }) as _, index (index)}
+						<Skeleton class="h-4 w-full" style="max-width: {88 - (index % 3) * 12}%;" />
+					{/each}
+				</div>
+			{:else if message.html}
 				<MailboxMessageHtml html={message.html} />
 			{:else}
 				<div class="bg-background text-foreground w-fit max-w-full rounded-lg border p-5 sm:p-6">
@@ -57,7 +66,13 @@
 		</Card.Header>
 		<Separator />
 		<Card.Content class="min-h-0 flex-1 overflow-auto py-6">
-			{#if message.html}
+			{#if loadingBody}
+				<div class="space-y-3" aria-busy="true" aria-label="Loading message body">
+					{#each Array.from({ length: 6 }) as _, index (index)}
+						<Skeleton class="h-4 w-full" style="max-width: {88 - (index % 3) * 12}%;" />
+					{/each}
+				</div>
+			{:else if message.html}
 				<MailboxMessageHtml html={message.html} />
 			{:else}
 				<pre class="text-sm leading-relaxed whitespace-pre-wrap">{message.text}</pre>
