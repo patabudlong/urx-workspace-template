@@ -1,4 +1,5 @@
 <script lang="ts">
+	import MailboxMessageHtml from '$lib/components/mailbox/mailbox-message-html.svelte';
 	import type { MailboxMessageDetail } from '$lib/shared/mailbox/schemas';
 	import { formatMailboxDate } from '$lib/mailbox/utils';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -24,7 +25,7 @@
 	<Separator />
 	<Card.Content class="min-h-0 flex-1 overflow-auto py-6">
 		{#if message.html}
-			<div class="prose prose-sm dark:prose-invert max-w-none">{@html message.html}</div>
+			<MailboxMessageHtml html={message.html} />
 		{:else}
 			<pre class="text-sm leading-relaxed whitespace-pre-wrap">{message.text}</pre>
 		{/if}

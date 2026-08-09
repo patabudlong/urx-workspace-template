@@ -115,3 +115,34 @@ export function parseRecipientInput(value: string): string[] {
 		.map((entry) => entry.trim())
 		.filter(Boolean);
 }
+
+export function buildMailboxEmailSrcdoc(html: string): string {
+	return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<base target="_blank" rel="noopener noreferrer">
+<style>
+	html, body {
+		margin: 0;
+		padding: 0;
+		background: #ffffff;
+	}
+	body {
+		padding: 0;
+		overflow-wrap: anywhere;
+		word-break: break-word;
+	}
+	img, table, video, iframe {
+		max-width: 100%;
+	}
+	pre {
+		white-space: pre-wrap;
+	}
+</style>
+</head>
+<body>${html}</body>
+</html>`;
+}
