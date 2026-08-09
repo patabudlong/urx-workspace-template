@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import AppSidebar from '$lib/components/app-sidebar.svelte';
 	import AppSidebarViewport from '$lib/components/app-sidebar-viewport.svelte';
+	import NavigationProgress from '$lib/components/navigation-progress.svelte';
 	import PreventStaleAuthView from '$lib/components/prevent-stale-auth-view.svelte';
 	import PresenceHeartbeat from '$lib/components/presence-heartbeat.svelte';
 	import SiteHeader from '$lib/components/site-header.svelte';
@@ -22,10 +23,13 @@
 	// urixoft-workspace-mailbox:layout:start
 	const isMailboxSection = $derived(pathname === '/mailbox' || pathname.startsWith('/mailbox/'));
 	// urixoft-workspace-mailbox:layout:end
-	const isNestedAppSection = $derived(isTeamSection || isSettingsSection || isMailboxSection);
+	const isNestedAppSection = $derived(
+		isTeamSection || isSettingsSection || isMailboxSection
+	);
 </script>
 
 <PreventStaleAuthView />
+<NavigationProgress />
 <PresenceHeartbeat />
 
 <Sidebar.Provider

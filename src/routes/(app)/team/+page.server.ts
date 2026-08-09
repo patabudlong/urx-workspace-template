@@ -27,15 +27,16 @@ import {
 import { canRemoveWorkspaceMembers } from '$lib/shared/team/member-management';
 import { ObjectId } from 'mongodb';
 
-export const load: PageServerLoad = async ({ parent }) => {
+export const load: PageServerLoad = async ({ parent, isDataRequest }) => {
 	const { workspace } = await parent();
 
-	const members = workspace
-		? await listWorkspaceMembersForDisplay(workspace.workspaceId)
-		: [];
+	const membersQuery = workspace
+		? listWorkspaceMembersForDisplay(workspace.workspaceId)
+		: Promise.resolve([]);
 
+	// Client navigations stream the member list so the route shell paints immediately.
 	return {
-		members,
+		members: isDataRequest ? membersQuery : await membersQuery,
 		canManageMembers: workspace ? canRemoveWorkspaceMembers(workspace.role) : false,
 		meta: {
 			title: 'Members'

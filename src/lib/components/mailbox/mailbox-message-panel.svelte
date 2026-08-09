@@ -1,4 +1,5 @@
 <script lang="ts">
+	import MailboxMessageToolbar from '$lib/components/mailbox/mailbox-message-toolbar.svelte';
 	import MailboxMessageView from '$lib/components/mailbox/mailbox-message-view.svelte';
 	import MailboxMessageViewSkeleton from '$lib/components/mailbox/mailbox-message-view-skeleton.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
@@ -57,7 +58,7 @@
 		const controller = new AbortController();
 		let cancelled = false;
 
-		fetchMailboxMessage(folder, uid, controller.signal)
+		fetchMailboxMessage(folder, uid, { signal: controller.signal })
 			.then((resolved) => {
 				if (cancelled || targetUid !== uid) {
 					return;
@@ -85,6 +86,15 @@
 			controller.abort();
 		};
 	});
+
+	function handleMessageUpdated(message: MailboxMessageDetail) {
+		cachedMessage = message;
+	}
+
+	function handleMessageRemoved() {
+		cachedMessage = null;
+		loadedUid = null;
+	}
 </script>
 
 <section
@@ -118,6 +128,12 @@
 	{:else if loadingMessage && !cachedMessage}
 		<MailboxMessageViewSkeleton layout="panel" />
 	{:else if cachedMessage}
+		<MailboxMessageToolbar
+			{folder}
+			message={cachedMessage}
+			onUpdated={handleMessageUpdated}
+			onRemoved={handleMessageRemoved}
+		/>
 		<MailboxMessageView message={cachedMessage} layout="panel" />
 	{/if}
 </section>

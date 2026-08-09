@@ -12,24 +12,30 @@ import {
 	listUserWorkspaceContexts,
 	resolveActiveWorkspaceContext
 } from '$lib/server/workspace-context';
+import { resolveUserPresenceStatus } from '$lib/server/presence';
 import { findUserById } from '$lib/server/repositories/users';
-import { loadUserDisplay } from '$lib/server/user-display';
+import { buildUserDisplay } from '$lib/shared/user-display';
 
-export const load: LayoutServerLoad = async ({ locals, url }) => {
+export const load: LayoutServerLoad = async ({ locals, url, untrack }) => {
 	if (!locals.user) {
-		const redirectTo = encodeURIComponent(url.pathname + url.search);
+		const redirectTo = untrack(() => encodeURIComponent(url.pathname + url.search));
 		redirect(303, `/login?redirectTo=${redirectTo}`);
 	}
 
-	const user = await findUserById(locals.user.id);
+	// Workspace is host-scoped — never read `url` outside `untrack` or this layout
+	// re-runs its Mongo queries on every client-side navigation.
+	const requestUrl = untrack(() => new URL(url.href));
+
+	const [user, access] = await Promise.all([
+		findUserById(locals.user.id),
+		getOnboardingAccessState(locals.user.id)
+	]);
 
 	if (user && isSuperadminUser(user)) {
 		redirect(303, PLATFORM_ADMIN_HOME);
 	}
 
-	const access = await getOnboardingAccessState(locals.user.id);
-
-	if (access.status !== 'ready' && url.pathname !== '/onboarding') {
+	if (access.status !== 'ready' && requestUrl.pathname !== '/onboarding') {
 		redirect(303, '/onboarding');
 	}
 
@@ -38,12 +44,12 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 		access.status === 'ready' ? await listUserWorkspaceContexts(locals.user.id) : [];
 	const workspace =
 		access.status === 'ready'
-			? resolveActiveWorkspaceContext(workspaces, url, workspaceHostSuffix)
+			? resolveActiveWorkspaceContext(workspaces, requestUrl, workspaceHostSuffix)
 			: null;
 
 	if (access.status === 'ready' && workspace) {
-		const path = url.pathname + url.search;
-		const landing = resolveWorkspaceLandingUrl(workspace.workspaceSlug, url, path);
+		const path = requestUrl.pathname + requestUrl.search;
+		const landing = resolveWorkspaceLandingUrl(workspace.workspaceSlug, requestUrl, path);
 
 		if (landing.startsWith('http')) {
 			redirect(
@@ -51,14 +57,20 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 				await resolveCrossHostWorkspaceRedirect(
 					{ sub: locals.user.id, email: locals.user.email },
 					workspace.workspaceSlug,
-					url,
+					requestUrl,
 					path
 				)
 			);
 		}
 	}
 
-	const userDisplay = await loadUserDisplay(locals.user.id, locals.user.email);
+	const userDisplay = buildUserDisplay({
+		email: user?.email ?? locals.user.email,
+		firstName: user?.firstName,
+		lastName: user?.lastName,
+		avatarUrl: user?.avatarUrl,
+		presenceStatus: user ? resolveUserPresenceStatus(user) : 'offline'
+	});
 
 	return {
 		user: locals.user,

@@ -12,6 +12,13 @@ export const MAILBOX_MESSAGE_UID_PARAM_SCHEMA = z.object({
 	uid: z.coerce.number().int().positive()
 });
 
+export const MAILBOX_MESSAGE_ACTION_SCHEMA = z.object({
+	folder: MAILBOX_FOLDER_PATH_SCHEMA,
+	action: z.enum(['toggleRead', 'toggleFlagged', 'archive', 'delete', 'spam'])
+});
+
+export type MailboxMessageAction = z.infer<typeof MAILBOX_MESSAGE_ACTION_SCHEMA>['action'];
+
 export const MAILBOX_SEND_MESSAGE_SCHEMA = z.object({
 	to: z.array(z.email()).min(1).max(50),
 	cc: z.array(z.email()).max(50).optional(),

@@ -15,6 +15,8 @@ export type AppNavItem = {
 	icon: Component;
 	external?: boolean;
 	match?: 'exact' | 'prefix';
+	/** When set, used instead of `href` for active-state matching. */
+	activeHref?: string;
 };
 
 export type AppNavGroup = {
@@ -29,7 +31,9 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
 // urixoft-workspace-mailbox:start
 			{
 				title: 'Mailbox',
-				href: '/mailbox',
+				// Link straight to INBOX — avoid /mailbox → redirect (double IMAP load).
+				href: '/mailbox/INBOX',
+				activeHref: '/mailbox',
 				icon: MailIcon,
 				match: 'prefix'
 			},
@@ -104,11 +108,13 @@ export const WORKSPACE_OWNER_PROFILE_NAV_ITEMS: AppNavItem[] = [
 ];
 
 export function isAppNavActive(pathname: string, item: AppNavItem): boolean {
+	const href = item.activeHref ?? item.href;
+
 	if (item.match === 'prefix') {
-		return pathname === item.href || pathname.startsWith(`${item.href}/`);
+		return pathname === href || pathname.startsWith(`${href}/`);
 	}
 
-	return pathname === item.href;
+	return pathname === href;
 }
 
 export function formatWorkspaceRole(role: string): string {

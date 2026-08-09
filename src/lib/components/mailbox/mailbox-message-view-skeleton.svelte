@@ -8,6 +8,11 @@
 
 {#if layout === 'panel'}
 	<div aria-busy="true" aria-label="Loading message">
+		<div class="border-border flex items-center gap-1 border-b px-2 py-1.5 sm:px-3">
+			{#each Array.from({ length: 8 }) as _, index (index)}
+				<Skeleton class="size-7 rounded-md" />
+			{/each}
+		</div>
 		<header class="border-border space-y-3 border-b p-4 sm:p-6">
 			<Skeleton class="h-7 w-3/5 max-w-md" />
 			<div class="space-y-2">

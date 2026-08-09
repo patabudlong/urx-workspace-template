@@ -1111,6 +1111,90 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 					}
 				}
 			},
+			'/mailbox/folder-page': {
+				get: {
+					tags: ['Mailbox'],
+					summary: 'Load folder list and message page together',
+					description:
+						'Returns IMAP folders and a paginated message list for one folder in a single connection.',
+					operationId: 'getMailboxFolderPage',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{
+							name: 'folder',
+							in: 'query',
+							schema: { type: 'string', default: 'INBOX' }
+						},
+						{
+							name: 'page',
+							in: 'query',
+							schema: { type: 'integer', minimum: 1, default: 1 }
+						},
+						{
+							name: 'limit',
+							in: 'query',
+							schema: { type: 'integer', minimum: 1, maximum: 100, default: 25 }
+						}
+					],
+					responses: {
+						'200': {
+							description: 'Folders and messages',
+							content: {
+								'application/json': {
+									schema: {
+										type: 'object',
+										required: ['data', 'meta'],
+										properties: {
+											data: {
+												type: 'object',
+												required: ['folders', 'messages', 'pagination'],
+												properties: {
+													folders: {
+														type: 'array',
+														items: { $ref: '#/components/schemas/MailboxFolder' }
+													},
+													messages: {
+														type: 'array',
+														items: { $ref: '#/components/schemas/MailboxMessageSummary' }
+													},
+													pagination: {
+														type: 'object',
+														required: ['page', 'limit', 'total', 'hasMore'],
+														properties: {
+															page: { type: 'integer' },
+															limit: { type: 'integer' },
+															total: { type: 'integer' },
+															hasMore: { type: 'boolean' }
+														}
+													}
+												}
+											},
+											meta: { $ref: '#/components/schemas/ApiMeta' }
+										}
+									}
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'503': {
+							description: 'Mailbox not connected',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
 			'/mailbox/messages': {
 				get: {
 					tags: ['Mailbox'],
@@ -1203,6 +1287,72 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 							content: {
 								'application/json': {
 									schema: { $ref: '#/components/schemas/MailboxMessageDetailSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid parameters',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'Message not found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'503': {
+							description: 'Mailbox not connected',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				patch: {
+					tags: ['Mailbox'],
+					summary: 'Update mailbox message',
+					description: 'Toggle read/flagged state or move a message to archive, trash, or spam.',
+					operationId: 'patchMailboxMessage',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{
+							name: 'uid',
+							in: 'path',
+							required: true,
+							schema: { type: 'integer', minimum: 1 }
+						}
+					],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/MailboxMessageActionRequest' }
+							}
+						}
+					},
+					responses: {
+						'200': {
+							description: 'Message updated or moved',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/MailboxMessageActionSuccessResponse' }
 								}
 							}
 						},
@@ -2000,6 +2150,44 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 					required: ['data', 'meta'],
 					properties: {
 						data: { $ref: '#/components/schemas/MailboxMessageDetail' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				MailboxMessageActionRequest: {
+					type: 'object',
+					required: ['folder', 'action'],
+					properties: {
+						folder: { type: 'string' },
+						action: {
+							type: 'string',
+							enum: ['toggleRead', 'toggleFlagged', 'archive', 'delete', 'spam']
+						}
+					}
+				},
+				MailboxMessageActionSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							oneOf: [
+								{
+									type: 'object',
+									required: ['type', 'seen', 'flagged'],
+									properties: {
+										type: { type: 'string', enum: ['updated'] },
+										seen: { type: 'boolean' },
+										flagged: { type: 'boolean' }
+									}
+								},
+								{
+									type: 'object',
+									required: ['type'],
+									properties: {
+										type: { type: 'string', enum: ['moved'] }
+									}
+								}
+							]
+						},
 						meta: { $ref: '#/components/schemas/ApiMeta' }
 					}
 				},

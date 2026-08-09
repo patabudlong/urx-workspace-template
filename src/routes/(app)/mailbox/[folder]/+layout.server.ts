@@ -1,10 +1,13 @@
-import { error, redirect } from '@sveltejs/kit';
+import { redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
-import { isMailboxConfigured, listMailboxMessages } from '$lib/server/mailbox';
 import { decodeMailboxFolder } from '$lib/mailbox/utils';
+import { listMailboxFolderPage } from '$lib/server/mailbox';
 
-export const load: LayoutServerLoad = async ({ locals, params, url }) => {
-	if (!(await isMailboxConfigured(locals.user!.id))) {
+export const load: LayoutServerLoad = async ({ locals, parent, params, url, depends }) => {
+	depends('mailbox:messages');
+
+	const { configured } = await parent();
+	if (!configured) {
 		redirect(303, '/mailbox/settings');
 	}
 
@@ -12,23 +15,23 @@ export const load: LayoutServerLoad = async ({ locals, params, url }) => {
 	const page = Number(url.searchParams.get('page') ?? '1');
 	const limit = 25;
 
-	try {
-		const { items, total } = await listMailboxMessages(locals.user!.id, folder, page, limit);
+	// Return promises so IMAP stays off the navigation critical path.
+	// SvelteKit streams them; the shell paints immediately, then the list fills in.
+	const folderPage = listMailboxFolderPage(locals.user!.id, folder, page, limit);
 
-		return {
-			folder,
-			mailbox: {
-				messages: items,
-				pagination: {
-					page,
-					limit,
-					total,
-					hasMore: page * limit < total
-				}
+	return {
+		folder,
+		page,
+		limit,
+		folders: folderPage.then((result) => result.folders),
+		mailbox: folderPage.then((result) => ({
+			messages: result.items,
+			pagination: {
+				page,
+				limit,
+				total: result.total,
+				hasMore: page * limit < result.total
 			}
-		};
-	} catch (loadError) {
-		const message = loadError instanceof Error ? loadError.message : 'Failed to load messages';
-		throw error(503, message);
-	}
+		}))
+	};
 };

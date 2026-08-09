@@ -15,6 +15,33 @@ Apply a **top UI designer** lens: clarity, consistency, accessibility, and zero 
 - **Theme** — `mode-watcher` + `.dark` class. Tokens: `bg-background`, `text-foreground`, `border-border`, etc.
 - **Add primitives**: `pnpm dlx shadcn-svelte@latest add <name> -y` — never hand-copy from docs.
 
+## Use shadcn components only (required)
+
+All interactive and structural UI must come from **`$lib/components/ui/**`** (installed via shadcn-svelte). Do not invent parallel primitives.
+
+| Need | Use |
+|------|-----|
+| Loading placeholders | `Skeleton` from `$lib/components/ui/skeleton` |
+| Buttons / links-as-buttons | `Button` |
+| Cards | `Card` |
+| Inputs / textarea / label | `Input`, `Textarea`, `Label` |
+| Dialogs / sheets / menus | `Dialog`, `Sheet`, `DropdownMenu`, etc. |
+| Badges / separators / tooltips | `Badge`, `Separator`, `Tooltip` |
+| Sidebar chrome | `Sidebar` |
+
+```svelte
+<!-- ✅ shadcn Skeleton -->
+import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+<Skeleton class="h-4 w-2/5" />
+
+<!-- ❌ Hand-rolled pulse placeholder when Skeleton exists -->
+<div class="bg-muted h-4 w-2/5 animate-pulse rounded-md"></div>
+```
+
+- If a primitive is missing: **add it** with `pnpm dlx shadcn-svelte@latest add <name> -y`, then use it.
+- App-level wrappers in `$lib/components/**` may compose shadcn parts; they must not reimplement Button/Skeleton/Input/etc.
+- Never copy third-party component source into the repo when shadcn already provides it.
+
 ## File boundaries (prevents conflicts)
 
 ```
@@ -246,6 +273,7 @@ import StatusAlert from '$lib/components/status-alert.svelte';
 - Inline status `div` with only background/border colors and no icon — use `StatusAlert`
 - Stacked status alerts on the same form (success + error visible together) — use one mutually exclusive alert slot
 - `StatusAlert` with only a title or only body text — always pass both `title` and `description`
+- Hand-rolled Skeleton / Button / Input / Dialog when `$lib/components/ui/*` already has it — add via `pnpm dlx shadcn-svelte@latest add` instead
 - Auth alerts with unmapped copy and no entry in `$lib/shared/auth-messages.ts` when the message is reused
 - “Check your email” alerts using `variant="success"` or green styling — use `variant="info"`
 - Danger/error alerts using `circle-alert` — use `triangle-alert`

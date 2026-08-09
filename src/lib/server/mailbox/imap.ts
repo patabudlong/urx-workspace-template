@@ -48,55 +48,102 @@ function hasAttachments(bodyStructure: unknown): boolean {
 	return node.childNodes?.some((child) => hasAttachments(child)) ?? false;
 }
 
+/** PrivateEmail (and similar) often choke on concurrent IMAP logins — serialize per user. */
+const imapQueues = new Map<string, Promise<unknown>>();
+
 async function withImapClient<T>(userId: string, fn: (client: ImapFlow) => Promise<T>): Promise<T> {
-	const config = await getMailboxConfig(userId);
-	if (!config) {
-		throw new Error('Mailbox is not configured');
-	}
+	const previous = imapQueues.get(userId) ?? Promise.resolve();
 
-	const client = createImapClient(config);
+	const run = previous.catch(() => undefined).then(async () => {
+		const config = await getMailboxConfig(userId);
+		if (!config) {
+			throw new Error('Mailbox is not configured');
+		}
 
-	await client.connect();
+		const client = createImapClient(config);
+
+		await client.connect();
+
+		try {
+			return await fn(client);
+		} finally {
+			await client.logout().catch(() => undefined);
+		}
+	});
+
+	imapQueues.set(userId, run);
 
 	try {
-		return await fn(client);
+		return await run;
 	} finally {
-		await client.logout();
+		if (imapQueues.get(userId) === run) {
+			imapQueues.delete(userId);
+		}
 	}
 }
 
-export async function listMailboxFolders(userId: string): Promise<MailboxFolder[]> {
-	return withImapClient(userId, async (client) => {
-		const folders: MailboxFolder[] = [];
+function isFolderStatusPriority(mailbox: {
+	path?: string;
+	specialUse?: string | null;
+	flags?: Set<string>;
+}): boolean {
+	if (!mailbox.path) {
+		return false;
+	}
 
-		const mailboxes = await client.list();
+	if (mailbox.flags?.has('\\Noselect') || mailbox.flags?.has('\\NonExistent')) {
+		return false;
+	}
 
-		for (const mailbox of mailboxes) {
-			if (!mailbox.path) {
-				continue;
-			}
+	if (mailbox.specialUse) {
+		return true;
+	}
 
-			let unseen = 0;
-			let totalMessages = 0;
-			try {
-				const status = await client.status(mailbox.path, { unseen: true, messages: true });
-				unseen = status.unseen ?? 0;
-				totalMessages = status.messages ?? 0;
-			} catch {
-				// Some folders may not be selectable.
-			}
+	return mailbox.path.toUpperCase() === 'INBOX';
+}
 
-			folders.push({
-				path: mailbox.path,
-				name: mailbox.name || mailbox.path,
-				specialUse: mailbox.specialUse ?? null,
-				unseen,
-				total: totalMessages
-			});
+async function fetchMailboxFolders(client: ImapFlow): Promise<MailboxFolder[]> {
+	// Avoid list({ statusQuery }) — without LIST-STATUS, ImapFlow falls back to N sequential
+	// STATUS calls (very slow). LIST first, then STATUS only the primary folders.
+	const mailboxes = await client.list();
+	const folders: MailboxFolder[] = [];
+
+	for (const mailbox of mailboxes) {
+		if (!mailbox.path) {
+			continue;
 		}
 
-		return sortMailboxFolders(folders);
-	});
+		folders.push({
+			path: mailbox.path,
+			name: mailbox.name || mailbox.path,
+			specialUse: mailbox.specialUse ?? null,
+			unseen: 0,
+			total: 0
+		});
+	}
+
+	for (const mailbox of mailboxes.filter(isFolderStatusPriority)) {
+		if (!mailbox.path) {
+			continue;
+		}
+
+		try {
+			const status = await client.status(mailbox.path, { unseen: true, messages: true });
+			const folder = folders.find((entry) => entry.path === mailbox.path);
+			if (folder) {
+				folder.unseen = status.unseen ?? 0;
+				folder.total = status.messages ?? 0;
+			}
+		} catch {
+			// Some folders may not be selectable.
+		}
+	}
+
+	return sortMailboxFolders(folders);
+}
+
+export async function listMailboxFolders(userId: string): Promise<MailboxFolder[]> {
+	return withImapClient(userId, (client) => fetchMailboxFolders(client));
 }
 
 function mapSummary(message: {
@@ -133,47 +180,72 @@ function mapSummary(message: {
 	};
 }
 
+async function fetchMailboxMessages(
+	client: ImapFlow,
+	folder: string,
+	page: number,
+	limit: number
+): Promise<{ items: MailboxMessageSummary[]; total: number }> {
+	const lock = await client.getMailboxLock(folder);
+
+	try {
+		const mailbox = client.mailbox;
+		const total = typeof mailbox === 'object' && mailbox ? mailbox.exists : 0;
+
+		if (!total) {
+			return { items: [], total: 0 };
+		}
+
+		const start = Math.max(total - page * limit + 1, 1);
+		const end = Math.max(total - (page - 1) * limit, 1);
+		const range = start <= end ? `${start}:${end}` : `${end}:${start}`;
+
+		const items: MailboxMessageSummary[] = [];
+		for await (const message of client.fetch(
+			range,
+			{
+				uid: true,
+				envelope: true,
+				flags: true,
+				bodyStructure: true
+			},
+			{ uid: false }
+		)) {
+			items.push(mapSummary(message));
+		}
+
+		items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+		return { items, total };
+	} finally {
+		lock.release();
+	}
+}
+
 export async function listMailboxMessages(
 	userId: string,
 	folder: string,
 	page: number,
 	limit: number
 ): Promise<{ items: MailboxMessageSummary[]; total: number }> {
+	return withImapClient(userId, (client) => fetchMailboxMessages(client, folder, page, limit));
+}
+
+/** One IMAP connection for sidebar folders + message list (Overview → Mailbox entry). */
+export async function listMailboxFolderPage(
+	userId: string,
+	folder: string,
+	page: number,
+	limit: number
+): Promise<{
+	folders: MailboxFolder[];
+	items: MailboxMessageSummary[];
+	total: number;
+}> {
 	return withImapClient(userId, async (client) => {
-		const lock = await client.getMailboxLock(folder);
-
-		try {
-			const mailbox = client.mailbox;
-			const total = typeof mailbox === 'object' && mailbox ? mailbox.exists : 0;
-
-			if (!total) {
-				return { items: [], total: 0 };
-			}
-
-			const start = Math.max(total - page * limit + 1, 1);
-			const end = Math.max(total - (page - 1) * limit, 1);
-			const range = start <= end ? `${start}:${end}` : `${end}:${start}`;
-
-			const items: MailboxMessageSummary[] = [];
-			for await (const message of client.fetch(
-				range,
-				{
-					uid: true,
-					envelope: true,
-					flags: true,
-					bodyStructure: true
-				},
-				{ uid: false }
-			)) {
-				items.push(mapSummary(message));
-			}
-
-			items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-			return { items, total };
-		} finally {
-			lock.release();
-		}
+		const folders = await fetchMailboxFolders(client);
+		const { items, total } = await fetchMailboxMessages(client, folder, page, limit);
+		return { folders, items, total };
 	});
 }
 
@@ -218,6 +290,146 @@ export async function getMailboxMessage(
 				text: parsed.text?.trim() || parsed.textAsHtml?.replace(/<[^>]+>/g, ' ').trim() || '',
 				html: parsed.html ? String(parsed.html) : null
 			};
+		} finally {
+			lock.release();
+		}
+	});
+}
+
+const SPECIAL_FOLDER_FALLBACKS: Record<string, string[]> = {
+	'\\Archive': ['Archive', 'Archives'],
+	'\\Trash': ['Trash', 'Deleted', 'Deleted Messages'],
+	'\\Junk': ['Junk', 'Spam', 'Junk E-mail']
+};
+
+function resolveSpecialFolderFromMailboxes(
+	mailboxes: { path?: string; name?: string; specialUse?: string | null }[],
+	specialUse: '\\Archive' | '\\Trash' | '\\Junk'
+): string {
+	const match = mailboxes.find((mailbox) => mailbox.specialUse === specialUse);
+	if (match?.path) {
+		return match.path;
+	}
+
+	const fallbacks = SPECIAL_FOLDER_FALLBACKS[specialUse] ?? [];
+	for (const name of fallbacks) {
+		const folder = mailboxes.find(
+			(entry) =>
+				entry.path?.toLowerCase() === name.toLowerCase() ||
+				(entry.name || '').toLowerCase() === name.toLowerCase()
+		);
+		if (folder?.path) {
+			return folder.path;
+		}
+	}
+
+	throw new Error(`No ${specialUse.replace('\\', '')} folder found in mailbox`);
+}
+
+async function resolveMailboxSpecialFolderPath(
+	userId: string,
+	specialUse: '\\Archive' | '\\Trash' | '\\Junk'
+): Promise<string> {
+	const folders = await listMailboxFolders(userId);
+	return resolveSpecialFolderFromMailboxes(folders, specialUse);
+}
+
+export async function updateMailboxMessageFlags(
+	userId: string,
+	folder: string,
+	uid: number,
+	flags: { seen?: boolean; flagged?: boolean }
+): Promise<void> {
+	return withImapClient(userId, async (client) => {
+		const lock = await client.getMailboxLock(folder);
+
+		try {
+			if (flags.seen === true) {
+				await client.messageFlagsAdd(uid, ['\\Seen'], { uid: true });
+			} else if (flags.seen === false) {
+				await client.messageFlagsRemove(uid, ['\\Seen'], { uid: true });
+			}
+
+			if (flags.flagged === true) {
+				await client.messageFlagsAdd(uid, ['\\Flagged'], { uid: true });
+			} else if (flags.flagged === false) {
+				await client.messageFlagsRemove(uid, ['\\Flagged'], { uid: true });
+			}
+		} finally {
+			lock.release();
+		}
+	});
+}
+
+export async function moveMailboxMessage(
+	userId: string,
+	folder: string,
+	uid: number,
+	destination: string
+): Promise<void> {
+	return withImapClient(userId, async (client) => {
+		const lock = await client.getMailboxLock(folder);
+
+		try {
+			await client.messageMove(uid, destination, { uid: true });
+		} finally {
+			lock.release();
+		}
+	});
+}
+
+export async function performMailboxMessageAction(
+	userId: string,
+	folder: string,
+	uid: number,
+	action: 'toggleRead' | 'toggleFlagged' | 'archive' | 'delete' | 'spam'
+): Promise<{ type: 'updated'; seen: boolean; flagged: boolean } | { type: 'moved' }> {
+	return withImapClient(userId, async (client) => {
+		const lock = await client.getMailboxLock(folder);
+
+		try {
+			const message = await client.fetchOne(uid, { flags: true }, { uid: true });
+			if (!message) {
+				throw new Error('Message not found');
+			}
+
+			const seen = message.flags?.has('\\Seen') ?? false;
+			const flagged = message.flags?.has('\\Flagged') ?? false;
+
+			switch (action) {
+				case 'toggleRead': {
+					const nextSeen = !seen;
+					if (nextSeen) {
+						await client.messageFlagsAdd(uid, ['\\Seen'], { uid: true });
+					} else {
+						await client.messageFlagsRemove(uid, ['\\Seen'], { uid: true });
+					}
+
+					return { type: 'updated', seen: nextSeen, flagged };
+				}
+				case 'toggleFlagged': {
+					const nextFlagged = !flagged;
+					if (nextFlagged) {
+						await client.messageFlagsAdd(uid, ['\\Flagged'], { uid: true });
+					} else {
+						await client.messageFlagsRemove(uid, ['\\Flagged'], { uid: true });
+					}
+
+					return { type: 'updated', seen, flagged: nextFlagged };
+				}
+				case 'archive':
+				case 'delete':
+				case 'spam': {
+					const specialUse =
+						action === 'archive' ? '\\Archive' : action === 'delete' ? '\\Trash' : '\\Junk';
+					const mailboxes = await client.list();
+					const destination = resolveSpecialFolderFromMailboxes(mailboxes, specialUse);
+					await client.messageMove(uid, destination, { uid: true });
+					return { type: 'moved' };
+				}
+				default:
+					throw new Error('Unsupported mailbox message action');
+			}
 		} finally {
 			lock.release();
 		}

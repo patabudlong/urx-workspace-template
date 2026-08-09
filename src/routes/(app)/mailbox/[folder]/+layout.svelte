@@ -1,22 +1,74 @@
 <script lang="ts">
 	import MailboxMessageList from '$lib/components/mailbox/mailbox-message-list.svelte';
+	import MailboxMessageListSkeleton from '$lib/components/mailbox/mailbox-message-list-skeleton.svelte';
 	import MailboxMessagePanel from '$lib/components/mailbox/mailbox-message-panel.svelte';
+	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
-	import type { MailboxFolder } from '$lib/shared/mailbox/schemas';
+	import type { MailboxFolder, MailboxMessageSummary } from '$lib/shared/mailbox/schemas';
 	import { getMailboxFolderLabel, isMailboxInboxPath } from '$lib/mailbox/utils';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { tick } from 'svelte';
 
+	type MailboxListData = {
+		messages: MailboxMessageSummary[];
+		pagination: {
+			page: number;
+			limit: number;
+			total: number;
+			hasMore: boolean;
+		};
+	};
+
 	let { data, children } = $props();
 
+	let mailbox = $state<MailboxListData | null>(null);
+	let mailboxFolder = $state<string | null>(null);
+	let mailboxPage = $state<number | null>(null);
+	let mailboxLoadFailed = $state<Error | null>(null);
 	let pendingUid = $state<number | null>(null);
 	let listScroller = $state<HTMLDivElement | undefined>();
 	let listScrollTop = $state(0);
 
+	$effect(() => {
+		const folder = data.folder;
+		const pageNum = data.page;
+		const next = data.mailbox as Promise<MailboxListData> | MailboxListData;
+		mailboxLoadFailed = null;
+
+		if (!next || typeof (next as Promise<MailboxListData>).then !== 'function') {
+			mailbox = next as MailboxListData;
+			mailboxFolder = folder;
+			mailboxPage = pageNum;
+			return;
+		}
+
+		// Clear only when folder/page changes — keep the list during message opens.
+		if (mailboxFolder !== folder || mailboxPage !== pageNum) {
+			mailbox = null;
+		}
+
+		void (next as Promise<MailboxListData>)
+			.then((resolved) => {
+				if (folder === data.folder && pageNum === data.page) {
+					mailbox = resolved;
+					mailboxFolder = folder;
+					mailboxPage = pageNum;
+				}
+			})
+			.catch((error: unknown) => {
+				if (folder === data.folder && pageNum === data.page) {
+					mailboxLoadFailed =
+						error instanceof Error ? error : new Error('Failed to load messages.');
+					mailbox = null;
+					mailboxFolder = null;
+					mailboxPage = null;
+				}
+			});
+	});
+
 	const isInboxFolder = $derived(isMailboxInboxPath(data.folder));
-	const mailbox = $derived(data.mailbox);
 
 	const folderLabel = $derived.by(() => {
 		const folders = page.data.folders;
@@ -51,7 +103,6 @@
 
 	$effect(() => {
 		routeUid;
-		mailbox.messages;
 
 		const savedTop = listScrollTop;
 		void tick().then(() => {
@@ -86,7 +137,7 @@
 	}
 </script>
 
-<Card.Root class="flex min-h-0 min-w-0 flex-1 flex-col gap-0 rounded-none py-0">
+{#snippet messageListPane(mailbox: MailboxListData)}
 	{@const hasPagination = mailbox.pagination.page > 1 || mailbox.pagination.hasMore}
 	{#if !isInboxFolder || hasPagination}
 		<Card.Header
@@ -149,6 +200,33 @@
 			class="min-h-0 flex-1 lg:h-full"
 		/>
 	</Card.Content>
+{/snippet}
+
+<Card.Root class="flex min-h-0 min-w-0 flex-1 flex-col gap-0 rounded-none py-0">
+	{#if mailboxLoadFailed}
+		<div class="p-4 sm:p-6">
+			<StatusAlert
+				variant="danger"
+				title="Messages unavailable"
+				description={mailboxLoadFailed.message}
+			/>
+		</div>
+	{:else if mailbox}
+		{@render messageListPane(mailbox)}
+	{:else}
+		<Card.Content
+			class="flex min-h-0 flex-1 flex-col overflow-hidden p-0 lg:grid lg:h-full lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] xl:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]"
+		>
+			<div class="border-border min-h-0 flex-1 overflow-y-auto max-lg:border-b lg:h-full lg:flex-none lg:border-r">
+				<MailboxMessageListSkeleton layout="panel" />
+			</div>
+			<MailboxMessagePanel
+				folder={data.folder}
+				targetUid={null}
+				class="min-h-0 flex-1 lg:h-full"
+			/>
+		</Card.Content>
+	{/if}
 </Card.Root>
 
 {@render children()}

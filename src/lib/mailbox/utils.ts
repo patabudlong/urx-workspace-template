@@ -179,6 +179,22 @@ export function getMailboxAddressInitials(value: string): string {
 	return label.slice(0, 2).toUpperCase() || '?';
 }
 
+export type MailboxComposeMode = 'reply' | 'replyAll' | 'forward';
+
+export function buildMailboxComposeHref(
+	mode: MailboxComposeMode,
+	folder: string,
+	uid: number
+): string {
+	const params = new URLSearchParams({
+		mode,
+		folder,
+		uid: String(uid)
+	});
+
+	return `/mailbox/compose?${params}`;
+}
+
 export function parseRecipientInput(value: string): string[] {
 	return value
 		.split(/[,;]/)

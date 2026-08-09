@@ -21,7 +21,9 @@ function createImapClient(config: MailboxConfig): ImapFlow {
 		logger: false,
 		tls: { minVersion: 'TLSv1.2' },
 		connectionTimeout: MAIL_TIMEOUT_MS,
-		greetingTimeout: MAIL_TIMEOUT_MS
+		greetingTimeout: MAIL_TIMEOUT_MS,
+		// ImapFlow defaults to 5 minutes — a stuck LIST/STATUS would look like an endless nav load.
+		socketTimeout: MAIL_TIMEOUT_MS
 	});
 }
 
