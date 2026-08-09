@@ -12,10 +12,12 @@ export const load: LayoutServerLoad = async ({ locals, params, url }) => {
 	const page = Number(url.searchParams.get('page') ?? '1');
 	const limit = 25;
 
-	return {
-		folder,
-		mailbox: listMailboxMessages(locals.user!.id, folder, page, limit)
-			.then(({ items, total }) => ({
+	try {
+		const { items, total } = await listMailboxMessages(locals.user!.id, folder, page, limit);
+
+		return {
+			folder,
+			mailbox: {
 				messages: items,
 				pagination: {
 					page,
@@ -23,10 +25,10 @@ export const load: LayoutServerLoad = async ({ locals, params, url }) => {
 					total,
 					hasMore: page * limit < total
 				}
-			}))
-			.catch((loadError) => {
-				const message = loadError instanceof Error ? loadError.message : 'Failed to load messages';
-				throw error(503, message);
-			})
-	};
+			}
+		};
+	} catch (loadError) {
+		const message = loadError instanceof Error ? loadError.message : 'Failed to load messages';
+		throw error(503, message);
+	}
 };

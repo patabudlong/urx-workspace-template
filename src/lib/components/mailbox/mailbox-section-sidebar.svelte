@@ -8,22 +8,28 @@
 		getMailboxFolderLabel,
 		partitionMailboxFolders
 	} from '$lib/mailbox/utils';
+	import { MAILBOX_SETTINGS_NAV_ITEM } from '$lib/navigation/mailbox-nav';
+	import { isAppNavActive } from '$lib/navigation/app-nav';
 	import type { MailboxFolder } from '$lib/shared/mailbox/schemas';
 	import InboxIcon from '@lucide/svelte/icons/inbox';
 	import { cn } from '$lib/utils.js';
+	import { page } from '$app/state';
 
 	let {
 		folders,
 		activeFolder,
-		isComposeActive = false
+		isComposeActive = false,
+		configured = true
 	}: {
 		folders: MailboxFolder[];
 		activeFolder: string;
 		isComposeActive?: boolean;
+		configured?: boolean;
 	} = $props();
 
-	const inboxFolder = $derived(findMailboxInboxFolder(folders));
-	const mailboxFolders = $derived(partitionMailboxFolders(folders).folders);
+	const inboxFolder = $derived(configured ? findMailboxInboxFolder(folders) : null);
+	const mailboxFolders = $derived(configured ? partitionMailboxFolders(folders).folders : []);
+	const isSettingsActive = $derived(isAppNavActive(page.url.pathname, MAILBOX_SETTINGS_NAV_ITEM));
 </script>
 
 <aside class="border-border bg-muted/30 shrink-0 border-b" aria-label="Mailbox navigation">
@@ -34,10 +40,14 @@
 				Browse folders and read messages from your connected PrivateEmail account.
 			</p>
 		</div>
-		<MailboxComposeButton active={isComposeActive} layout="inline" />
 	</div>
 
-	<nav class="flex flex-col gap-2 p-2 pt-0">
+	<nav class="flex flex-col gap-2 px-2 pt-0 pb-2">
+		{#if configured}
+			<div class="px-1 pb-1">
+				<MailboxComposeButton active={isComposeActive} layout="sidebar" />
+			</div>
+		{/if}
 		{#if inboxFolder}
 			{@const href = `/mailbox/${encodeMailboxFolder(inboxFolder.path)}`}
 			{@const active = activeFolder === inboxFolder.path}
@@ -88,5 +98,24 @@
 				</div>
 			</div>
 		{/if}
+
+		<div>
+			<p class="text-muted-foreground px-3 py-1.5 text-xs font-medium">Account</p>
+			<div class="flex gap-1 overflow-x-auto px-1">
+				<a
+					href={MAILBOX_SETTINGS_NAV_ITEM.href}
+					class={cn(
+						'flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors',
+						isSettingsActive
+							? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+							: 'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+					)}
+					aria-current={isSettingsActive ? 'page' : undefined}
+				>
+					<MAILBOX_SETTINGS_NAV_ITEM.icon class="size-4 shrink-0" />
+					<span>Settings</span>
+				</a>
+			</div>
+		</div>
 	</nav>
 </aside>

@@ -131,7 +131,52 @@ export function formatMailboxDate(value: string): string {
 		return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 	}
 
-	return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+	const sameYear = date.getFullYear() === now.getFullYear();
+	if (sameYear) {
+		return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+	}
+
+	return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+export function parseMailboxAddress(value: string): { name: string; email: string } {
+	const trimmed = value.trim();
+	if (!trimmed) {
+		return { name: 'Unknown sender', email: '' };
+	}
+
+	const angleMatch = trimmed.match(/^(.+?)\s*<([^>]+)>$/);
+	if (angleMatch) {
+		const name = angleMatch[1].replace(/^"|"$/g, '').trim();
+		return { name: name || angleMatch[2].trim(), email: angleMatch[2].trim() };
+	}
+
+	if (trimmed.includes('@')) {
+		const localPart = trimmed.split('@')[0] ?? trimmed;
+		return { name: localPart, email: trimmed };
+	}
+
+	return { name: trimmed, email: '' };
+}
+
+export function getMailboxAddressLabel(value: string): string {
+	const { name, email } = parseMailboxAddress(value);
+	if (name && email && name !== email) {
+		return name;
+	}
+
+	return email || name || 'Unknown sender';
+}
+
+export function getMailboxAddressInitials(value: string): string {
+	const label = getMailboxAddressLabel(value);
+	const parts = label.split(/\s+/).filter(Boolean);
+
+	if (parts.length >= 2) {
+		return `${parts[0]?.[0] ?? ''}${parts[1]?.[0] ?? ''}`.toUpperCase();
+	}
+
+	return label.slice(0, 2).toUpperCase() || '?';
 }
 
 export function parseRecipientInput(value: string): string[] {

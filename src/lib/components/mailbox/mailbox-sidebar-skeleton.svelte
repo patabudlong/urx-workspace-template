@@ -7,10 +7,12 @@
 	<Skeleton class="h-4 w-20" />
 	<Skeleton class="h-3 w-full max-w-48" />
 	<Skeleton class="h-3 w-4/5 max-w-40" />
-	<Skeleton class="h-10 w-full rounded-lg" />
 </Sidebar.Header>
 
 <Sidebar.Content class="min-h-0 flex-1 gap-1 overflow-visible ps-1 pt-3">
+	<div class="p-2 pb-1">
+		<Skeleton class="h-10 w-full rounded-lg" />
+	</div>
 	<Skeleton class="mx-2 mb-2 h-3 w-14" />
 	<div class="space-y-1 px-1">
 		{#each Array.from({ length: 6 }) as _, index (index)}
@@ -21,3 +23,7 @@
 		{/each}
 	</div>
 </Sidebar.Content>
+
+<Sidebar.Footer class="border-sidebar-border mt-auto shrink-0 border-t p-2">
+	<Skeleton class="h-8 w-full rounded-md" />
+</Sidebar.Footer>
