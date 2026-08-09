@@ -60,11 +60,12 @@
 
 	const superform = superForm(untrack(() => data.disableTwoFactorForm), {
 		id: 'disableTwoFactorForm',
-		validators: zod4Client(
-			data.security.hasAppPassword
-				? twoFactorDisableWithPasswordSchema
-				: twoFactorDisableWithCodeSchema
-		),
+		validators: (() =>
+			zod4Client(
+				requiresPassword
+					? twoFactorDisableWithPasswordSchema
+					: twoFactorDisableWithCodeSchema
+			))(),
 		validationMethod: 'submit-only',
 		onSubmit: () => {
 			submitting = true;

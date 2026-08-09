@@ -48,7 +48,7 @@
 	let formRateLimited = $state(false);
 	let codeInput = $state<{ focus: () => void; typeDigit: (digit: string) => void } | null>(null);
 
-	const { enhance, message: formMessage, errors, reset } = superform;
+	const { enhance, message: formMessage, errors, reset } = (() => superform)();
 
 	const formError = $derived(
 		$formMessage && !isAuthRateLimitMessage($formMessage) ? $formMessage : null

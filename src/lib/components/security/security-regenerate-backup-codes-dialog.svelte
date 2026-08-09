@@ -50,11 +50,12 @@
 
 	const superform = superForm(untrack(() => data.regenerateBackupCodesForm), {
 		id: 'regenerateBackupCodesForm',
-		validators: zod4Client(
-			data.security.hasAppPassword
-				? twoFactorRegenerateBackupCodesWithPasswordSchema
-				: twoFactorRegenerateBackupCodesWithCodeSchema
-		),
+		validators: (() =>
+			zod4Client(
+				requiresPassword
+					? twoFactorRegenerateBackupCodesWithPasswordSchema
+					: twoFactorRegenerateBackupCodesWithCodeSchema
+			))(),
 		validationMethod: 'submit-only',
 		onSubmit: () => {
 			submitting = true;
