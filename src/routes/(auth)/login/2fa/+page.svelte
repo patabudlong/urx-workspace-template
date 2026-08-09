@@ -9,6 +9,7 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import { AUTH_ACTION_BUTTON_CLASS } from '$lib/auth/ui';
+	import { cn } from '$lib/utils.js';
 	import { twoFactorLoginChallengeSchema } from '$lib/shared/schemas/security';
 	import {
 		INVALID_VERIFICATION_CODE_MESSAGE,
@@ -169,7 +170,11 @@
 			<Button
 				type="button"
 				variant="outline"
-				class="h-10 w-full"
+				class={cn(
+					'h-10 w-full',
+					$form.method === TWO_FACTOR_METHODS.EMAIL &&
+						'border-primary bg-primary/5 text-primary ring-primary/20 ring-2 hover:bg-primary/10 hover:text-primary'
+				)}
 				disabled={sendingCode || submitting || formRateLimited}
 				onclick={async () => {
 					sendingCode = true;
