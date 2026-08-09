@@ -39,17 +39,17 @@
 		{/snippet}
 	</PageHeader>
 
-	{#if !data.configured}
+	{#if isSettingsRoute}
+		{@render children()}
+	{:else if !data.configured}
 		<StatusAlert
 			variant="info"
 			title="Connect your PrivateEmail account"
 			description="Link your mailbox in settings to read inbox folders and send messages from the workspace."
 		/>
 		<Button href="/mailbox/settings" class="h-10 w-fit">Connect mailbox</Button>
-	{:else if data.loadError && !isSettingsRoute}
+	{:else if data.loadError}
 		<StatusAlert variant="danger" title="Mailbox unavailable" description={data.loadError} />
-	{:else if isSettingsRoute}
-		{@render children()}
 	{:else}
 		<div class="grid min-h-0 gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
 			<Card.Root class="min-h-0">

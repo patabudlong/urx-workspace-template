@@ -1,6 +1,7 @@
 import { env } from '$env/dynamic/private';
 import { getMailboxConfigForUser } from '$lib/server/repositories/user-mailbox-credentials';
 import type { MailboxConnectInput } from '$lib/shared/mailbox/schemas';
+import { PRIVATEEMAIL_SERVER_DEFAULTS } from '$lib/shared/mailbox/privateemail';
 
 export type MailboxConfig = {
 	imap: {
@@ -31,17 +32,33 @@ function parsePort(value: string | undefined, fallback: number): number {
 	return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+function resolveSmtpSettings(port: number, secureOverride?: boolean) {
+	if (secureOverride !== undefined) {
+		return { port, secure: secureOverride };
+	}
+
+	if (port === 587) {
+		return { port: 587, secure: false };
+	}
+
+	return { port, secure: true };
+}
+
 export function getDefaultMailboxHosts() {
+	const smtpPort = parsePort(env.MAILBOX_SMTP_PORT, PRIVATEEMAIL_SERVER_DEFAULTS.smtp.preferredPort);
+	const smtpSecure = env.MAILBOX_SMTP_SECURE
+		? parseBoolean(env.MAILBOX_SMTP_SECURE, true)
+		: undefined;
+
 	return {
 		imap: {
-			host: env.MAILBOX_IMAP_HOST?.trim() || 'mail.privateemail.com',
-			port: parsePort(env.MAILBOX_IMAP_PORT, 993),
-			secure: parseBoolean(env.MAILBOX_IMAP_SECURE, true)
+			host: env.MAILBOX_IMAP_HOST?.trim() || PRIVATEEMAIL_SERVER_DEFAULTS.imap.host,
+			port: parsePort(env.MAILBOX_IMAP_PORT, PRIVATEEMAIL_SERVER_DEFAULTS.imap.port),
+			secure: parseBoolean(env.MAILBOX_IMAP_SECURE, PRIVATEEMAIL_SERVER_DEFAULTS.imap.secure)
 		},
 		smtp: {
-			host: env.MAILBOX_SMTP_HOST?.trim() || 'mail.privateemail.com',
-			port: parsePort(env.MAILBOX_SMTP_PORT, 465),
-			secure: parseBoolean(env.MAILBOX_SMTP_SECURE, true)
+			host: env.MAILBOX_SMTP_HOST?.trim() || PRIVATEEMAIL_SERVER_DEFAULTS.smtp.host,
+			...resolveSmtpSettings(smtpPort, smtpSecure)
 		}
 	};
 }
@@ -57,8 +74,7 @@ export function buildMailboxConfigFromConnect(input: MailboxConnectInput): Mailb
 		},
 		smtp: {
 			host: input.smtpHost?.trim() || defaults.smtp.host,
-			port: input.smtpPort ?? defaults.smtp.port,
-			secure: input.smtpSecure ?? defaults.smtp.secure
+			...resolveSmtpSettings(input.smtpPort ?? defaults.smtp.port, input.smtpSecure)
 		},
 		email: input.email.trim(),
 		password: input.password,

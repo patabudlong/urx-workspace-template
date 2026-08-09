@@ -7,4 +7,4 @@ export {
 export { encryptMailboxPassword, decryptMailboxPassword } from './credentials';
 export { getMailboxMessage, listMailboxFolders, listMailboxMessages, verifyMailboxConnection } from './imap';
 export { sendMailboxMessage } from './smtp';
-export { verifyMailboxCredentials } from './verify';
+export { verifyMailboxCredentials, createImapClient, createSmtpTransport } from './verify';

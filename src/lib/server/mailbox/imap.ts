@@ -1,7 +1,8 @@
 import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
-import { getMailboxConfig } from './config';
+import { createImapClient } from './verify';
 import type { MailboxFolder, MailboxMessageDetail, MailboxMessageSummary } from '$lib/shared/mailbox/schemas';
+import { getMailboxConfig } from './config';
 import { verifyMailboxCredentials } from './verify';
 
 type AddressLike = {
@@ -52,16 +53,7 @@ async function withImapClient<T>(userId: string, fn: (client: ImapFlow) => Promi
 		throw new Error('Mailbox is not configured');
 	}
 
-	const client = new ImapFlow({
-		host: config.imap.host,
-		port: config.imap.port,
-		secure: config.imap.secure,
-		auth: {
-			user: config.email,
-			pass: config.password
-		},
-		logger: false
-	});
+	const client = createImapClient(config);
 
 	await client.connect();
 

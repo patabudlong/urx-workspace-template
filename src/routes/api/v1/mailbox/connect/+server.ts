@@ -29,7 +29,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		return jsonError('BAD_REQUEST', verification.message, { requestId });
 	}
 
-	const status = await upsertMailboxCredentialsForUser(locals.user.id, config);
+	const status = await upsertMailboxCredentialsForUser(locals.user.id, verification.config);
 	return jsonOk(status, { requestId, status: 201 });
 };
 

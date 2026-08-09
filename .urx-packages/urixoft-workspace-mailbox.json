@@ -1,7 +1,7 @@
 {
   "id": "urixoft-workspace-mailbox",
   "version": "0.2.0",
-  "installedAt": "2026-08-09T06:47:01.673Z",
+  "installedAt": "2026-08-09T07:05:05.066Z",
   "files": [
     "src/lib/components/mailbox/mailbox-folder-list.svelte",
     "src/lib/components/mailbox/mailbox-message-list.svelte",
@@ -9,12 +9,14 @@
     "src/lib/mailbox/utils.ts",
     "src/lib/server/mailbox/config.ts",
     "src/lib/server/mailbox/credentials.ts",
+    "src/lib/server/mailbox/errors.ts",
     "src/lib/server/mailbox/imap.ts",
     "src/lib/server/mailbox/index.ts",
     "src/lib/server/mailbox/mailparser.d.ts",
     "src/lib/server/mailbox/smtp.ts",
     "src/lib/server/mailbox/verify.ts",
     "src/lib/server/repositories/user-mailbox-credentials.ts",
+    "src/lib/shared/mailbox/privateemail.ts",
     "src/lib/shared/mailbox/schemas.ts",
     "src/lib/shared/models/user-mailbox-credentials.ts",
     "src/routes/(app)/mailbox/+layout.server.ts",

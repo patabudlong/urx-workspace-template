@@ -1,18 +1,22 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { buildMailboxConfigFromConnect, verifyMailboxCredentials } from '$lib/server/mailbox';
+import { buildMailboxConfigFromConnect, getDefaultMailboxHosts, verifyMailboxCredentials } from '$lib/server/mailbox';
 import {
 	deleteMailboxCredentialsForUser,
 	getMailboxConnectionStatus,
 	upsertMailboxCredentialsForUser
 } from '$lib/server/repositories/user-mailbox-credentials';
 import { MAILBOX_CONNECT_SCHEMA } from '$lib/shared/mailbox/schemas';
+import { PRIVATEEMAIL_SERVER_DEFAULTS } from '$lib/shared/mailbox/privateemail';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const connection = await getMailboxConnectionStatus(locals.user!.id);
+	const serverDefaults = getDefaultMailboxHosts();
 
 	return {
 		connection,
+		serverDefaults,
+		privateEmailReference: PRIVATEEMAIL_SERVER_DEFAULTS,
 		meta: {
 			title: 'Mailbox settings'
 		}
@@ -41,7 +45,16 @@ export const actions: Actions = {
 			return fail(400, { error: verification.message });
 		}
 
-		await upsertMailboxCredentialsForUser(locals.user!.id, config);
+		try {
+			await upsertMailboxCredentialsForUser(locals.user!.id, verification.config);
+		} catch (error) {
+			const message =
+				error instanceof Error
+					? error.message
+					: 'Could not save mailbox credentials. Check database connectivity.';
+			return fail(500, { error: message });
+		}
+
 		return { success: true };
 	},
 	disconnect: async ({ locals }) => {

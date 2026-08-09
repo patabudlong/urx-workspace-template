@@ -1,5 +1,5 @@
-import nodemailer from 'nodemailer';
 import { getMailboxConfig } from './config';
+import { createSmtpTransport } from './verify';
 import type { MailboxSendMessageInput } from '$lib/shared/mailbox/schemas';
 
 export async function sendMailboxMessage(
@@ -11,15 +11,7 @@ export async function sendMailboxMessage(
 		throw new Error('Mailbox is not configured');
 	}
 
-	const transport = nodemailer.createTransport({
-		host: config.smtp.host,
-		port: config.smtp.port,
-		secure: config.smtp.secure,
-		auth: {
-			user: config.email,
-			pass: config.password
-		}
-	});
+	const transport = createSmtpTransport(config);
 
 	const info = await transport.sendMail({
 		from: {
