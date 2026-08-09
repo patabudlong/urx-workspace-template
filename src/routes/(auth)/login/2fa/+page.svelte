@@ -228,9 +228,12 @@
 						{#snippet children({ props })}
 							<Form.Label required class="sr-only">Verification code</Form.Label>
 							<VerificationCodeInput
-								{...props}
+								id={props.id}
+								name={props.name}
 								bind:value={$form.code}
 								disabled={submitting || formRateLimited}
+								aria-invalid={$errors.code?.length ? 'true' : undefined}
+								aria-describedby={props['aria-describedby']}
 							/>
 						{/snippet}
 					</Form.Control>
@@ -242,9 +245,12 @@
 							{#snippet children({ props })}
 								<Form.Label required class="sr-only">Verification code</Form.Label>
 								<VerificationCodeInput
-									{...props}
+									id={props.id}
+									name={props.name}
 									bind:value={$form.code}
 									disabled={submitting || formRateLimited}
+									aria-invalid={$errors.code?.length ? 'true' : undefined}
+									aria-describedby={props['aria-describedby']}
 								/>
 							{/snippet}
 						</Form.Control>

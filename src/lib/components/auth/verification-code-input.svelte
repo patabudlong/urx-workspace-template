@@ -24,12 +24,12 @@
 		class?: string;
 	} = $props();
 
-	let inputEl = $state<HTMLInputElement | null>(null);
-	let activeIndex = $state(0);
-
-	const digits = $derived(
-		Array.from({ length: CODE_LENGTH }, (_, index) => value[index] ?? '')
+	let inputEls = $state<(HTMLInputElement | null)[]>(
+		Array.from({ length: CODE_LENGTH }, () => null)
 	);
+	let slots = $state<string[]>(Array.from({ length: CODE_LENGTH }, () => ''));
+	let activeIndex = $state(0);
+	let ignoreExternalSync = false;
 
 	function extractDigits(text: string): string {
 		const normalized = text.replace(/[\uFF10-\uFF19]/g, (character) =>
@@ -39,97 +39,158 @@
 		return normalized.replace(/\D/g, '').slice(0, CODE_LENGTH);
 	}
 
-	function setValue(next: string) {
-		value = extractDigits(next);
+	function slotsFromCode(code: string): string[] {
+		return Array.from({ length: CODE_LENGTH }, (_, index) => code[index] ?? '');
 	}
 
-	function syncInputElement() {
-		if (inputEl && inputEl.value !== value) {
-			inputEl.value = value;
+	function publish(nextSlots: string[]) {
+		slots = nextSlots;
+		const nextValue = nextSlots.join('');
+		ignoreExternalSync = true;
+		value = nextValue;
+		void tick().then(() => {
+			ignoreExternalSync = false;
+		});
+	}
+
+	$effect(() => {
+		const code = extractDigits(value ?? '');
+		if (ignoreExternalSync) {
+			return;
 		}
-	}
+		const nextSlots = slotsFromCode(code);
+		if (nextSlots.some((digit, index) => digit !== slots[index])) {
+			slots = nextSlots;
+		}
+	});
 
-	function placeCaret(index: number) {
-		if (!inputEl || disabled) {
+	function focusIndex(index: number) {
+		if (disabled) {
 			return;
 		}
 
-		const position = Math.min(Math.max(index, 0), value.length, CODE_LENGTH);
-		inputEl.focus({ preventScroll: true });
-		inputEl.setSelectionRange(position, position);
-		activeIndex = Math.min(position, CODE_LENGTH - 1);
+		const next = Math.min(Math.max(index, 0), CODE_LENGTH - 1);
+		activeIndex = next;
+		const el = inputEls[next];
+		if (!el) {
+			return;
+		}
+
+		el.focus({ preventScroll: true });
+		el.select();
+	}
+
+	function registerInput(node: HTMLInputElement, index: number) {
+		inputEls[index] = node;
+		return {
+			destroy() {
+				if (inputEls[index] === node) {
+					inputEls[index] = null;
+				}
+			}
+		};
+	}
+
+	function setDigit(index: number, digit: string) {
+		const nextSlots = [...slots];
+		nextSlots[index] = digit;
+		publish(nextSlots);
+	}
+
+	function clearDigit(index: number) {
+		if (!slots[index]) {
+			return;
+		}
+		const nextSlots = [...slots];
+		nextSlots[index] = '';
+		publish(nextSlots);
 	}
 
 	export function focus() {
-		if (disabled || !inputEl) {
+		if (disabled) {
 			return;
 		}
 
-		placeCaret(Math.min(value.length, CODE_LENGTH - 1));
+		const firstEmpty = slots.findIndex((digit) => !digit);
+		focusIndex(firstEmpty === -1 ? CODE_LENGTH - 1 : firstEmpty);
 	}
 
 	export function typeDigit(digit: string) {
-		if (disabled || !/^\d$/.test(digit) || value.length >= CODE_LENGTH) {
+		if (disabled || !/^\d$/.test(digit)) {
 			return;
 		}
 
-		setValue(value + digit);
-		syncInputElement();
-		placeCaret(value.length);
+		const index = Math.min(activeIndex, CODE_LENGTH - 1);
+		setDigit(index, digit);
+		void tick().then(() => {
+			focusIndex(index < CODE_LENGTH - 1 ? index + 1 : index);
+		});
 	}
 
-	function handleInput(event: Event) {
-		const target = event.currentTarget as HTMLInputElement;
-		const previousLength = value.length;
-		setValue(target.value);
-		target.value = value;
-
-		if (value.length >= previousLength) {
-			placeCaret(value.length);
+	function handleBeforeInput(index: number, event: InputEvent) {
+		if (disabled) {
+			event.preventDefault();
 			return;
 		}
 
-		placeCaret(target.selectionStart ?? value.length);
+		if (event.inputType.startsWith('delete')) {
+			event.preventDefault();
+			clearDigit(index);
+			return;
+		}
+
+		if (event.inputType === 'insertText' && event.data) {
+			event.preventDefault();
+			const digit = extractDigits(event.data).slice(-1);
+			if (!digit) {
+				return;
+			}
+
+			setDigit(index, digit);
+			void tick().then(() => {
+				focusIndex(index < CODE_LENGTH - 1 ? index + 1 : index);
+			});
+		}
 	}
 
-	function handleKeyDown(event: KeyboardEvent) {
-		if (
-			event.key === 'Backspace' &&
-			value.length > 0 &&
-			(inputEl?.selectionStart ?? 0) === (inputEl?.selectionEnd ?? 0)
-		) {
-			const caret = inputEl?.selectionStart ?? value.length;
+	function handleKeyDown(index: number, event: KeyboardEvent) {
+		if (event.key === 'Backspace') {
+			event.preventDefault();
 
-			if (caret === 0) {
+			if (slots[index]) {
+				clearDigit(index);
 				return;
 			}
 
-			if (caret === value.length) {
-				event.preventDefault();
-				setValue(value.slice(0, -1));
-				syncInputElement();
-				placeCaret(value.length);
-				return;
+			if (index > 0) {
+				clearDigit(index - 1);
+				void tick().then(() => focusIndex(index - 1));
 			}
+			return;
 		}
 
 		if (event.key === 'ArrowLeft') {
 			event.preventDefault();
-			placeCaret(Math.max(0, activeIndex - 1));
+			focusIndex(index - 1);
 			return;
 		}
 
 		if (event.key === 'ArrowRight') {
 			event.preventDefault();
-			placeCaret(Math.min(value.length, activeIndex + 1));
+			focusIndex(index + 1);
+			return;
+		}
+
+		if (event.key === 'Delete') {
+			event.preventDefault();
+			clearDigit(index);
 		}
 	}
 
-	function handlePaste(event: ClipboardEvent) {
+	function handlePaste(index: number, event: ClipboardEvent) {
 		event.preventDefault();
 
 		const clipboard = event.clipboardData;
-
 		if (!clipboard) {
 			return;
 		}
@@ -148,47 +209,29 @@
 			return;
 		}
 
-		setValue(pasted);
-		syncInputElement();
-		placeCaret(value.length);
-	}
-
-	function handleClick(event: MouseEvent) {
-		const target = event.currentTarget;
-
-		if (!inputEl || disabled || !(target instanceof HTMLInputElement)) {
+		if (index === 0) {
+			publish(slotsFromCode(pasted));
+			void tick().then(() => focusIndex(Math.min(pasted.length, CODE_LENGTH - 1)));
 			return;
 		}
 
-		const bounds = target.getBoundingClientRect();
-		const relativeX = event.clientX - bounds.left;
-		const gap = bounds.width >= 360 ? 12 : 8;
-		const cellWidth = (bounds.width - gap * (CODE_LENGTH - 1)) / CODE_LENGTH;
-		const index = Math.min(
-			CODE_LENGTH - 1,
-			Math.max(0, Math.floor(relativeX / (cellWidth + gap)))
+		const nextSlots = [...slots];
+		for (let offset = 0; offset < pasted.length && index + offset < CODE_LENGTH; offset++) {
+			nextSlots[index + offset] = pasted[offset]!;
+		}
+		publish(nextSlots);
+		void tick().then(() =>
+			focusIndex(Math.min(index + pasted.length, CODE_LENGTH - 1))
 		);
-
-		placeCaret(Math.min(index, value.length));
 	}
 
-	function handleFocus() {
-		placeCaret(Math.min(value.length, CODE_LENGTH - 1));
+	function handleFocus(index: number) {
+		activeIndex = index;
+		inputEls[index]?.select();
 	}
-
-	$effect(() => {
-		const _code = value;
-		syncInputElement();
-	});
 
 	$effect(() => {
 		if (!autofocus || disabled) {
-			return;
-		}
-
-		const el = inputEl;
-
-		if (!el) {
 			return;
 		}
 
@@ -200,19 +243,18 @@
 				return;
 			}
 
-			el.focus({ preventScroll: true });
-			const position = Math.min(el.value.length, CODE_LENGTH - 1);
-			el.setSelectionRange(position, position);
-			activeIndex = position;
+			const firstEmpty = slots.findIndex((digit) => !digit);
+			focusIndex(firstEmpty === -1 ? CODE_LENGTH - 1 : firstEmpty);
 
 			retryId = window.setTimeout(() => {
-				if (cancelled || disabled || document.activeElement === el) {
+				if (cancelled || disabled) {
 					return;
 				}
 
-				el.focus({ preventScroll: true });
-				el.setSelectionRange(position, position);
-				activeIndex = position;
+				const el = inputEls[activeIndex];
+				if (el && document.activeElement !== el) {
+					focusIndex(activeIndex);
+				}
 			}, 50);
 		});
 
@@ -224,50 +266,44 @@
 </script>
 
 <div
-	class={cn('relative', className)}
+	class={cn(className)}
 	role="group"
 	aria-label="Verification code"
 	aria-describedby={ariaDescribedBy}
 >
 	{#if name}
-		<input type="hidden" {name} {value} />
+		<input type="hidden" {name} value={slots.join('')} />
 	{/if}
 
-	<input
-		bind:this={inputEl}
-		{id}
-		type="text"
-		inputmode="numeric"
-		autocomplete="one-time-code"
-		maxlength={CODE_LENGTH}
-		{disabled}
-		{value}
-		data-verification-code-input
-		aria-invalid={ariaInvalid}
-		class="absolute inset-0 z-10 h-full w-full cursor-text opacity-0"
-		aria-label="Verification code"
-		oninput={handleInput}
-		onkeydown={handleKeyDown}
-		onpaste={handlePaste}
-		onfocus={handleFocus}
-		onclick={handleClick}
-	/>
-
-	<div class="pointer-events-none flex justify-center gap-2 sm:gap-3">
-		{#each digits as digit, index (index)}
-			<div
+	<div class="flex justify-center gap-2 sm:gap-3">
+		{#each slots as digit, index (index)}
+			<input
+				use:registerInput={index}
+				id={index === 0 ? id : undefined}
+				type="text"
+				inputmode="numeric"
+				autocomplete={index === 0 ? 'one-time-code' : 'off'}
+				maxlength={1}
+				{disabled}
+				value={digit}
+				data-verification-code-input
+				aria-label={`Digit ${index + 1} of ${CODE_LENGTH}`}
+				aria-invalid={ariaInvalid}
 				class={cn(
 					'border-input bg-background ring-offset-background',
 					'size-11 rounded-lg border text-center',
 					'font-mono text-lg font-semibold tracking-tight',
 					'sm:size-12 sm:text-xl',
-					'flex items-center justify-center',
-					!disabled && activeIndex === index && 'border-ring ring-ring ring-2 ring-offset-2'
+					'outline-none transition-shadow',
+					'focus-visible:border-ring focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2',
+					!disabled && activeIndex === index && 'border-ring ring-ring ring-2 ring-offset-2',
+					disabled && 'cursor-not-allowed opacity-50'
 				)}
-				aria-hidden="true"
-			>
-				{digit}
-			</div>
+				onbeforeinput={(event) => handleBeforeInput(index, event)}
+				onkeydown={(event) => handleKeyDown(index, event)}
+				onpaste={(event) => handlePaste(index, event)}
+				onfocus={() => handleFocus(index)}
+			/>
 		{/each}
 	</div>
 </div>
