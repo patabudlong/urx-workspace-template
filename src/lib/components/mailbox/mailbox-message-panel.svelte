@@ -88,11 +88,11 @@
 </script>
 
 <section
-	class={cn('bg-background flex h-full min-h-0 min-w-0 flex-col overflow-hidden', className)}
+	class={cn('bg-background flex h-full min-h-0 min-w-0 flex-col overflow-y-auto', className)}
 	aria-label={targetUid ? 'Message' : 'Message preview'}
 >
 	{#if targetUid == null}
-		<div class="flex h-full min-h-0 items-center justify-center overflow-y-auto p-6 sm:p-10">
+		<div class="flex min-h-full flex-1 items-center justify-center p-6 sm:p-10">
 			<div
 				class="border-border/70 bg-background flex max-w-sm flex-col items-center gap-4 rounded-xl border border-dashed px-8 py-10 text-center shadow-sm"
 			>
@@ -116,12 +116,8 @@
 			/>
 		</div>
 	{:else if loadingMessage && !cachedMessage}
-		<div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-			<MailboxMessageViewSkeleton layout="panel" />
-		</div>
+		<MailboxMessageViewSkeleton layout="panel" />
 	{:else if cachedMessage}
-		<div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-			<MailboxMessageView message={cachedMessage} layout="panel" />
-		</div>
+		<MailboxMessageView message={cachedMessage} layout="panel" />
 	{/if}
 </section>

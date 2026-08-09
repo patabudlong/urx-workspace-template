@@ -199,6 +199,7 @@ export function buildMailboxEmailSrcdoc(html: string): string {
 		margin: 0;
 		padding: 0;
 		background: #ffffff;
+		overflow: hidden;
 	}
 	body {
 		padding: 1.25rem 1.5rem;

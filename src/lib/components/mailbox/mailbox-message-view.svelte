@@ -15,8 +15,8 @@
 </script>
 
 {#if layout === 'panel'}
-	<div class="flex h-full min-h-0 flex-col overflow-hidden">
-		<header class="border-border shrink-0 space-y-3 border-b p-4 sm:p-6">
+	<div>
+		<header class="border-border space-y-3 border-b p-4 sm:p-6">
 			<h2 class="text-xl leading-snug font-semibold">{message.subject}</h2>
 			<div class="text-muted-foreground space-y-1 text-sm">
 				<p><span class="text-foreground font-medium">From:</span> {message.from || 'Unknown sender'}</p>
@@ -30,11 +30,11 @@
 			</div>
 		</header>
 
-		<div class="bg-muted/20 min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+		<div class="bg-muted/20 p-4 sm:p-6">
 			{#if message.html}
 				<MailboxMessageHtml html={message.html} />
 			{:else}
-				<div class="bg-background text-foreground rounded-lg border p-5 sm:p-6">
+				<div class="bg-background text-foreground w-fit max-w-full rounded-lg border p-5 sm:p-6">
 					<pre class="font-sans text-[15px] leading-7 whitespace-pre-wrap">{message.text}</pre>
 				</div>
 			{/if}

@@ -146,7 +146,7 @@
 		<MailboxMessagePanel
 			folder={data.folder}
 			{targetUid}
-			class="min-h-0 flex-1 overflow-hidden lg:h-full"
+			class="min-h-0 flex-1 lg:h-full"
 		/>
 	</Card.Content>
 </Card.Root>

@@ -7,8 +7,8 @@
 </script>
 
 {#if layout === 'panel'}
-	<div class="flex h-full min-h-0 flex-col overflow-hidden" aria-busy="true" aria-label="Loading message">
-		<header class="border-border shrink-0 space-y-3 border-b p-4 sm:p-6">
+	<div aria-busy="true" aria-label="Loading message">
+		<header class="border-border space-y-3 border-b p-4 sm:p-6">
 			<Skeleton class="h-7 w-3/5 max-w-md" />
 			<div class="space-y-2">
 				<Skeleton class="h-4 w-2/5 max-w-xs" />
@@ -16,7 +16,7 @@
 				<Skeleton class="h-4 w-28" />
 			</div>
 		</header>
-		<div class="space-y-3 overflow-auto p-4 sm:p-6">
+		<div class="space-y-3 p-4 sm:p-6">
 			{#each Array.from({ length: 6 }) as _, index (index)}
 				<Skeleton class="h-4 w-full" style="max-width: {88 - (index % 3) * 12}%;" />
 			{/each}
