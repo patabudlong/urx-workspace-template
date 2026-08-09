@@ -6,6 +6,7 @@ import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
 import ShieldIcon from '@lucide/svelte/icons/shield';
 import UsersIcon from '@lucide/svelte/icons/users';
 import UserCircleIcon from '@lucide/svelte/icons/user-circle';
+import MailIcon from '@lucide/svelte/icons/mail';
 import { WORKSPACE_MEMBER_ROLES } from '$lib/shared/models/workspace-member';
 
 export type AppNavItem = {
@@ -25,6 +26,14 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
 	{
 		label: 'Workspace',
 		items: [
+// urixoft-workspace-mailbox:start
+			{
+				title: 'Mailbox',
+				href: '/mailbox',
+				icon: MailIcon,
+				match: 'prefix'
+			},
+// urixoft-workspace-mailbox:end
 			{
 				title: 'Overview',
 				href: '/',
