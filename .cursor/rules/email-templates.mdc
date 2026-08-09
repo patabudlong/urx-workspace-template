@@ -1,0 +1,63 @@
+---
+description: Transactional email layout and sending standards
+globs: src/lib/server/mail/**/*
+alwaysApply: false
+---
+
+# Transactional email standards
+
+Every outbound email must use the **shared Urixoft transactional layout** — the same shell as verify-email and password-reset.
+
+## Required layout
+
+Use helpers from **`$lib/server/mail/templates/transactional-email-layout.ts`**:
+
+| Piece | Helper |
+|-------|--------|
+| Full HTML document | `buildTransactionalEmailHtml()` |
+| Plain-text footer block | `buildTransactionalEmailText()` |
+| Body copy | `buildBodyParagraphHtml()` |
+| Muted info box | `buildMutedInfoBoxHtml()` |
+| Primary CTA button | `buildPrimaryButtonHtml()` |
+| Escaping | `escapeHtml()` |
+
+**Do not** hand-roll standalone `<html>` tables or one-off email CSS in senders.
+
+For standard copy + optional CTA/illustration, compose via **`simple-email.ts`** (`buildSimpleEmailHtml` / `buildSimpleEmailText`), which wraps the shared layout.
+
+## Layout must include
+
+1. Hidden **preheader** text
+2. **Brand header** — logo + app name + tagline (linked to urixoft.com)
+3. White **card** with headline + body
+4. Optional **muted info box**, **primary button**, **illustration band** (`/email/*.png`)
+5. **Footer** — copyright, Philippines address, urixoft.com / social links
+
+## Assets
+
+- Logo: `${origin}/email/urixoft-logo.png`
+- Illustrations: `${origin}/email/<name>.png` (add to `static/email/` when needed)
+- Reuse existing illustrations where semantically appropriate
+
+## Sending pattern
+
+```typescript
+import { sendMail } from '$lib/server/mail/index';
+import { buildSimpleEmailHtml, buildSimpleEmailText } from '$lib/server/mail/templates/simple-email';
+
+await sendMail({
+  to,
+  subject: '...',
+  text: buildSimpleEmailText(content),
+  html: buildSimpleEmailHtml(content)
+});
+```
+
+Custom templates (e.g. verification code layout) may extend `buildTransactionalEmailHtml` directly but must keep the same header, footer, colors, and 76-char HTML line limit for SMTP 7bit.
+
+## Red flags (reject in review)
+
+- New email HTML without `transactional-email-layout.ts`
+- Inline-only plain templates missing brand header/footer
+- Hardcoded colors outside layout constants
+- Missing plain-text alternative (`text` + `html` on every `sendMail`)

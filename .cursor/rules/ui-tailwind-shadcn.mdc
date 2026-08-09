@@ -1,0 +1,282 @@
+---
+description: Tailwind v4 + shadcn-svelte UI standards — composition, tokens, no layout conflicts
+globs: src/**/*.svelte,src/routes/layout.css,src/lib/components/**/*
+alwaysApply: false
+---
+
+# UI Design Standards (Tailwind v4 + shadcn-svelte)
+
+Apply a **top UI designer** lens: clarity, consistency, accessibility, and zero fighting the design system.
+
+## Stack (do not mix alternatives)
+
+- **Tailwind CSS v4** — utilities + `@theme` in `src/routes/layout.css` only. No `tailwind.config.js`.
+- **shadcn-svelte** — style `nova`, base `zinc`, icons `@lucide/svelte`.
+- **Theme** — `mode-watcher` + `.dark` class. Tokens: `bg-background`, `text-foreground`, `border-border`, etc.
+- **Add primitives**: `pnpm dlx shadcn-svelte@latest add <name> -y` — never hand-copy from docs.
+
+## Use shadcn components only (required)
+
+All interactive and structural UI must come from **`$lib/components/ui/**`** (installed via shadcn-svelte). Do not invent parallel primitives.
+
+| Need | Use |
+|------|-----|
+| Loading placeholders | `Skeleton` from `$lib/components/ui/skeleton` |
+| Buttons / links-as-buttons | `Button` |
+| Cards | `Card` |
+| Inputs / textarea / label | `Input`, `Textarea`, `Label` |
+| Dialogs / sheets / menus | `Dialog`, `Sheet`, `DropdownMenu`, etc. |
+| Badges / separators / tooltips | `Badge`, `Separator`, `Tooltip` |
+| Sidebar chrome | `Sidebar` |
+
+```svelte
+<!-- ✅ shadcn Skeleton -->
+import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+<Skeleton class="h-4 w-2/5" />
+
+<!-- ❌ Hand-rolled pulse placeholder when Skeleton exists -->
+<div class="bg-muted h-4 w-2/5 animate-pulse rounded-md"></div>
+```
+
+- If a primitive is missing: **add it** with `pnpm dlx shadcn-svelte@latest add <name> -y`, then use it.
+- App-level wrappers in `$lib/components/**` may compose shadcn parts; they must not reimplement Button/Skeleton/Input/etc.
+- Never copy third-party component source into the repo when shadcn already provides it.
+
+## File boundaries (prevents conflicts)
+
+```
+src/routes/layout.css           # ONLY global theme + @layer base — no page-specific rules
+src/lib/components/ui/**      # shadcn primitives — edit only when customizing the design system
+src/lib/components/**         # app shells (sidebar, header) — compose ui/* here
+src/routes/**/*.svelte        # pages — layout + content; no deep style overrides on ui/*
+```
+
+- **Never** edit `ui/*` for one-off page needs — wrap or compose in app components.
+- **Never** add second CSS frameworks or global resets that compete with shadcn `base` layer.
+
+## Composition rules
+
+```svelte
+<!-- ✅ Compose shadcn primitives -->
+import * as Card from '$lib/components/ui/card/index.js';
+import { Button } from '$lib/components/ui/button/index.js';
+import { cn } from '$lib/utils.js';
+
+<div class={cn('flex flex-col gap-4', className)}>...</div>
+
+<!-- ❌ Raw HTML styled from scratch when shadcn has the part -->
+<button class="rounded bg-gray-800 px-4 py-2">...</button>
+
+<!-- ❌ Conflicting utilities on ui components -->
+<Button class="!bg-red-500 !p-8 z-[9999]">...</Button>
+```
+
+- Prefer **variants** (`variant`, `size`) over `!important` or arbitrary overrides.
+- Merge classes with **`cn()`** from `$lib/utils.js` — never string-concatenate Tailwind classes.
+- Use **`$lib/components/ui/.../index.js`** import paths (matches generated components).
+
+## Tailwind v4 practices
+
+- **Semantic colors only** in components: `bg-primary`, `text-muted-foreground`, `bg-sidebar-accent` — not `bg-zinc-900` unless chart/data viz.
+- **Spacing rhythm**: `gap-2`, `gap-4`, `gap-6`, `p-4`, `p-6` — stay on the scale; avoid random `p-[13px]`.
+- **Responsive**: mobile-first — `flex-col md:flex-row`, `grid md:grid-cols-2`. Sidebar already collapses; don’t hard-code desktop-only layouts.
+- **Typography**: `text-sm` for UI chrome, `text-2xl font-semibold tracking-tight` for page titles — don’t invent new scales per page.
+- **Radius**: use `--radius` tokens (`rounded-lg`, `rounded-md`) — aligned with nova preset.
+
+## shadcn-svelte patterns (Svelte 5)
+
+- **Runes**: `$props()`, `$state`, `$derived` — no `export let`.
+- **Links in sidebar/nav**: `Sidebar.MenuButton` + `{#snippet child({ props })}` + `<a href="..." {...props}>`.
+- **Icons**: `@lucide/svelte/icons/<name>` — `class="size-4"` (shadcn default icon size).
+- **Active nav**: `isActive={page.url.pathname === href}` from `$app/state`.
+- **Dialogs / sheets**: one overlay at a time — use shadcn `Dialog` or `Sheet`; don’t stack custom `fixed inset-0 z-50` divs.
+
+## Avoid blocking & z-index wars
+
+| Do | Don't |
+|----|--------|
+| Let Dialog/Sheet/Dropdown set overlay z-index | Add `z-[9999]` on random wrappers |
+| Use `Sidebar.Provider` + `Sidebar.Inset` for app shell | Nest multiple `fixed` headers that overlap |
+| `min-h-0` + `flex-1` for scroll regions inside layout | `h-screen` on every nested child |
+| `truncate` / `min-w-0` in flex rows for long text | Fixed widths that break mobile |
+| Portal-based menus (bits-ui defaults) | `overflow-hidden` on ancestors that clip popovers |
+
+## Dark mode
+
+- Toggle via **`toggleMode`** / **`ModeWatcher`** — don’t per-component `dark:` color one-offs that ignore tokens.
+- Test both modes when changing `layout.css` variables.
+- Sidebar/docs: use token pairs (`sidebar`, `sidebar-foreground`) — don’t hardcode light-only colors.
+
+## Accessibility (non-negotiable)
+
+- Interactive controls: shadcn `Button`, `Input`, etc. — they carry focus rings (`focus-visible:ring-*`).
+- Icon-only buttons: **`aria-label`** (see `theme-toggle.svelte`).
+- Don’t remove `outline-none` without providing visible focus — shadcn already handles this.
+- Form labels: use shadcn `Label` + `Field` patterns when forms are added.
+
+## Form placeholders
+
+**Do not use `placeholder` on labeled form inputs** — labels (and optional helper text) carry the meaning.
+
+| Use `placeholder` | Do not use `placeholder` |
+|-------------------|--------------------------|
+| Search / filter inputs (`Command.Input`, combobox search) | Text, email, password, tel, URL fields with a visible `Form.Label` |
+| Unlabeled global search bars | Address, select-adjacent inputs, admin action fields |
+| Rare cases with no room for a label — prefer `aria-label` instead | Example values (“Acme Services”, `https://…`, phone samples) |
+
+**Select / combobox empty state** is not an HTML placeholder — keep trigger copy like “Select team size” or `FormCombobox`’s `placeholder` prop when nothing is selected.
+
+```svelte
+<!-- ✅ Labeled field — no placeholder -->
+<Form.Label required>Workspace name</Form.Label>
+<Input {...props} bind:value={$form.name} autocomplete="organization" />
+
+<!-- ✅ Search inside combobox — placeholder allowed -->
+<Command.Input placeholder={searchPlaceholder} />
+
+<!-- ❌ Redundant example placeholder on a labeled field -->
+<Input placeholder="Acme Services" bind:value={$form.name} />
+```
+
+- Optional fields: mark with `(optional)` on the label, not a placeholder.
+- Inline compact inputs without a visible label: use `aria-label` (see admin reject reason).
+
+## When adding new UI
+
+1. Check if shadcn has the component → `pnpm dlx shadcn-svelte@latest add <name> -y`.
+2. Build app-level wrapper in `src/lib/components/` if reused across routes.
+3. Page stays thin — cards, tables, forms composed from primitives.
+4. If theme must change globally → update `layout.css` tokens, not individual pages.
+5. Run `pnpm check` after Svelte changes.
+
+## List / table search
+
+Place search **top-right** in the card header via **`Card.Action`** — never left-aligned above the table body.
+
+- Component: **`ListSearchInput`** (`$lib/components/list/list-search-input.svelte`)
+- Width: `sm:w-52 lg:w-60`, height `h-10`, muted background (`bg-muted/40`)
+- Parent owns `searchQuery` state; pass it into the list/table component as a prop
+- Use `aria-label` (no visible label); placeholder is allowed for search fields
+
+```svelte
+<Card.Header>
+	<Card.Title>Workspace members</Card.Title>
+	<Card.Description>…</Card.Description>
+	<Card.Action>
+		<ListSearchInput bind:value={searchQuery} placeholder="Search members..." ariaLabel="Search members" />
+	</Card.Action>
+</Card.Header>
+```
+
+## Auth forms (`src/routes/(auth)/**`)
+
+Use shared tokens from **`$lib/auth/ui.ts`** — do not invent per-page button heights or link styles.
+
+| Element | Standard |
+|--------|----------|
+| Full-width actions (submit, OAuth, navigation `Button`) | `class={AUTH_ACTION_BUTTON_CLASS}` → `h-10 w-full` |
+| Inline footer link (“Sign in”, “Sign up”) | `class={AUTH_INLINE_LINK_CLASS}` inside `text-muted-foreground text-center text-sm` |
+| Submit / OAuth busy state | `cn(AUTH_ACTION_BUTTON_CLASS, authLoading.authBusy && 'pointer-events-none cursor-wait')` |
+| Page title | `text-2xl font-semibold tracking-tight` via `AuthFormPanel` |
+| Body / helper copy | `text-sm` + `text-muted-foreground` |
+| Form field spacing | `space-y-5` within forms; `space-y-6` between sections |
+
+```svelte
+import { AUTH_ACTION_BUTTON_CLASS, AUTH_INLINE_LINK_CLASS } from '$lib/auth/ui';
+
+<Button type="submit" class={cn(AUTH_ACTION_BUTTON_CLASS, busy && 'pointer-events-none cursor-wait')}>
+	Sign in
+</Button>
+
+<p class="text-muted-foreground text-center text-sm">
+	Already have an account?
+	<a href="/login" class={AUTH_INLINE_LINK_CLASS}>Sign in</a>
+</p>
+```
+
+- **Never** use `<Button class="w-full">` without `AUTH_ACTION_BUTTON_CLASS` on auth screens — default shadcn height is `h-8`.
+- **Never** mix raw `text-primary font-medium hover:underline` on auth footer links; use `AUTH_INLINE_LINK_CLASS`.
+- Google OAuth button: `GoogleSignInButton` (already uses `AUTH_ACTION_BUTTON_CLASS`).
+
+## Status alerts (info, warning, danger, success, plain)
+
+**Every inline status message must include an icon.** Use **`StatusAlert`** from `$lib/components/status-alert.svelte` — never hand-roll colored `div`s for feedback.
+
+**Every alert must have both a title and subtext (`description`).** Never show a single-line alert body without a headline. Map shared copy in `$lib/shared/auth-messages.ts` via `resolveAuthFormAlertPresentation()`.
+
+| Variant | Use for | Icon (`@lucide/svelte`) |
+|--------|---------|-------------------------|
+| `info` | Neutral guidance, **“Check your email”**, tips | `info` (blue / `text-primary`) |
+| `warning` | Rate limits, caution, recoverable issues | `triangle-alert` |
+| `danger` | Errors, invalid input, failed actions | `triangle-alert` (red / `text-destructive`) |
+| `success` | Confirmed actions (password updated, email verified) | `circle-check` |
+| `plain` | Low-emphasis notes without semantic color | `info` (muted) |
+
+**Icon rules (non-negotiable):**
+- **“Check your email”** and similar inbox-guidance alerts → always `variant="info"` (blue, `info` icon) — never `success`/green.
+- **Errors and danger** → always `triangle-alert` — never `circle-alert`.
+
+```svelte
+import StatusAlert from '$lib/components/status-alert.svelte';
+
+<StatusAlert
+	variant="success"
+	title="Password updated"
+	description="Sign in with your new password."
+/>
+<StatusAlert
+	variant="warning"
+	title="Too many attempts"
+	description="Try again in 2:00."
+/>
+<StatusAlert
+	variant="danger"
+	title="Verification failed"
+	description="That verification code is invalid or has expired."
+/>
+<StatusAlert
+	variant="info"
+	title="Check your email"
+	description="We sent a verification code to your email."
+/>
+```
+
+- **`FormAlert`** (`$lib/components/auth/form-alert.svelte`) — shorthand for `variant="danger"`; requires `title` + `description`.
+- **`AuthFormMessageAlert`** — wraps `StatusAlert`; resolves `title` + `description` from `resolveAuthFormAlertPresentation()`; auto-uses `warning` for rate-limit countdowns.
+- **One alert at a time** — show a single alert per form or page section. When a new status appears, **replace** the previous alert — never stack two banners. Use a mutually exclusive `{#if}` / `{:else if}` chain ordered by priority:
+  1. Client errors (reCAPTCHA, validation)
+  2. Form action errors (`$formMessage` from superforms)
+  3. Redirect / query-param errors (`?error=…`, Google OAuth)
+  4. Success or info banners (`?reset=success`, “check your email”) — lowest priority; hide when any error is active
+
+```svelte
+{#if recaptchaError}
+	<AuthFormMessageAlert message={recaptchaError} />
+{:else if $formMessage}
+	<AuthFormMessageAlert message={$formMessage} bind:limited={formRateLimited} />
+{:else if data.googleAuthError}
+	<AuthFormMessageAlert message={data.googleAuthError} retryAfterSeconds={data.rateLimitRetryAfter} />
+{:else if data.passwordResetSuccess}
+	<StatusAlert variant="success" title="Password updated" description="Sign in with your new password." />
+{/if}
+```
+- **Alert copy** — prefer structured `title` + `description` mappings in `$lib/shared/auth-messages.ts`. Title = short headline; description = supporting detail or next step. Unmapped messages fall back to `AUTH_ALERT_FALLBACK_TITLE` + message as description.
+- Icons: `class="size-4 shrink-0"` in the component; `aria-hidden="true"` on decorative icons. `role="alert"` for danger/warning; `role="status"` for info/success/plain.
+
+## Red flags (reject in review)
+
+- New global CSS outside `layout.css`
+- Modified `src/lib/components/ui/**` for a single page
+- Raw hex/rgb in `.svelte` files instead of CSS variables
+- Duplicate button/input styles
+- Auth `Button` with only `w-full` (missing `h-10` via `AUTH_ACTION_BUTTON_CLASS`)
+- Inline status `div` with only background/border colors and no icon — use `StatusAlert`
+- Stacked status alerts on the same form (success + error visible together) — use one mutually exclusive alert slot
+- `StatusAlert` with only a title or only body text — always pass both `title` and `description`
+- Hand-rolled Skeleton / Button / Input / Dialog when `$lib/components/ui/*` already has it — add via `pnpm dlx shadcn-svelte@latest add` instead
+- Auth alerts with unmapped copy and no entry in `$lib/shared/auth-messages.ts` when the message is reused
+- “Check your email” alerts using `variant="success"` or green styling — use `variant="info"`
+- Danger/error alerts using `circle-alert` — use `triangle-alert`
+- `placeholder` on labeled `Input` / `Textarea` fields (use labels + helper text instead)
+- Multiple competing layout roots (second sidebar, second header provider)
+- `!` important utilities on shadcn components
