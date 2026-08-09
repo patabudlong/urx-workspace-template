@@ -7,18 +7,22 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { decodeMailboxFolder } from '$lib/mailbox/utils';
 	import { cn } from '$lib/utils.js';
-	import PenSquareIcon from '@lucide/svelte/icons/pen-square';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import { page } from '$app/state';
 
 	let { data, children } = $props();
 
+	const isSettingsRoute = $derived(page.url.pathname.startsWith('/mailbox/settings'));
+	const isComposeRoute = $derived(page.url.pathname.startsWith('/mailbox/compose'));
+
 	const activeFolder = $derived.by(() => {
+		if (isComposeRoute) {
+			return '';
+		}
+
 		const folderParam = page.params.folder;
 		return folderParam ? decodeMailboxFolder(folderParam) : 'INBOX';
 	});
-
-	const isSettingsRoute = $derived(page.url.pathname.startsWith('/mailbox/settings'));
 </script>
 
 {#await data.folders}
@@ -33,12 +37,12 @@
 					'bg-sidebar text-sidebar-foreground border-sidebar-border hidden w-(--team-secondary-sidebar-width) shrink-0 lg:sticky lg:top-0 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:self-start lg:border-r lg:py-2'
 				)}
 			>
-				<MailboxSidebarPanel {folders} {activeFolder} />
+				<MailboxSidebarPanel {folders} {activeFolder} isComposeActive={isComposeRoute} />
 			</aside>
 
 			<div class="flex min-w-0 flex-1 flex-col gap-6 p-4 lg:gap-8 lg:p-6">
 				<div class="lg:hidden">
-					<MailboxSectionSidebar {folders} {activeFolder} />
+					<MailboxSectionSidebar {folders} {activeFolder} isComposeActive={isComposeRoute} />
 				</div>
 
 				<div class="flex w-full min-w-0 flex-col gap-8">
@@ -51,10 +55,6 @@
 							<Button href="/mailbox/settings" variant="outline" class="h-10">
 								<SettingsIcon class="size-4" aria-hidden="true" />
 								Settings
-							</Button>
-							<Button href="/mailbox/compose" class="h-10">
-								<PenSquareIcon class="size-4" aria-hidden="true" />
-								New message
 							</Button>
 						{/snippet}
 					</PageHeader>
@@ -76,12 +76,6 @@
 							<SettingsIcon class="size-4" aria-hidden="true" />
 							Settings
 						</Button>
-						{#if data.configured}
-							<Button href="/mailbox/compose" class="h-10">
-								<PenSquareIcon class="size-4" aria-hidden="true" />
-								New message
-							</Button>
-						{/if}
 					{/snippet}
 				</PageHeader>
 

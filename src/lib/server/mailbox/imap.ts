@@ -1,6 +1,7 @@
 import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
 import { createImapClient } from './verify';
+import { sortMailboxFolders } from '$lib/mailbox/utils';
 import type { MailboxFolder, MailboxMessageDetail, MailboxMessageSummary } from '$lib/shared/mailbox/schemas';
 import { getMailboxConfig } from './config';
 import { verifyMailboxCredentials } from './verify';
@@ -94,7 +95,7 @@ export async function listMailboxFolders(userId: string): Promise<MailboxFolder[
 			});
 		}
 
-		return folders.sort((a, b) => a.name.localeCompare(b.name));
+		return sortMailboxFolders(folders);
 	});
 }
 

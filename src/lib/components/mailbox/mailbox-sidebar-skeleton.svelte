@@ -3,10 +3,11 @@
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 </script>
 
-<Sidebar.Header class="border-sidebar-border shrink-0 gap-2 border-b p-4">
+<Sidebar.Header class="border-sidebar-border shrink-0 gap-3 border-b p-4">
 	<Skeleton class="h-4 w-20" />
 	<Skeleton class="h-3 w-full max-w-48" />
 	<Skeleton class="h-3 w-4/5 max-w-40" />
+	<Skeleton class="h-10 w-full rounded-lg" />
 </Sidebar.Header>
 
 <Sidebar.Content class="min-h-0 flex-1 gap-1 overflow-visible ps-1 pt-3">

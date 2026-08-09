@@ -16,6 +16,47 @@ const SPECIAL_FOLDER_LABELS: Record<string, string> = {
 	'\\Archive': 'Archive'
 };
 
+const MAILBOX_FOLDER_SORT_ORDER: Record<string, number> = {
+	'\\Inbox': 0,
+	'\\Drafts': 1,
+	'\\Sent': 2,
+	'\\Archive': 3,
+	'\\Junk': 4,
+	'\\Trash': 5
+};
+
+const MAILBOX_FOLDER_NAME_ORDER: Record<string, number> = {
+	inbox: 0,
+	drafts: 1,
+	sent: 2,
+	archive: 3,
+	junk: 4,
+	spam: 4,
+	trash: 5
+};
+
+function getMailboxFolderSortIndex(folder: MailboxFolder): number {
+	if (folder.specialUse && folder.specialUse in MAILBOX_FOLDER_SORT_ORDER) {
+		return MAILBOX_FOLDER_SORT_ORDER[folder.specialUse];
+	}
+
+	const key = (folder.name || folder.path).trim().toLowerCase();
+	return MAILBOX_FOLDER_NAME_ORDER[key] ?? 100;
+}
+
+export function sortMailboxFolders(folders: MailboxFolder[]): MailboxFolder[] {
+	return [...folders].sort((a, b) => {
+		const orderA = getMailboxFolderSortIndex(a);
+		const orderB = getMailboxFolderSortIndex(b);
+
+		if (orderA !== orderB) {
+			return orderA - orderB;
+		}
+
+		return (a.name || a.path).localeCompare(b.name || b.path);
+	});
+}
+
 export function encodeMailboxFolder(path: string): string {
 	return encodeURIComponent(path);
 }

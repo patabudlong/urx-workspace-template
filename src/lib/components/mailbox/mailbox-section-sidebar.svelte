@@ -1,31 +1,40 @@
 <script lang="ts">
+	import MailboxComposeButton from '$lib/components/mailbox/mailbox-compose-button.svelte';
 	import {
 		encodeMailboxFolder,
 		getMailboxFolderIcon,
-		getMailboxFolderLabel
+		getMailboxFolderLabel,
+		sortMailboxFolders
 	} from '$lib/mailbox/utils';
 	import type { MailboxFolder } from '$lib/shared/mailbox/schemas';
 	import { cn } from '$lib/utils.js';
 
 	let {
 		folders,
-		activeFolder
+		activeFolder,
+		isComposeActive = false
 	}: {
 		folders: MailboxFolder[];
 		activeFolder: string;
+		isComposeActive?: boolean;
 	} = $props();
+
+	const sortedFolders = $derived(sortMailboxFolders(folders));
 </script>
 
 <aside class="border-border bg-muted/30 shrink-0 border-b" aria-label="Mailbox navigation">
-	<div class="px-4 pt-4 pb-2">
-		<h2 class="text-sm font-semibold">Mailbox</h2>
-		<p class="text-muted-foreground mt-1 text-xs leading-relaxed">
-			Browse folders and read messages from your connected PrivateEmail account.
-		</p>
+	<div class="flex flex-col gap-3 px-4 pt-4 pb-2">
+		<div>
+			<h2 class="text-sm font-semibold">Mailbox</h2>
+			<p class="text-muted-foreground mt-1 text-xs leading-relaxed">
+				Browse folders and read messages from your connected PrivateEmail account.
+			</p>
+		</div>
+		<MailboxComposeButton active={isComposeActive} layout="inline" />
 	</div>
 
-	<nav class="flex gap-1 overflow-x-auto p-2">
-		{#each folders as folder (folder.path)}
+	<nav class="flex gap-1 overflow-x-auto p-2 pt-0">
+		{#each sortedFolders as folder (folder.path)}
 			{@const Icon = getMailboxFolderIcon(folder)}
 			{@const href = `/mailbox/${encodeMailboxFolder(folder.path)}`}
 			{@const active = activeFolder === folder.path}

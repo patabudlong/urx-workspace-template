@@ -18,7 +18,7 @@
 <div class="flex w-full min-w-0 flex-col gap-8">
 	<PageHeader
 		eyebrow="Mailbox"
-		title="New message"
+		title="Compose"
 		description="Send a message through your connected mailbox. Outbound mail is sent via SMTP and not stored in MongoDB."
 	>
 		{#snippet actions()}

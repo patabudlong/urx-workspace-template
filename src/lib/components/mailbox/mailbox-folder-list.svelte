@@ -1,6 +1,11 @@
 <script lang="ts">
 	import type { MailboxFolder } from '$lib/shared/mailbox/schemas';
-	import { encodeMailboxFolder, getMailboxFolderIcon, getMailboxFolderLabel } from '$lib/mailbox/utils';
+	import {
+		encodeMailboxFolder,
+		getMailboxFolderIcon,
+		getMailboxFolderLabel,
+		sortMailboxFolders
+	} from '$lib/mailbox/utils';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 
 	let {
@@ -10,13 +15,15 @@
 		folders: MailboxFolder[];
 		activeFolder: string;
 	} = $props();
+
+	const sortedFolders = $derived(sortMailboxFolders(folders));
 </script>
 
 <Sidebar.Group>
 	<Sidebar.GroupLabel>Folders</Sidebar.GroupLabel>
 	<Sidebar.GroupContent>
 		<Sidebar.Menu>
-			{#each folders as folder (folder.path)}
+			{#each sortedFolders as folder (folder.path)}
 				{@const Icon = getMailboxFolderIcon(folder)}
 				{@const href = `/mailbox/${encodeMailboxFolder(folder.path)}`}
 				<Sidebar.MenuItem>
