@@ -1,6 +1,10 @@
 <script lang="ts">
 	import type { MailboxMessageSummary } from '$lib/shared/mailbox/schemas';
-	import { encodeMailboxFolder, formatMailboxDate } from '$lib/mailbox/utils';
+	import {
+		encodeMailboxFolder,
+		formatMailboxDate
+	} from '$lib/mailbox/utils';
+	import { prefetchMailboxMessage } from '$lib/mailbox/client';
 	import * as Table from '$lib/components/ui/table/index.js';
 	import PaperclipIcon from '@lucide/svelte/icons/paperclip';
 	import { cn } from '$lib/utils.js';
@@ -8,11 +12,13 @@
 	let {
 		folder,
 		messages,
-		activeUid
+		activeUid,
+		onOpenMessage
 	}: {
 		folder: string;
 		messages: MailboxMessageSummary[];
 		activeUid?: number;
+		onOpenMessage: (uid: number, href: string) => void;
 	} = $props();
 </script>
 
@@ -22,6 +28,7 @@
 	<Table.Root>
 		<Table.Body>
 			{#each messages as message (message.uid)}
+				{@const href = `/mailbox/${encodeMailboxFolder(folder)}/${message.uid}`}
 				<Table.Row
 					class={cn(
 						'hover:bg-muted/40 cursor-pointer',
@@ -31,8 +38,15 @@
 				>
 					<Table.Cell class="max-w-0">
 						<a
-							href={`/mailbox/${encodeMailboxFolder(folder)}/${message.uid}`}
+							{href}
+							data-sveltekit-noscroll
 							class="flex min-w-0 flex-col gap-1 py-1"
+							onclick={(event) => {
+								event.preventDefault();
+								onOpenMessage(message.uid, href);
+							}}
+							onmouseenter={() => prefetchMailboxMessage(folder, message.uid)}
+							onfocus={() => prefetchMailboxMessage(folder, message.uid)}
 						>
 							<div class="flex items-center gap-2">
 								<span class="truncate">{message.from || 'Unknown sender'}</span>

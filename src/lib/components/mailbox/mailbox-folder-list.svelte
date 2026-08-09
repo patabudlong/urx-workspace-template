@@ -1,10 +1,11 @@
 <script lang="ts">
+	import MailboxFolderCount from '$lib/components/mailbox/mailbox-folder-count.svelte';
 	import type { MailboxFolder } from '$lib/shared/mailbox/schemas';
 	import {
 		encodeMailboxFolder,
 		getMailboxFolderIcon,
 		getMailboxFolderLabel,
-		sortMailboxFolders
+		partitionMailboxFolders
 	} from '$lib/mailbox/utils';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 
@@ -16,14 +17,15 @@
 		activeFolder: string;
 	} = $props();
 
-	const sortedFolders = $derived(sortMailboxFolders(folders));
+	const mailboxFolders = $derived(partitionMailboxFolders(folders).folders);
 </script>
 
+{#if mailboxFolders.length > 0}
 <Sidebar.Group>
 	<Sidebar.GroupLabel>Folders</Sidebar.GroupLabel>
 	<Sidebar.GroupContent>
 		<Sidebar.Menu>
-			{#each sortedFolders as folder (folder.path)}
+			{#each mailboxFolders as folder (folder.path)}
 				{@const Icon = getMailboxFolderIcon(folder)}
 				{@const href = `/mailbox/${encodeMailboxFolder(folder.path)}`}
 				<Sidebar.MenuItem>
@@ -31,10 +33,8 @@
 						{#snippet child({ props })}
 							<a href={href} {...props}>
 								<Icon class="size-4" aria-hidden="true" />
-								<span class="truncate">{getMailboxFolderLabel(folder)}</span>
-								{#if folder.unseen > 0}
-									<span class="text-primary ms-auto text-xs font-medium">{folder.unseen}</span>
-								{/if}
+								<span class="min-w-0 flex-1 truncate">{getMailboxFolderLabel(folder)}</span>
+								<MailboxFolderCount unseen={folder.unseen} total={folder.total} />
 							</a>
 						{/snippet}
 					</Sidebar.MenuButton>
@@ -43,3 +43,4 @@
 		</Sidebar.Menu>
 	</Sidebar.GroupContent>
 </Sidebar.Group>
+{/if}

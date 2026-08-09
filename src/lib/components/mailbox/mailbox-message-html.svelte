@@ -4,7 +4,7 @@
 	let { html }: { html: string } = $props();
 
 	let iframeEl = $state<HTMLIFrameElement | null>(null);
-	let iframeHeight = $state(320);
+	let iframeHeight = $state(240);
 
 	const srcdoc = $derived(buildMailboxEmailSrcdoc(html));
 
@@ -14,42 +14,24 @@
 			return;
 		}
 
-		iframeHeight = Math.max(body.scrollHeight, 120);
+		const nextHeight = Math.max(body.scrollHeight, 240);
+		if (nextHeight !== iframeHeight) {
+			iframeHeight = nextHeight;
+		}
 	}
 
-	$effect(() => {
-		html;
-
-		const frame = iframeEl;
-		if (!frame) {
-			return;
-		}
-
+	function handleLoad() {
 		resizeIframe();
-
-		const doc = frame.contentDocument;
-		if (!doc?.body) {
-			return;
-		}
-
-		const observer = new ResizeObserver(() => {
-			resizeIframe();
-		});
-
-		observer.observe(doc.body);
-
-		return () => {
-			observer.disconnect();
-		};
-	});
+		requestAnimationFrame(resizeIframe);
+	}
 </script>
 
 <iframe
 	bind:this={iframeEl}
 	title="Email message body"
-	class="w-full border-0"
+	class="bg-background w-full rounded-lg border shadow-sm"
 	{srcdoc}
 	sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-	onload={resizeIframe}
+	onload={handleLoad}
 	style:height="{iframeHeight}px"
 ></iframe>

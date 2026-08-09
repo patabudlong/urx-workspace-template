@@ -1,9 +1,9 @@
 import { error, redirect } from '@sveltejs/kit';
-import type { PageServerLoad } from './$types';
+import type { LayoutServerLoad } from './$types';
 import { isMailboxConfigured, listMailboxMessages } from '$lib/server/mailbox';
 import { decodeMailboxFolder } from '$lib/mailbox/utils';
 
-export const load: PageServerLoad = async ({ locals, params, url }) => {
+export const load: LayoutServerLoad = async ({ locals, params, url }) => {
 	if (!(await isMailboxConfigured(locals.user!.id))) {
 		redirect(303, '/mailbox/settings');
 	}

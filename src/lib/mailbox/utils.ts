@@ -44,6 +44,31 @@ function getMailboxFolderSortIndex(folder: MailboxFolder): number {
 	return MAILBOX_FOLDER_NAME_ORDER[key] ?? 100;
 }
 
+export function isMailboxInboxPath(path: string): boolean {
+	return path.toUpperCase() === 'INBOX';
+}
+
+export function isMailboxInboxFolder(folder: MailboxFolder): boolean {
+	return folder.specialUse === '\\Inbox' || isMailboxInboxPath(folder.path);
+}
+
+export function findMailboxInboxFolder(folders: MailboxFolder[]): MailboxFolder | undefined {
+	return folders.find(isMailboxInboxFolder);
+}
+
+export function partitionMailboxFolders(folders: MailboxFolder[]): {
+	inbox: MailboxFolder | null;
+	folders: MailboxFolder[];
+} {
+	const inbox = findMailboxInboxFolder(folders) ?? null;
+	const others = folders.filter((folder) => !isMailboxInboxFolder(folder));
+
+	return {
+		inbox,
+		folders: sortMailboxFolders(others)
+	};
+}
+
 export function sortMailboxFolders(folders: MailboxFolder[]): MailboxFolder[] {
 	return [...folders].sort((a, b) => {
 		const orderA = getMailboxFolderSortIndex(a);
@@ -131,15 +156,49 @@ export function buildMailboxEmailSrcdoc(html: string): string {
 		background: #ffffff;
 	}
 	body {
-		padding: 0;
+		padding: 1.25rem 1.5rem;
 		overflow-wrap: anywhere;
 		word-break: break-word;
+		font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+		font-size: 15px;
+		line-height: 1.65;
+		color: #18181b;
+		-webkit-font-smoothing: antialiased;
 	}
-	img, table, video, iframe {
+	p, li, td, th, blockquote {
+		line-height: 1.65;
+	}
+	h1, h2, h3, h4, h5, h6 {
+		line-height: 1.3;
+		margin-top: 1.25em;
+		margin-bottom: 0.5em;
+	}
+	a {
+		color: #2563eb;
+		text-decoration: underline;
+		text-underline-offset: 2px;
+	}
+	img, video {
 		max-width: 100%;
+		height: auto;
+	}
+	table {
+		max-width: 100%;
+		border-collapse: collapse;
+	}
+	td, th {
+		word-break: break-word;
+		vertical-align: top;
 	}
 	pre {
 		white-space: pre-wrap;
+		overflow-x: auto;
+	}
+	blockquote {
+		margin: 1em 0;
+		padding-left: 1em;
+		border-left: 3px solid #e4e4e7;
+		color: #52525b;
 	}
 </style>
 </head>

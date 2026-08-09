@@ -1,6 +1,8 @@
 <script lang="ts">
 	import MailboxComposeButton from '$lib/components/mailbox/mailbox-compose-button.svelte';
 	import MailboxFolderList from '$lib/components/mailbox/mailbox-folder-list.svelte';
+	import MailboxInboxMenu from '$lib/components/mailbox/mailbox-inbox-menu.svelte';
+	import { findMailboxInboxFolder } from '$lib/mailbox/utils';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import type { MailboxFolder } from '$lib/shared/mailbox/schemas';
 
@@ -13,6 +15,8 @@
 		activeFolder: string;
 		isComposeActive?: boolean;
 	} = $props();
+
+	const inboxFolder = $derived(findMailboxInboxFolder(folders));
 </script>
 
 <Sidebar.Header class="border-sidebar-border shrink-0 gap-3 border-b p-4">
@@ -24,5 +28,8 @@
 </Sidebar.Header>
 
 <Sidebar.Content class="min-h-0 flex-1 gap-1 overflow-visible ps-1 pt-1">
+	{#if inboxFolder}
+		<MailboxInboxMenu inbox={inboxFolder} {activeFolder} />
+	{/if}
 	<MailboxFolderList {folders} {activeFolder} />
 </Sidebar.Content>
