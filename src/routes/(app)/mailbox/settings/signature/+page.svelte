@@ -153,17 +153,6 @@
 								Use a publicly accessible image URL (PNG or SVG recommended, max height 48px).
 							</p>
 						</div>
-						<div class="space-y-2 sm:col-span-2">
-							<Label for="signature-website">Website</Label>
-							<Input
-								id="signature-website"
-								name="website"
-								type="url"
-								inputmode="url"
-								bind:value={signature.website}
-								disabled={savingSignature}
-							/>
-						</div>
 						<div class="space-y-2">
 							<Label for="signature-phone">Phone</Label>
 							<Input

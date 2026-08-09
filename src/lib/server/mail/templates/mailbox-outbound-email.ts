@@ -59,7 +59,7 @@ export function buildMailboxOutboundEmailHtml(input: MailboxOutboundEmailInput):
 		bodyHtml: wrapMailboxBodyHtml(input.bodyHtml),
 		illustrationUrl: resolveEmailAssetUrl(EMAIL_ASSETS.messages, input.requestOrigin),
 		illustrationAlt: 'Messages illustration',
-		sentViaFooter: true
+		sentViaInCard: true
 	});
 }
 

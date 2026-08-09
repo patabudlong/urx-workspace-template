@@ -2,10 +2,6 @@ import { escapeMailboxHtml } from '$lib/mailbox/utils';
 import type { MailboxSignature } from '$lib/shared/mailbox/signature';
 import { isMailboxSignatureConfigured } from '$lib/shared/mailbox/signature';
 
-function formatWebsiteLabel(url: string): string {
-	return url.replace(/^https?:\/\//i, '').replace(/\/$/, '');
-}
-
 export function buildMailboxSignatureText(signature: MailboxSignature): string {
 	const lines: string[] = [];
 
@@ -26,9 +22,6 @@ export function buildMailboxSignatureText(signature: MailboxSignature): string {
 	if (signature.phone.trim()) {
 		contacts.push(signature.phone.trim());
 	}
-	if (signature.website.trim()) {
-		contacts.push(signature.website.trim());
-	}
 	if (contacts.length > 0) {
 		lines.push(contacts.join(' · '));
 	}
@@ -45,7 +38,6 @@ export function buildMailboxSignatureHtml(signature: MailboxSignature): string {
 	const company = escapeMailboxHtml(signature.companyName.trim());
 	const email = escapeMailboxHtml(signature.email.trim());
 	const phone = escapeMailboxHtml(signature.phone.trim());
-	const website = signature.website.trim();
 	const address = escapeMailboxHtml(signature.address.trim());
 	const logoUrl = signature.logoUrl.trim();
 
@@ -57,12 +49,6 @@ export function buildMailboxSignatureHtml(signature: MailboxSignature): string {
 	}
 	if (phone) {
 		contactParts.push(`<span>${phone}</span>`);
-	}
-	if (website) {
-		const href = escapeMailboxHtml(website);
-		contactParts.push(
-			`<a href="${href}" style="color:#2563eb;text-decoration:underline">${escapeMailboxHtml(formatWebsiteLabel(website))}</a>`
-		);
 	}
 
 	const hasDetailsBelowCompany = contactParts.length > 0 || Boolean(address);

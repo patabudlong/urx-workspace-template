@@ -37,7 +37,7 @@ export type TransactionalEmailLayoutInput = {
 	illustrationAlt?: string;
 	illustrationWidth?: number;
 	footerNoteHtml?: string;
-	sentViaFooter?: boolean;
+	sentViaInCard?: boolean;
 };
 
 /**
@@ -92,18 +92,6 @@ export function buildTransactionalEmailHtml(input: TransactionalEmailLayoutInput
 			]
 		: [];
 
-	const sentViaFooterRow = input.sentViaFooter
-		? [
-				'<tr>',
-				'<td style="padding:16px 32px 24px 32px;',
-				input.footerNoteHtml ? '' : `border-top:1px solid ${BORDER};`,
-				'font-family:Arial,Helvetica,sans-serif;">',
-				buildSentViaFooterHtml(),
-				'</td>',
-				'</tr>'
-			]
-		: [];
-
 	const headlineBlock = headline
 		? [
 				'<h1 style="margin:0 0 8px 0;',
@@ -116,6 +104,22 @@ export function buildTransactionalEmailHtml(input: TransactionalEmailLayoutInput
 		: '';
 
 	const bodyCellPadding = headline ? 'padding:24px 32px 0 32px;' : 'padding:24px 32px;';
+
+	const sentViaCardRow = input.sentViaInCard
+		? [
+				'<tr>',
+				'<td style="padding:16px 32px 24px 32px;',
+				'font-family:Arial,Helvetica,sans-serif;',
+				'background-color:#ffffff;">',
+				'<p style="margin:0;',
+				'font-size:12px;line-height:18px;',
+				`color:${TEXT_MUTED};">`,
+				escapeHtml(SENT_VIA_URIXOFT_WORKSPACE_TEXT),
+				'</p>',
+				'</td>',
+				'</tr>'
+			]
+		: [];
 
 	return [
 		'<!DOCTYPE html>',
@@ -203,7 +207,7 @@ export function buildTransactionalEmailHtml(input: TransactionalEmailLayoutInput
 		'</tr>',
 		...illustrationRow,
 		...footerNoteRow,
-		...sentViaFooterRow,
+		...sentViaCardRow,
 		'</table>',
 		'<table role="presentation"',
 		'width="520" cellpadding="0"',
@@ -281,10 +285,6 @@ export function buildFooterNoteHtml(text: string): string {
 		text,
 		'</p>'
 	].join('\n');
-}
-
-export function buildSentViaFooterHtml(): string {
-	return buildFooterNoteHtml(escapeHtml(SENT_VIA_URIXOFT_WORKSPACE_TEXT));
 }
 
 export function buildBodyParagraphHtml(text: string): string {

@@ -31,13 +31,12 @@ export const actions: Actions = {
 			companyName: String(formData.get('companyName') ?? ''),
 			logoUrl: String(formData.get('logoUrl') ?? ''),
 			phone: String(formData.get('phone') ?? ''),
-			website: String(formData.get('website') ?? ''),
 			address: String(formData.get('address') ?? '')
 		});
 
 		if (!parsed.success) {
 			return fail(400, {
-				signatureError: 'Check the email, website, and logo URL fields.'
+				signatureError: 'Check the email and logo URL fields.'
 			});
 		}
 
