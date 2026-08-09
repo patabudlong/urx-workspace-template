@@ -48,6 +48,10 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 			{
 				name: 'Users',
 				description: 'Authenticated user profile'
+			},
+			{
+				name: 'Mailbox',
+				description: 'Per-user IMAP mailbox read and SMTP send (PrivateEmail compatible)'
 			}
 		],
 		paths: {
@@ -910,6 +914,384 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						}
 					}
 				}
+			},
+			'/mailbox/status': {
+				get: {
+					tags: ['Mailbox'],
+					summary: 'Mailbox connection status',
+					description: 'Returns whether the current user has connected a mailbox and connection metadata.',
+					operationId: 'getMailboxStatus',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Mailbox connection status',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/MailboxStatusSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/mailbox/connect': {
+				post: {
+					tags: ['Mailbox'],
+					summary: 'Connect or update mailbox',
+					description:
+						'Verifies IMAP and SMTP credentials, then stores them encrypted for the current user.',
+					operationId: 'connectMailbox',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/MailboxConnectRequest' }
+							}
+						}
+					},
+					responses: {
+						'201': {
+							description: 'Mailbox connected',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/MailboxStatusSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid body or credential verification failed',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				delete: {
+					tags: ['Mailbox'],
+					summary: 'Disconnect mailbox',
+					description: 'Removes stored mailbox credentials for the current user.',
+					operationId: 'disconnectMailbox',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Mailbox disconnected',
+							content: {
+								'application/json': {
+									schema: {
+										type: 'object',
+										required: ['data', 'meta'],
+										properties: {
+											data: {
+												type: 'object',
+												required: ['connected'],
+												properties: {
+													connected: { type: 'boolean', const: false }
+												}
+											},
+											meta: { $ref: '#/components/schemas/ApiMeta' }
+										}
+									}
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/mailbox/folders': {
+				get: {
+					tags: ['Mailbox'],
+					summary: 'List IMAP folders',
+					description: 'Lists folders from the connected mailbox.',
+					operationId: 'listMailboxFolders',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Folder list',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/MailboxFoldersSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'503': {
+							description: 'Mailbox not connected',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				post: {
+					tags: ['Mailbox'],
+					summary: 'Verify mailbox connection',
+					description: 'Re-verifies IMAP connectivity for the connected mailbox.',
+					operationId: 'verifyMailboxConnection',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Verification result',
+							content: {
+								'application/json': {
+									schema: {
+										type: 'object',
+										required: ['data', 'meta'],
+										properties: {
+											data: {
+												type: 'object',
+												required: ['ok'],
+												properties: {
+													ok: { type: 'boolean' },
+													message: { type: 'string' }
+												}
+											},
+											meta: { $ref: '#/components/schemas/ApiMeta' }
+										}
+									}
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'503': {
+							description: 'Mailbox not connected or verification failed',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/mailbox/messages': {
+				get: {
+					tags: ['Mailbox'],
+					summary: 'List mailbox messages',
+					description: 'Paginated message summaries for a folder.',
+					operationId: 'listMailboxMessages',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{
+							name: 'folder',
+							in: 'query',
+							required: false,
+							schema: { type: 'string', default: 'INBOX' }
+						},
+						{
+							name: 'page',
+							in: 'query',
+							required: false,
+							schema: { type: 'integer', minimum: 1, default: 1 }
+						},
+						{
+							name: 'limit',
+							in: 'query',
+							required: false,
+							schema: { type: 'integer', minimum: 1, maximum: 100, default: 25 }
+						}
+					],
+					responses: {
+						'200': {
+							description: 'Paginated message list',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/MailboxMessagesPaginatedResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid query parameters',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'503': {
+							description: 'Mailbox not connected',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/mailbox/messages/{uid}': {
+				get: {
+					tags: ['Mailbox'],
+					summary: 'Get mailbox message',
+					description: 'Full message detail for a folder UID.',
+					operationId: 'getMailboxMessage',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{
+							name: 'uid',
+							in: 'path',
+							required: true,
+							schema: { type: 'integer', minimum: 1 }
+						},
+						{
+							name: 'folder',
+							in: 'query',
+							required: true,
+							schema: { type: 'string' }
+						}
+					],
+					responses: {
+						'200': {
+							description: 'Message detail',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/MailboxMessageDetailSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid parameters',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'Message not found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'503': {
+							description: 'Mailbox not connected',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/mailbox/send': {
+				post: {
+					tags: ['Mailbox'],
+					summary: 'Send mailbox message',
+					description: 'Sends email via the connected user SMTP account.',
+					operationId: 'sendMailboxMessage',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/MailboxSendMessageRequest' }
+							}
+						}
+					},
+					responses: {
+						'201': {
+							description: 'Message sent',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/MailboxSendSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'503': {
+							description: 'Mailbox not connected',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
 			}
 		},
 		components: {
@@ -1505,6 +1887,181 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						meta: {
 							$ref: '#/components/schemas/ApiMeta'
 						}
+					}
+				},
+				MailboxConnectionStatus: {
+					type: 'object',
+					required: ['connected'],
+					properties: {
+						connected: { type: 'boolean' },
+						email: { type: 'string', format: 'email' },
+						displayName: { type: 'string' },
+						connectedAt: { type: 'string', format: 'date-time' },
+						lastVerifiedAt: { type: 'string', format: 'date-time' }
+					}
+				},
+				MailboxStatusSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/MailboxConnectionStatus' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				MailboxConnectRequest: {
+					type: 'object',
+					required: ['email', 'password'],
+					properties: {
+						email: { type: 'string', format: 'email' },
+						password: { type: 'string', format: 'password' },
+						displayName: { type: 'string', maxLength: 120 },
+						imapHost: { type: 'string' },
+						imapPort: { type: 'integer', minimum: 1, maximum: 65535 },
+						imapSecure: { type: 'boolean' },
+						smtpHost: { type: 'string' },
+						smtpPort: { type: 'integer', minimum: 1, maximum: 65535 },
+						smtpSecure: { type: 'boolean' }
+					}
+				},
+				MailboxFolder: {
+					type: 'object',
+					required: ['path', 'name', 'specialUse', 'unseen', 'total'],
+					properties: {
+						path: { type: 'string' },
+						name: { type: 'string' },
+						specialUse: { type: 'string', nullable: true },
+						unseen: { type: 'integer' },
+						total: { type: 'integer' }
+					}
+				},
+				MailboxFoldersSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							type: 'object',
+							required: ['folders'],
+							properties: {
+								folders: {
+									type: 'array',
+									items: { $ref: '#/components/schemas/MailboxFolder' }
+								}
+							}
+						},
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				MailboxMessageSummary: {
+					type: 'object',
+					required: [
+						'uid',
+						'subject',
+						'from',
+						'to',
+						'date',
+						'seen',
+						'answered',
+						'flagged',
+						'hasAttachments',
+						'preview'
+					],
+					properties: {
+						uid: { type: 'integer' },
+						subject: { type: 'string' },
+						from: { type: 'string' },
+						to: { type: 'array', items: { type: 'string' } },
+						date: { type: 'string', format: 'date-time' },
+						seen: { type: 'boolean' },
+						answered: { type: 'boolean' },
+						flagged: { type: 'boolean' },
+						hasAttachments: { type: 'boolean' },
+						preview: { type: 'string' }
+					}
+				},
+				MailboxMessageDetail: {
+					allOf: [
+						{ $ref: '#/components/schemas/MailboxMessageSummary' },
+						{
+							type: 'object',
+							required: ['cc', 'bcc', 'messageId', 'inReplyTo', 'text', 'html'],
+							properties: {
+								cc: { type: 'array', items: { type: 'string' } },
+								bcc: { type: 'array', items: { type: 'string' } },
+								messageId: { type: 'string', nullable: true },
+								inReplyTo: { type: 'string', nullable: true },
+								text: { type: 'string' },
+								html: { type: 'string', nullable: true }
+							}
+						}
+					]
+				},
+				MailboxMessageDetailSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/MailboxMessageDetail' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				MailboxMessagesPaginatedResponse: {
+					type: 'object',
+					required: ['data', 'pagination', 'meta'],
+					properties: {
+						data: {
+							type: 'array',
+							items: { $ref: '#/components/schemas/MailboxMessageSummary' }
+						},
+						pagination: {
+							type: 'object',
+							required: ['page', 'limit', 'total', 'hasMore'],
+							properties: {
+								page: { type: 'integer' },
+								limit: { type: 'integer' },
+								total: { type: 'integer' },
+								hasMore: { type: 'boolean' }
+							}
+						},
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				MailboxSendMessageRequest: {
+					type: 'object',
+					required: ['to', 'subject', 'text'],
+					properties: {
+						to: {
+							type: 'array',
+							items: { type: 'string', format: 'email' },
+							minItems: 1,
+							maxItems: 50
+						},
+						cc: {
+							type: 'array',
+							items: { type: 'string', format: 'email' },
+							maxItems: 50
+						},
+						bcc: {
+							type: 'array',
+							items: { type: 'string', format: 'email' },
+							maxItems: 50
+						},
+						subject: { type: 'string', maxLength: 998 },
+						text: { type: 'string', maxLength: 100000 },
+						html: { type: 'string', maxLength: 200000 },
+						replyTo: { type: 'string', format: 'email' }
+					}
+				},
+				MailboxSendSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							type: 'object',
+							required: ['messageId'],
+							properties: {
+								messageId: { type: 'string', nullable: true }
+							}
+						},
+						meta: { $ref: '#/components/schemas/ApiMeta' }
 					}
 				}
 			}

@@ -36,6 +36,14 @@ Copy `.env.example` to `.env` and adjust as needed.
 | `SMTP_FROM` | Default From address for outbound mail |
 | `MAIL_PROVIDER` | `smtp` (default, MailHog) or `postmark` |
 | `POSTMARK_SERVER_TOKEN` | Postmark server token when `MAIL_PROVIDER=postmark` |
+| `MAILBOX_IMAP_HOST` | Default IMAP host for mailbox connect (PrivateEmail: `mail.privateemail.com`) |
+| `MAILBOX_IMAP_PORT` | Default IMAP port (`993`) |
+| `MAILBOX_IMAP_SECURE` | IMAP TLS (`true` for port 993) |
+| `MAILBOX_SMTP_HOST` | Default SMTP host for mailbox connect |
+| `MAILBOX_SMTP_PORT` | Default SMTP port (`465` SSL or `587` STARTTLS) |
+| `MAILBOX_SMTP_SECURE` | SMTP TLS mode (`true` for port 465; omit or `false` for 587) |
+
+Per-user mailbox passwords are encrypted in MongoDB using `JWT_SECRET`. `SMTP_HOST` / `SMTP_PORT` are for transactional app mail (MailHog/Postmark), not the user mailbox.
 
 ### Brand colors
 
@@ -77,6 +85,25 @@ pnpm build              # production build
 pnpm preview            # preview production build
 pnpm rotate:jwt-secret  # rotate JWT signing key
 ```
+
+## Workspace packages
+
+### Mailbox (`urixoft-workspace-mailbox`)
+
+Per-user PrivateEmail (or any IMAP/SMTP) inbox in the workspace. Messages are read live from the mail server; credentials are encrypted in MongoDB (`user_mailbox_credentials`). Installed from the sibling `urx-workspace-mailbox` package.
+
+```sh
+pnpm workspace:mailbox:install    # copy routes, patch nav/collections/layout, update .env.example
+pnpm workspace:mailbox:uninstall  # remove package files and dependencies
+```
+
+**Connect a mailbox**
+
+1. Sign in and open **Mailbox → Settings** at `/mailbox/settings`
+2. Enter your full PrivateEmail address and mailbox password (not your Namecheap account password)
+3. The app verifies IMAP + SMTP, then stores encrypted credentials
+
+Optional host defaults in `.env` (see `.env.example` `urixoft-workspace-mailbox` block). API routes live under `/api/v1/mailbox/*` and are documented at `/docs`.
 
 ## Dev credentials
 
