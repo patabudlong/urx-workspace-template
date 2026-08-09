@@ -67,7 +67,7 @@ import { jsonOk } from '$lib/server/api/response';
 
 ## Cyber security
 
-- Secrets in env only (`MONGODB_URI`, `JWT_SECRET`, optional `JWT_SECRET_PREVIOUS` during rotation). Never in client bundles.
+- Secrets in env only (`MONGODB_TARGET`, `MONGODB_URI_LOCAL`, `MONGODB_URI_ATLAS`, `JWT_SECRET`, optional `JWT_SECRET_PREVIOUS` during rotation). Never in client bundles.
 - JWT rotation: `pnpm rotate:jwt-secret` moves current → `JWT_SECRET_PREVIOUS`, generates new `JWT_SECRET`; verify accepts both until tokens expire.
 - Zod validation on every API input. Strip `passwordHash`, tokens from responses.
 - JWT Bearer auth for mobile; verify in `hooks.server.ts` or per-route guards.

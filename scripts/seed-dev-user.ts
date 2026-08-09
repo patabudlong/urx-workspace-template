@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { loadEnvFile } from './load-env.ts';
 import { splitFullName } from '../src/lib/shared/user.ts';
 import { PLATFORM_ROLES } from '../src/lib/shared/models/user.ts';
+import { resolveMongoDbName, resolveMongoUri } from '../src/lib/server/db/resolve-mongo-uri.ts';
 
 const envPath = loadEnvFile();
 
@@ -34,11 +35,13 @@ function resolveSeedNames(): { firstName: string; lastName: string } {
 }
 
 async function main() {
-	const uri = process.env.MONGODB_URI;
-	const dbName = process.env.MONGODB_DB_NAME ?? 'urx-workspace';
+	const { target, uri } = resolveMongoUri(process.env);
+	const dbName = resolveMongoDbName(process.env);
 
 	if (!uri) {
-		console.error('MONGODB_URI is not set. Copy .env.example to .env and start Docker Mongo.');
+		console.error(
+			`MongoDB URI for target "${target}" is not set. Copy .env.example to .env and set MONGODB_URI_LOCAL / MONGODB_URI_ATLAS.`
+		);
 		process.exit(1);
 	}
 
@@ -46,7 +49,7 @@ async function main() {
 	const password = process.env.SEED_USER_PASSWORD ?? DEFAULT_PASSWORD;
 	const { firstName, lastName } = resolveSeedNames();
 
-	console.log(`Seeding user: ${email} (${firstName} ${lastName})`);
+	console.log(`Seeding user: ${email} (${firstName} ${lastName}) → ${target} / ${dbName}`);
 
 	const client = new MongoClient(uri);
 

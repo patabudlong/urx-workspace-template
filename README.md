@@ -23,7 +23,9 @@ Copy `.env.example` to `.env` and adjust as needed.
 
 | Variable | Purpose |
 |----------|---------|
-| `MONGODB_URI` | MongoDB connection string |
+| `MONGODB_TARGET` | `local` or `atlas` — which URI to use (restart after change) |
+| `MONGODB_URI_LOCAL` | Local Docker connection string (`pnpm docker:up`) |
+| `MONGODB_URI_ATLAS` | Atlas `mongodb+srv://…` connection string |
 | `MONGODB_DB_NAME` | Database name |
 | `ALLOWED_ORIGINS` | CORS origins for web-based mobile shells |
 | `JWT_SECRET` | Signing key for session tokens (min 32 chars) |
