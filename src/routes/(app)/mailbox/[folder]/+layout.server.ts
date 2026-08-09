@@ -2,6 +2,7 @@ import { redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
 import { decodeMailboxFolder } from '$lib/mailbox/utils';
 import { listMailboxFolders, listMailboxMessages } from '$lib/server/mailbox';
+import { MAILBOX_SEARCH_QUERY_SCHEMA } from '$lib/shared/mailbox/schemas';
 
 export const load: LayoutServerLoad = async ({ locals, parent, params, url, depends }) => {
 	depends('mailbox:messages');
@@ -14,17 +15,19 @@ export const load: LayoutServerLoad = async ({ locals, parent, params, url, depe
 	const folder = decodeMailboxFolder(params.folder);
 	const page = Number(url.searchParams.get('page') ?? '1');
 	const limit = 25;
+	const query = MAILBOX_SEARCH_QUERY_SCHEMA.parse(url.searchParams.get('q') ?? undefined);
 	const userId = locals.user!.id;
 
 	// Stream messages independently of folder STATUS. Queue order matters: start
 	// the message list first so it resolves (and paints) before sidebar counts.
-	const messagesPromise = listMailboxMessages(userId, folder, page, limit);
+	const messagesPromise = listMailboxMessages(userId, folder, page, limit, { query });
 	const foldersPromise = listMailboxFolders(userId);
 
 	return {
 		folder,
 		page,
 		limit,
+		query: query ?? null,
 		folders: foldersPromise,
 		mailbox: messagesPromise.then(({ items, total }) => ({
 			messages: items,

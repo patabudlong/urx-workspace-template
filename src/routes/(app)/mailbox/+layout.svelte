@@ -61,6 +61,10 @@
 		return folderParam ? decodeMailboxFolder(folderParam) : 'INBOX';
 	});
 
+	const searchQuery = $derived(
+		typeof page.data.query === 'string' ? page.data.query : (page.url.searchParams.get('q') ?? '')
+	);
+
 	const isMessageView = $derived(
 		data.configured && !isSettingsRoute && !isComposeRoute
 	);
@@ -78,6 +82,7 @@
 		{activeFolder}
 		isComposeActive={isComposeRoute}
 		configured={data.configured}
+		{searchQuery}
 	/>
 {/snippet}
 
@@ -106,6 +111,7 @@
 					{activeFolder}
 					isComposeActive={isComposeRoute}
 					configured={data.configured}
+					{searchQuery}
 				/>
 			{/if}
 		</div>

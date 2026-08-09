@@ -2,10 +2,19 @@ import { z } from 'zod';
 
 export const MAILBOX_FOLDER_PATH_SCHEMA = z.string().min(1).max(256);
 
+export const MAILBOX_SEARCH_QUERY_SCHEMA = z
+	.string()
+	.trim()
+	.max(200)
+	.optional()
+	.transform((value) => (value && value.length > 0 ? value : undefined));
+
 export const MAILBOX_LIST_MESSAGES_QUERY_SCHEMA = z.object({
 	folder: MAILBOX_FOLDER_PATH_SCHEMA.default('INBOX'),
 	page: z.coerce.number().int().min(1).default(1),
-	limit: z.coerce.number().int().min(1).max(100).default(25)
+	limit: z.coerce.number().int().min(1).max(100).default(25),
+	/** IMAP TEXT search across headers and body (PrivateEmail / RFC 3501). */
+	q: MAILBOX_SEARCH_QUERY_SCHEMA
 });
 
 export const MAILBOX_MESSAGE_UID_PARAM_SCHEMA = z.object({

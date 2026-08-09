@@ -27,6 +27,7 @@
 	let mailbox = $state<MailboxListData | null>(null);
 	let mailboxFolder = $state<string | null>(null);
 	let mailboxPage = $state<number | null>(null);
+	let mailboxQuery = $state<string | null>(null);
 	let mailboxLoadFailed = $state<Error | null>(null);
 	let pendingUid = $state<number | null>(null);
 	let listScroller = $state<HTMLDivElement | undefined>();
@@ -35,6 +36,7 @@
 	$effect(() => {
 		const folder = data.folder;
 		const pageNum = data.page;
+		const query = typeof data.query === 'string' ? data.query : null;
 		const next = data.mailbox as Promise<MailboxListData> | MailboxListData;
 		mailboxLoadFailed = null;
 
@@ -42,32 +44,37 @@
 			mailbox = next as MailboxListData;
 			mailboxFolder = folder;
 			mailboxPage = pageNum;
+			mailboxQuery = query;
 			setMailboxMessagePrefetchEnabled(true);
 			return;
 		}
 
-		// Clear only when folder/page changes — keep the list during message opens.
-		if (mailboxFolder !== folder || mailboxPage !== pageNum) {
-			mailbox = null;
+		// Clear only when folder/page/query changes — keep the list during message opens.
+		if (mailboxFolder !== folder || mailboxPage !== pageNum || mailboxQuery !== query) {
+			if (mailboxFolder !== folder || mailboxPage !== pageNum) {
+				mailbox = null;
+			}
 			setMailboxMessagePrefetchEnabled(false);
 		}
 
 		void (next as Promise<MailboxListData>)
 			.then((resolved) => {
-				if (folder === data.folder && pageNum === data.page) {
+				if (folder === data.folder && pageNum === data.page && query === (data.query ?? null)) {
 					mailbox = resolved;
 					mailboxFolder = folder;
 					mailboxPage = pageNum;
+					mailboxQuery = query;
 					setMailboxMessagePrefetchEnabled(true);
 				}
 			})
 			.catch((error: unknown) => {
-				if (folder === data.folder && pageNum === data.page) {
+				if (folder === data.folder && pageNum === data.page && query === (data.query ?? null)) {
 					mailboxLoadFailed =
 						error instanceof Error ? error : new Error('Failed to load messages.');
 					mailbox = null;
 					mailboxFolder = null;
 					mailboxPage = null;
+					mailboxQuery = null;
 					setMailboxMessagePrefetchEnabled(false);
 				}
 			});
@@ -174,13 +181,20 @@
 
 {#snippet messageListPane(mailbox: MailboxListData)}
 	{@const hasPagination = mailbox.pagination.page > 1 || mailbox.pagination.hasMore}
-	{#if !isInboxFolder || hasPagination}
+	{@const activeQuery = typeof data.query === 'string' ? data.query : null}
+	{@const showHeader = Boolean(activeQuery) || !isInboxFolder || hasPagination}
+	{@const pageQuery = activeQuery
+		? `&q=${encodeURIComponent(activeQuery)}`
+		: ''}
+	{#if showHeader}
 		<Card.Header
 			class="border-border shrink-0 flex-row items-center justify-between gap-4 space-y-0 rounded-none border-b px-4 pt-4 pb-4"
 		>
-			{#if !isInboxFolder}
-				<div>
-					<Card.Title>{folderLabel}</Card.Title>
+			{#if activeQuery || !isInboxFolder}
+				<div class="min-w-0">
+					<Card.Title class="truncate">
+						{activeQuery ? `Results for “${activeQuery}”` : folderLabel}
+					</Card.Title>
 					<Card.Description>
 						{mailbox.pagination.total === 1
 							? '1 message'
@@ -189,12 +203,16 @@
 				</div>
 			{/if}
 			{#if hasPagination}
-				<div class={isInboxFolder ? 'ms-auto flex items-center gap-2' : 'flex items-center gap-2'}>
+				<div
+					class={activeQuery || !isInboxFolder
+						? 'flex items-center gap-2'
+						: 'ms-auto flex items-center gap-2'}
+				>
 					{#if mailbox.pagination.page > 1}
 						<Button
 							variant="outline"
 							size="sm"
-							href={`/mailbox/${page.params.folder}?page=${mailbox.pagination.page - 1}`}
+							href={`/mailbox/${page.params.folder}?page=${mailbox.pagination.page - 1}${pageQuery}`}
 						>
 							Previous
 						</Button>
@@ -203,7 +221,7 @@
 						<Button
 							variant="outline"
 							size="sm"
-							href={`/mailbox/${page.params.folder}?page=${mailbox.pagination.page + 1}`}
+							href={`/mailbox/${page.params.folder}?page=${mailbox.pagination.page + 1}${pageQuery}`}
 						>
 							Next
 						</Button>
@@ -225,6 +243,10 @@
 				folder={data.folder}
 				messages={mailbox.messages}
 				{activeUid}
+				emptyTitle={activeQuery ? 'No matches' : 'No messages'}
+				emptyDescription={activeQuery
+					? 'No messages in this folder match your search.'
+					: 'This folder is empty.'}
 				onOpenMessage={openMessage}
 			/>
 		</div>

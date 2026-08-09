@@ -23,8 +23,10 @@ export const GET: RequestHandler = async ({ locals, request, url }) => {
 	}
 
 	try {
-		const { folder, page, limit } = parsed.data;
-		const { items, total } = await listMailboxMessages(locals.user.id, folder, page, limit);
+		const { folder, page, limit, q: query } = parsed.data;
+		const { items, total } = await listMailboxMessages(locals.user.id, folder, page, limit, {
+			query
+		});
 		const hasMore = page * limit < total;
 
 		return jsonPaginated(items, { page, limit, total, hasMore }, { requestId });

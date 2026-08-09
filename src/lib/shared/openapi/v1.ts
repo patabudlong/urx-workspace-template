@@ -1135,6 +1135,14 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 							name: 'limit',
 							in: 'query',
 							schema: { type: 'integer', minimum: 1, maximum: 100, default: 25 }
+						},
+						{
+							name: 'q',
+							in: 'query',
+							required: false,
+							description:
+								'IMAP TEXT search across message headers and body (RFC 3501 / PrivateEmail).',
+							schema: { type: 'string', maxLength: 200 }
 						}
 					],
 					responses: {
@@ -1221,6 +1229,14 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 							in: 'query',
 							required: false,
 							schema: { type: 'integer', minimum: 1, maximum: 100, default: 25 }
+						},
+						{
+							name: 'q',
+							in: 'query',
+							required: false,
+							description:
+								'IMAP TEXT search across message headers and body (RFC 3501 / PrivateEmail).',
+							schema: { type: 'string', maxLength: 200 }
 						}
 					],
 					responses: {

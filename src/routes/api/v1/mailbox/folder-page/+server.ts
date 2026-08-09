@@ -23,12 +23,13 @@ export const GET: RequestHandler = async ({ locals, request, url }) => {
 	}
 
 	try {
-		const { folder, page, limit } = parsed.data;
+		const { folder, page, limit, q: query } = parsed.data;
 		const { folders, items, total } = await listMailboxFolderPage(
 			locals.user.id,
 			folder,
 			page,
-			limit
+			limit,
+			{ query }
 		);
 		const hasMore = page * limit < total;
 

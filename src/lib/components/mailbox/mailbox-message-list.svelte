@@ -16,11 +16,15 @@
 		folder,
 		messages,
 		activeUid,
+		emptyTitle = 'No messages',
+		emptyDescription = 'This folder is empty.',
 		onOpenMessage
 	}: {
 		folder: string;
 		messages: MailboxMessageSummary[];
 		activeUid?: number;
+		emptyTitle?: string;
+		emptyDescription?: string;
 		onOpenMessage: (uid: number, href: string) => void;
 	} = $props();
 </script>
@@ -31,8 +35,8 @@
 			<InboxIcon class="size-5" aria-hidden="true" />
 		</div>
 		<div class="space-y-1">
-			<p class="text-sm font-medium">No messages</p>
-			<p class="text-muted-foreground text-sm">This folder is empty.</p>
+			<p class="text-sm font-medium">{emptyTitle}</p>
+			<p class="text-muted-foreground text-sm">{emptyDescription}</p>
 		</div>
 	</div>
 {:else}

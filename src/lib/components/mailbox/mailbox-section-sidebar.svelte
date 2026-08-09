@@ -2,6 +2,7 @@
 	import MailboxComposeButton from '$lib/components/mailbox/mailbox-compose-button.svelte';
 	import MailboxFolderCount from '$lib/components/mailbox/mailbox-folder-count.svelte';
 	import MailboxSettingsSectionMenu from '$lib/components/mailbox/mailbox-settings-section-menu.svelte';
+	import MailboxSidebarTools from '$lib/components/mailbox/mailbox-sidebar-tools.svelte';
 	import {
 		encodeMailboxFolder,
 		findMailboxInboxFolder,
@@ -17,12 +18,14 @@
 		folders,
 		activeFolder,
 		isComposeActive = false,
-		configured = true
+		configured = true,
+		searchQuery = ''
 	}: {
 		folders: MailboxFolder[];
 		activeFolder: string;
 		isComposeActive?: boolean;
 		configured?: boolean;
+		searchQuery?: string;
 	} = $props();
 
 	const inboxFolder = $derived(configured ? findMailboxInboxFolder(folders) : null);
@@ -37,6 +40,7 @@
 				Browse folders and read messages from your connected PrivateEmail account.
 			</p>
 		</div>
+		<MailboxSidebarTools {configured} {activeFolder} {searchQuery} />
 	</div>
 
 	<nav class="flex flex-col gap-2 px-2 pt-0 pb-2">

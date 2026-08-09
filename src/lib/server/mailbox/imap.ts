@@ -250,15 +250,59 @@ function mapSummary(message: {
 	};
 }
 
+async function fetchMailboxMessageSummariesByUids(
+	client: ImapFlow,
+	uids: number[]
+): Promise<MailboxMessageSummary[]> {
+	if (uids.length === 0) {
+		return [];
+	}
+
+	const items: MailboxMessageSummary[] = [];
+	for await (const message of client.fetch(
+		uids,
+		{
+			uid: true,
+			envelope: true,
+			flags: true,
+			bodyStructure: true
+		},
+		{ uid: true }
+	)) {
+		items.push(mapSummary(message));
+	}
+
+	items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+	return items;
+}
+
 async function fetchMailboxMessages(
 	client: ImapFlow,
 	folder: string,
 	page: number,
-	limit: number
+	limit: number,
+	query?: string
 ): Promise<{ items: MailboxMessageSummary[]; total: number }> {
 	const lock = await client.getMailboxLock(folder);
 
 	try {
+		if (query) {
+			// RFC 3501 TEXT — headers + body. Supported by PrivateEmail IMAP.
+			const searchResult = await client.search({ text: query }, { uid: true });
+			const matchedUids = Array.isArray(searchResult) ? searchResult : [];
+			const total = matchedUids.length;
+			if (!total) {
+				return { items: [], total: 0 };
+			}
+
+			// Higher UIDs are typically newer; paginate newest-first.
+			const sortedUids = matchedUids.slice().sort((a, b) => b - a);
+			const start = (page - 1) * limit;
+			const pageUids = sortedUids.slice(start, start + limit);
+			const items = await fetchMailboxMessageSummariesByUids(client, pageUids);
+			return { items, total };
+		}
+
 		const mailbox = client.mailbox;
 		const total = typeof mailbox === 'object' && mailbox ? mailbox.exists : 0;
 
@@ -296,9 +340,12 @@ export async function listMailboxMessages(
 	userId: string,
 	folder: string,
 	page: number,
-	limit: number
+	limit: number,
+	options: { query?: string } = {}
 ): Promise<{ items: MailboxMessageSummary[]; total: number }> {
-	return withImapClient(userId, (client) => fetchMailboxMessages(client, folder, page, limit));
+	return withImapClient(userId, (client) =>
+		fetchMailboxMessages(client, folder, page, limit, options.query)
+	);
 }
 
 /**
@@ -309,14 +356,21 @@ export async function listMailboxFolderPage(
 	userId: string,
 	folder: string,
 	page: number,
-	limit: number
+	limit: number,
+	options: { query?: string } = {}
 ): Promise<{
 	folders: MailboxFolder[];
 	items: MailboxMessageSummary[];
 	total: number;
 }> {
 	return withImapClient(userId, async (client) => {
-		const { items, total } = await fetchMailboxMessages(client, folder, page, limit);
+		const { items, total } = await fetchMailboxMessages(
+			client,
+			folder,
+			page,
+			limit,
+			options.query
+		);
 		const folders = await fetchMailboxFolders(client);
 		return { folders, items, total };
 	});

@@ -3,7 +3,9 @@ import type { LayoutLoad } from './$types';
 import type { MailboxFolder } from '$lib/shared/mailbox/schemas';
 import { fetchMailboxFolders } from '$lib/mailbox/client';
 
-export const load: LayoutLoad = async ({ data, fetch, params }) => {
+export const load: LayoutLoad = async ({ data, fetch, params, depends }) => {
+	depends('mailbox:folders');
+
 	if (!data.configured) {
 		return {
 			connection: data.connection,
