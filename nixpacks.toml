@@ -4,7 +4,7 @@
 [variables]
 HOST = "0.0.0.0"
 PORT = "3000"
-NIXPACKS_NODE_VERSION = "20"
+NIXPACKS_NODE_VERSION = "22"
 # Prevent Nixpacks from serving the Vite app via Caddy (we run the Node adapter)
 NIXPACKS_SPA_CADDY = "false"
 
