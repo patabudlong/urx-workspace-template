@@ -94,6 +94,7 @@ Per-user PrivateEmail (or any IMAP/SMTP) inbox in the workspace. Messages are re
 
 ```sh
 pnpm workspace:mailbox:install    # copy routes, patch nav/collections/layout, update .env.example
+pnpm workspace:mailbox:sync         # copy mailbox changes from this app back into the package
 pnpm workspace:mailbox:uninstall  # remove package files and dependencies
 ```
 
