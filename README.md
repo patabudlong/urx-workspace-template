@@ -42,8 +42,30 @@ Copy `.env.example` to `.env` and adjust as needed.
 | `MAILBOX_SMTP_HOST` | Default SMTP host for mailbox connect |
 | `MAILBOX_SMTP_PORT` | Default SMTP port (`465` SSL or `587` STARTTLS) |
 | `MAILBOX_SMTP_SECURE` | SMTP TLS mode (`true` for port 465; omit or `false` for 587) |
+| `LINODE_ENDPOINT` | Linode Object Storage S3 endpoint |
+| `LINODE_BUCKET` | Linode bucket name |
+| `LINODE_ACCESS_KEY` | Linode access key |
+| `LINODE_SECRET_KEY` | Linode secret key |
+| `LINODE_REGION` | Linode region (e.g. `us-east-1`) |
+| `LINODE_PUBLIC_BASE` | Public base URL for uploaded objects (no trailing slash) |
 
 Per-user mailbox passwords are encrypted in MongoDB using `JWT_SECRET`. `SMTP_HOST` / `SMTP_PORT` are for transactional app mail (MailHog/Postmark), not the user mailbox.
+
+Linode is used for workspace brand logos and transactional email images. When Linode is not configured, logos fall back to `static/workspace-branding/` and email images fall back to `static/email/` on the platform origin.
+
+### Email assets (Linode)
+
+Transactional emails (verify, password reset, 2FA, workspace notifications, mailbox outbound) load images from Linode when `LINODE_*` is set. Source files live in `static/email/` (logo, illustrations).
+
+**Upload or refresh assets after adding or changing files in `static/email/`:**
+
+```sh
+pnpm upload:email-assets
+```
+
+This syncs every file in `static/email/` to `{LINODE_PUBLIC_BASE}/email/` (e.g. `https://your-bucket.region.linodeobjects.com/email/urixoft-logo.png`). The script also applies a bucket policy so `email/*` is publicly readable — required for Gmail and other clients to load images (Linode does not support per-object ACLs). Requires all `LINODE_*` variables in `.env`.
+
+**Local dev without Linode:** leave `LINODE_*` empty; emails use `http://workspace.localhost:5173/email/*` from the static folder.
 
 ### Brand colors
 
@@ -84,6 +106,7 @@ pnpm check              # TypeScript + Svelte validation
 pnpm build              # production build
 pnpm preview            # preview production build
 pnpm rotate:jwt-secret  # rotate JWT signing key
+pnpm upload:email-assets # sync static/email/* to Linode Object Storage
 ```
 
 ## Workspace packages

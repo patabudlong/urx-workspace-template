@@ -82,12 +82,13 @@
 
 		const ccRecipients = parseRecipientInput(cc);
 		const plainMessage = htmlToPlainText(html);
-		const quotedHtml = plainTextToQuotedHtml(draft.quotedText);
+		const includeQuotedMessage = mode === 'forward';
+		const quotedHtml = includeQuotedMessage ? plainTextToQuotedHtml(draft.quotedText) : '';
 		const hasUserContent = !isMailboxComposeHtmlEmpty(html);
 		const { text: textBody, html: htmlBody } = appendMailboxSignatureToBodies({
 			plainMessage: hasUserContent ? plainMessage : '',
 			htmlMessage: hasUserContent ? html : '',
-			quotedText: draft.quotedText,
+			quotedText: includeQuotedMessage ? draft.quotedText : '',
 			quotedHtml,
 			signature,
 			includeSignature: includeSignature && signatureConfigured

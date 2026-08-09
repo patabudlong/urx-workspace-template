@@ -1,14 +1,13 @@
 import { isMailConfigured, sendMail } from '$lib/server/mail/index';
+import { EMAIL_ASSETS, resolveEmailAssetUrl, resolveEmailLogoUrl } from '$lib/server/mail/email-assets';
 import {
-	buildAuthenticatedAppPathUrl,
-	resolvePlatformWorkspaceOrigin
+	buildAuthenticatedAppPathUrl
 } from '$lib/server/mail/platform-origin';
 import {
 	buildTwoFactorCodeEmailHtml,
 	buildTwoFactorCodeEmailText,
 	buildTwoFactorStatusEmailHtml,
 	buildTwoFactorStatusEmailText,
-	TWO_FACTOR_EMAIL_ILLUSTRATIONS,
 	type TwoFactorEmailIllustration,
 	type TwoFactorStatusChange
 } from '$lib/server/mail/templates/two-factor-email';
@@ -26,11 +25,12 @@ export function resolveTwoFactorEmailAssets(
 	origin: string,
 	illustration: TwoFactorEmailIllustration = 'code'
 ): { logoUrl: string; illustrationUrl: string } {
-	const platformOrigin = resolvePlatformWorkspaceOrigin(origin);
+	const illustrationAsset =
+		illustration === 'code' ? EMAIL_ASSETS.twoFactorCode : EMAIL_ASSETS.twoFactorStatus;
 
 	return {
-		logoUrl: `${platformOrigin}/email/urixoft-logo.png`,
-		illustrationUrl: `${platformOrigin}/email/${TWO_FACTOR_EMAIL_ILLUSTRATIONS[illustration]}`
+		logoUrl: resolveEmailLogoUrl(origin),
+		illustrationUrl: resolveEmailAssetUrl(illustrationAsset, origin)
 	};
 }
 

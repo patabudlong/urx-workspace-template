@@ -19,6 +19,7 @@
 		"seed:user": "node --import tsx scripts/seed-dev-user.ts",
 		"rotate:jwt-secret": "node --import tsx scripts/rotate-jwt-secret.ts",
 		"rotate:jwt-secret:dry": "node --import tsx scripts/rotate-jwt-secret.ts --dry-run",
+		"upload:email-assets": "node --import tsx scripts/upload-email-assets.ts",
 		"workspace:mailbox:install": "node ../urx-workspace-mailbox/bin/cli.mjs install",
 		"workspace:mailbox:sync": "node ../urx-workspace-mailbox/bin/cli.mjs sync",
 		"workspace:mailbox:uninstall": "node ../urx-workspace-mailbox/bin/cli.mjs uninstall"

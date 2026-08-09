@@ -1,35 +1,22 @@
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { env } from '$env/dynamic/private';
+import {
+	parseLinodeObjectStorageConfig,
+	type LinodeObjectStorageConfig
+} from '$lib/server/storage/linode-config';
 
-export type LinodeObjectStorageConfig = {
-	endpoint: string;
-	bucket: string;
-	accessKey: string;
-	secretKey: string;
-	region: string;
-	publicBase: string;
-};
+export type { LinodeObjectStorageConfig } from '$lib/server/storage/linode-config';
+export { parseLinodeObjectStorageConfig } from '$lib/server/storage/linode-config';
 
 export function getLinodeObjectStorageConfig(): LinodeObjectStorageConfig | null {
-	const endpoint = env.LINODE_ENDPOINT?.trim();
-	const bucket = env.LINODE_BUCKET?.trim();
-	const accessKey = env.LINODE_ACCESS_KEY?.trim();
-	const secretKey = env.LINODE_SECRET_KEY?.trim();
-	const region = env.LINODE_REGION?.trim() || 'us-east-1';
-	const publicBase = env.LINODE_PUBLIC_BASE?.trim().replace(/\/$/, '');
-
-	if (!endpoint || !bucket || !accessKey || !secretKey || !publicBase) {
-		return null;
-	}
-
-	return {
-		endpoint,
-		bucket,
-		accessKey,
-		secretKey,
-		region,
-		publicBase
-	};
+	return parseLinodeObjectStorageConfig({
+		LINODE_ENDPOINT: env.LINODE_ENDPOINT,
+		LINODE_BUCKET: env.LINODE_BUCKET,
+		LINODE_ACCESS_KEY: env.LINODE_ACCESS_KEY,
+		LINODE_SECRET_KEY: env.LINODE_SECRET_KEY,
+		LINODE_REGION: env.LINODE_REGION,
+		LINODE_PUBLIC_BASE: env.LINODE_PUBLIC_BASE
+	});
 }
 
 export function isLinodeObjectStorageConfigured(): boolean {
@@ -58,6 +45,36 @@ function getS3Client(config: LinodeObjectStorageConfig): S3Client {
 	return s3Client;
 }
 
+export async function uploadPublicObject(
+	input: {
+		key: string;
+		body: Buffer;
+		contentType: string;
+		cacheControl?: string;
+	},
+	config?: LinodeObjectStorageConfig
+): Promise<string> {
+	const resolved = config ?? getLinodeObjectStorageConfig();
+
+	if (!resolved) {
+		throw new Error('LINODE_NOT_CONFIGURED');
+	}
+
+	const client = getS3Client(resolved);
+
+	await client.send(
+		new PutObjectCommand({
+			Bucket: resolved.bucket,
+			Key: input.key,
+			Body: input.body,
+			ContentType: input.contentType,
+			CacheControl: input.cacheControl ?? 'public, max-age=31536000, immutable'
+		})
+	);
+
+	return `${resolved.publicBase}/${input.key}`;
+}
+
 export async function uploadWorkspaceBrandLogo(input: {
 	slug: string;
 	body: Buffer;
@@ -71,17 +88,13 @@ export async function uploadWorkspaceBrandLogo(input: {
 	}
 
 	const key = `workspaces/${input.slug}/logo.${input.extension}`;
-	const client = getS3Client(config);
 
-	await client.send(
-		new PutObjectCommand({
-			Bucket: config.bucket,
-			Key: key,
-			Body: input.body,
-			ContentType: input.contentType,
-			CacheControl: 'public, max-age=31536000, immutable'
-		})
+	return uploadPublicObject(
+		{
+			key,
+			body: input.body,
+			contentType: input.contentType
+		},
+		config
 	);
-
-	return `${config.publicBase}/${key}`;
 }

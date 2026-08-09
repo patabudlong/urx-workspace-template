@@ -65,14 +65,27 @@ export function buildMailboxSignatureHtml(signature: MailboxSignature): string {
 		);
 	}
 
+	const hasDetailsBelowCompany = contactParts.length > 0 || Boolean(address);
+	const companySeparator =
+		company && hasDetailsBelowCompany
+			? '<hr style="border:none;border-top:1px solid #e4e4e7;margin:10px 0 8px;">'
+			: '';
+
+	const detailsBlock = [
+		contactParts.length > 0
+			? `<p style="margin:0;font-size:14px;color:#3f3f46">${contactParts.join(' <span style="color:#d4d4d8">|</span> ')}</p>`
+			: '',
+		address ? `<p style="margin:4px 0 0;font-size:13px;color:#71717a">${address}</p>` : ''
+	]
+		.filter(Boolean)
+		.join('');
+
 	const textBlock = [
 		name ? `<p style="margin:0;font-size:15px;font-weight:600;color:#18181b">${name}</p>` : '',
 		position ? `<p style="margin:2px 0 0;font-size:14px;color:#52525b">${position}</p>` : '',
 		company ? `<p style="margin:2px 0 0;font-size:14px;color:#52525b">${company}</p>` : '',
-		contactParts.length > 0
-			? `<p style="margin:8px 0 0;font-size:14px;color:#3f3f46">${contactParts.join(' <span style="color:#d4d4d8">|</span> ')}</p>`
-			: '',
-		address ? `<p style="margin:4px 0 0;font-size:13px;color:#71717a">${address}</p>` : ''
+		companySeparator,
+		detailsBlock
 	]
 		.filter(Boolean)
 		.join('');
@@ -85,9 +98,7 @@ export function buildMailboxSignatureHtml(signature: MailboxSignature): string {
 		? `<td style="padding-right:16px;vertical-align:top"><img src="${escapeMailboxHtml(logoUrl)}" alt="${company || 'Company logo'}" height="48" style="display:block;max-width:120px;height:auto;max-height:48px" /></td>`
 		: '';
 
-	const divider = logoUrl ? 'border-left:2px solid #e4e4e7;padding-left:16px;' : '';
-
-	return `<table cellpadding="0" cellspacing="0" role="presentation" style="margin:0;font-family:ui-sans-serif,system-ui,sans-serif;font-size:14px;line-height:1.5;color:#18181b"><tr>${logoCell}<td style="vertical-align:top;${divider}">${textBlock}</td></tr></table>`;
+	return `<table cellpadding="0" cellspacing="0" role="presentation" style="margin:0;font-family:ui-sans-serif,system-ui,sans-serif;font-size:14px;line-height:1.5;color:#18181b"><tr>${logoCell}<td style="vertical-align:top">${textBlock}</td></tr></table>`;
 }
 
 export function appendMailboxSignatureToBodies(input: {

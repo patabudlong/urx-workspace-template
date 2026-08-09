@@ -1,5 +1,5 @@
 import { sendMail } from '$lib/server/mail/index';
-import { resolvePlatformWorkspaceOrigin } from '$lib/server/mail/platform-origin';
+import { EMAIL_ASSETS, resolveEmailAssetUrl, resolveEmailLogoUrl } from '$lib/server/mail/email-assets';
 import {
 	buildSimpleEmailHtml,
 	buildSimpleEmailText
@@ -13,12 +13,11 @@ export async function sendWorkspaceRequestReceivedEmail(input: {
 	origin: string;
 }): Promise<void> {
 	const greeting = input.firstName.trim() || 'there';
-	const platformOrigin = resolvePlatformWorkspaceOrigin(input.origin);
 	const content = {
 		title: 'We received your workspace request',
 		greeting,
-		logoUrl: `${platformOrigin}/email/urixoft-logo.png`,
-		illustrationUrl: `${platformOrigin}/email/workspace-request-review.png`,
+		logoUrl: resolveEmailLogoUrl(input.origin),
+		illustrationUrl: resolveEmailAssetUrl(EMAIL_ASSETS.workspaceRequestReview, input.origin),
 		illustrationAlt: 'Workspace request under review illustration',
 		preheader:
 			'Your workspace request is under review. We will email you when your dashboard is ready.',

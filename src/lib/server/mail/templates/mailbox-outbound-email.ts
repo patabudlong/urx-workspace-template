@@ -1,8 +1,9 @@
-import { resolvePlatformWorkspaceOrigin } from '$lib/server/mail/platform-origin';
+import { EMAIL_ASSETS, resolveEmailAssetUrl, resolveEmailLogoUrl } from '$lib/server/mail/email-assets';
 import {
 	buildTransactionalEmailHtml,
 	buildTransactionalEmailText,
 	escapeHtml,
+	SENT_VIA_URIXOFT_WORKSPACE_TEXT,
 	TEXT_BODY
 } from '$lib/server/mail/templates/transactional-email-layout';
 
@@ -11,6 +12,28 @@ export type MailboxOutboundEmailInput = {
 	bodyHtml: string;
 	requestOrigin: string;
 };
+
+function stripHtmlToPlainText(html: string): string {
+	return html
+		.replace(/<style[\s\S]*?<\/style>/gi, ' ')
+		.replace(/<script[\s\S]*?<\/script>/gi, ' ')
+		.replace(/<br\s*\/?>/gi, '\n')
+		.replace(/<\/p>/gi, '\n')
+		.replace(/<[^>]+>/g, ' ')
+		.replace(/&nbsp;/gi, ' ')
+		.replace(/&amp;/gi, '&')
+		.replace(/&lt;/gi, '<')
+		.replace(/&gt;/gi, '>')
+		.replace(/&quot;/gi, '"')
+		.replace(/&#39;/gi, "'")
+		.replace(/\s+/g, ' ')
+		.trim();
+}
+
+function buildMailboxPreheader(bodyHtml: string, subject: string): string {
+	const plain = stripHtmlToPlainText(bodyHtml);
+	return plain.slice(0, 120) || subject;
+}
 
 function wrapMailboxBodyHtml(bodyHtml: string): string {
 	return [
@@ -27,20 +50,19 @@ export function plainTextToMailboxBodyHtml(text: string): string {
 }
 
 export function buildMailboxOutboundEmailHtml(input: MailboxOutboundEmailInput): string {
-	const platformOrigin = resolvePlatformWorkspaceOrigin(input.requestOrigin);
 	const subject = input.subject.trim();
 
 	return buildTransactionalEmailHtml({
-		preheader: subject,
+		preheader: buildMailboxPreheader(input.bodyHtml, subject),
 		documentTitle: subject,
-		logoUrl: `${platformOrigin}/email/urixoft-logo.png`,
-		headline: subject,
+		logoUrl: resolveEmailLogoUrl(input.requestOrigin),
 		bodyHtml: wrapMailboxBodyHtml(input.bodyHtml),
-		illustrationUrl: `${platformOrigin}/email/messages.png`,
-		illustrationAlt: 'Messages illustration'
+		illustrationUrl: resolveEmailAssetUrl(EMAIL_ASSETS.messages, input.requestOrigin),
+		illustrationAlt: 'Messages illustration',
+		sentViaFooter: true
 	});
 }
 
-export function buildMailboxOutboundEmailText(subject: string, bodyText: string): string {
-	return buildTransactionalEmailText([subject, '', bodyText]);
+export function buildMailboxOutboundEmailText(bodyText: string): string {
+	return buildTransactionalEmailText([bodyText, '', SENT_VIA_URIXOFT_WORKSPACE_TEXT]);
 }

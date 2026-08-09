@@ -16,6 +16,8 @@ export const COMPANY_ADDRESS_LINES = [
 ] as const;
 
 export const BRAND_TAGLINE = 'Your business workspace, made simple.';
+export const SENT_VIA_URIXOFT_WORKSPACE_TEXT =
+	'This message was sent using Urixoft Workspace.';
 const LOGO_DISPLAY_WIDTH = 52;
 const LOGO_DISPLAY_HEIGHT = 46;
 const LOGO_BORDER_RADIUS = 6;
@@ -29,12 +31,13 @@ export type TransactionalEmailLayoutInput = {
 	preheader: string;
 	documentTitle: string;
 	logoUrl: string;
-	headline: string;
+	headline?: string;
 	bodyHtml: string;
 	illustrationUrl?: string;
 	illustrationAlt?: string;
 	illustrationWidth?: number;
 	footerNoteHtml?: string;
+	sentViaFooter?: boolean;
 };
 
 /**
@@ -45,7 +48,7 @@ export function buildTransactionalEmailHtml(input: TransactionalEmailLayoutInput
 	const preheader = escapeHtml(input.preheader);
 	const documentTitle = escapeHtml(input.documentTitle);
 	const logoUrl = escapeHtml(input.logoUrl);
-	const headline = escapeHtml(input.headline);
+	const headline = escapeHtml(input.headline?.trim() ?? '');
 	const appName = escapeHtml(APP_NAME);
 	const brandTagline = escapeHtml(BRAND_TAGLINE);
 	const websiteUrl = escapeHtml(URIXOFT_WEBSITE);
@@ -88,6 +91,31 @@ export function buildTransactionalEmailHtml(input: TransactionalEmailLayoutInput
 				'</tr>'
 			]
 		: [];
+
+	const sentViaFooterRow = input.sentViaFooter
+		? [
+				'<tr>',
+				'<td style="padding:16px 32px 24px 32px;',
+				input.footerNoteHtml ? '' : `border-top:1px solid ${BORDER};`,
+				'font-family:Arial,Helvetica,sans-serif;">',
+				buildSentViaFooterHtml(),
+				'</td>',
+				'</tr>'
+			]
+		: [];
+
+	const headlineBlock = headline
+		? [
+				'<h1 style="margin:0 0 8px 0;',
+				'font-size:22px;line-height:28px;',
+				'font-weight:600;',
+				`color:${TEXT_PRIMARY};">`,
+				headline,
+				'</h1>'
+			].join('')
+		: '';
+
+	const bodyCellPadding = headline ? 'padding:24px 32px 0 32px;' : 'padding:24px 32px;';
 
 	return [
 		'<!DOCTYPE html>',
@@ -167,19 +195,15 @@ export function buildTransactionalEmailHtml(input: TransactionalEmailLayoutInput
 		'background-color:#ffffff;',
 		'border-radius:12px;overflow:hidden;">',
 		'<tr>',
-		'<td style="padding:24px 32px 0 32px;',
+		`<td style="${bodyCellPadding}`,
 		'font-family:Arial,Helvetica,sans-serif;">',
-		'<h1 style="margin:0 0 8px 0;',
-		'font-size:22px;line-height:28px;',
-		'font-weight:600;',
-		`color:${TEXT_PRIMARY};">`,
-		headline,
-		'</h1>',
+		headlineBlock,
 		input.bodyHtml,
 		'</td>',
 		'</tr>',
 		...illustrationRow,
 		...footerNoteRow,
+		...sentViaFooterRow,
 		'</table>',
 		'<table role="presentation"',
 		'width="520" cellpadding="0"',
@@ -257,6 +281,10 @@ export function buildFooterNoteHtml(text: string): string {
 		text,
 		'</p>'
 	].join('\n');
+}
+
+export function buildSentViaFooterHtml(): string {
+	return buildFooterNoteHtml(escapeHtml(SENT_VIA_URIXOFT_WORKSPACE_TEXT));
 }
 
 export function buildBodyParagraphHtml(text: string): string {

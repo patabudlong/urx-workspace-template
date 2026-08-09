@@ -1,8 +1,8 @@
 import { sendMail } from '$lib/server/mail/index';
+import { EMAIL_ASSETS, resolveEmailAssetUrl, resolveEmailLogoUrl } from '$lib/server/mail/email-assets';
 import {
 	buildPlatformWorkspaceUrl,
-	formatPlatformWorkspaceHost,
-	resolvePlatformWorkspaceOrigin
+	formatPlatformWorkspaceHost
 } from '$lib/server/mail/platform-origin';
 import {
 	buildSimpleEmailHtml,
@@ -17,14 +17,13 @@ export async function sendWorkspaceApprovedEmail(input: {
 	origin: string;
 }): Promise<void> {
 	const greeting = input.firstName.trim() || 'there';
-	const platformOrigin = resolvePlatformWorkspaceOrigin(input.origin);
 	const platformHost = formatPlatformWorkspaceHost(input.origin);
 	const dashboardUrl = buildPlatformWorkspaceUrl(input.origin, '/login');
 	const content = {
 		title: 'Your workspace is approved',
 		greeting,
-		logoUrl: `${platformOrigin}/email/urixoft-logo.png`,
-		illustrationUrl: `${platformOrigin}/email/workspace-approved.png`,
+		logoUrl: resolveEmailLogoUrl(input.origin),
+		illustrationUrl: resolveEmailAssetUrl(EMAIL_ASSETS.workspaceApproved, input.origin),
 		illustrationAlt: 'Workspace approved welcome illustration',
 		preheader: `${input.workspaceName} is ready. Sign in to open your dashboard.`,
 		paragraphs: [

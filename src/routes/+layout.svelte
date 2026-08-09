@@ -38,6 +38,6 @@
 </svelte:head>
 
 <ModeWatcher />
-<Toaster richColors closeButton />
+<Toaster position="top-right" richColors closeButton />
 
 {@render children()}

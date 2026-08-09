@@ -1,5 +1,5 @@
 import { sendMail } from '$lib/server/mail/index';
-import { resolvePlatformWorkspaceOrigin } from '$lib/server/mail/platform-origin';
+import { EMAIL_ASSETS, resolveEmailAssetUrl, resolveEmailLogoUrl } from '$lib/server/mail/email-assets';
 import {
 	buildSimpleEmailHtml,
 	buildSimpleEmailText
@@ -23,14 +23,13 @@ export async function sendTeamInvitationEmail(input: {
 	origin: string;
 	expiresAt: Date;
 }): Promise<void> {
-	const platformOrigin = resolvePlatformWorkspaceOrigin(input.origin);
 	const roleLabel = findTeamInviteRoleOption(input.role)?.label ?? input.role;
 	const expiryLabel = formatInvitationExpiry(input.expiresAt);
 	const content = {
 		title: `You're invited to ${input.workspaceName}`,
 		greeting: 'there',
-		logoUrl: `${platformOrigin}/email/urixoft-logo.png`,
-		illustrationUrl: `${platformOrigin}/email/team-invitation.png`,
+		logoUrl: resolveEmailLogoUrl(input.origin),
+		illustrationUrl: resolveEmailAssetUrl(EMAIL_ASSETS.teamInvitation, input.origin),
 		illustrationAlt: 'Workspace invitation illustration',
 		illustrationWidth: 400,
 		preheader: `${input.inviterName} invited you to join ${input.workspaceName} on Urixoft Workspace.`,

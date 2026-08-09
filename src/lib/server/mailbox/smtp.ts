@@ -28,7 +28,7 @@ export async function sendMailboxMessage(
 		bodyHtml,
 		requestOrigin: options.requestOrigin
 	});
-	const text = buildMailboxOutboundEmailText(input.subject, input.text);
+	const text = buildMailboxOutboundEmailText(input.text);
 
 	const info = await transport.sendMail({
 		from: {
