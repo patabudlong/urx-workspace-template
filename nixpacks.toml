@@ -1,0 +1,18 @@
+# Coolify / Nixpacks — SvelteKit (adapter-node) on pnpm
+# Do not use npm ci: package-lock.json is not maintained; pnpm-lock.yaml is the source of truth.
+
+[variables]
+HOST = "0.0.0.0"
+PORT = "3000"
+NIXPACKS_NODE_VERSION = "20"
+# Prevent Nixpacks from serving the Vite app via Caddy (we run the Node adapter)
+NIXPACKS_SPA_CADDY = "false"
+
+[phases.install]
+cmds = ["pnpm install --frozen-lockfile --prod=false"]
+
+[phases.build]
+cmds = ["pnpm run build"]
+
+[start]
+cmd = "NODE_ENV=production node build"

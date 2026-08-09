@@ -1,11 +1,27 @@
-import adapter from '@sveltejs/adapter-auto';
+import adapter from '@sveltejs/adapter-node';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
 	server: {
 		host: true
+	},
+	build: {
+		rolldownOptions: {
+			// SvelteKit guard plugins routinely dominate CPU time; suppress noisy timing report.
+			checks: {
+				pluginTimings: false
+			}
+		}
+	},
+	resolve: {
+		alias: {
+			// sveltekit-superforms/adapters re-exports Vine; stub it so the client build
+			// never analyzes node:dns/promises from @vinejs/vine (Zod-only app).
+			'@vinejs/vine': fileURLToPath(new URL('./src/lib/stubs/vinejs.ts', import.meta.url))
+		}
 	},
 	plugins: [
 		tailwindcss(),
@@ -15,10 +31,7 @@ export default defineConfig({
 				runes: ({ filename }) =>
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
-
-			// adapter-auto only supports some environments, see https://svelte.dev/docs/kit/adapter-auto for a list.
-			// If your environment is not supported, or you settled on a specific environment, switch out the adapter.
-			// See https://svelte.dev/docs/kit/adapters for more information about adapters.
+			// Coolify / Nixpacks — Node server (see nixpacks.toml)
 			adapter: adapter()
 		})
 	]

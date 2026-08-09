@@ -5,6 +5,7 @@ const POSTMARK_API_URL = 'https://api.postmarkapp.com/email';
 export function createPostmarkTransport(config: {
 	serverToken: string;
 	from: string;
+	messageStream: string;
 }): MailTransport {
 	return {
 		async send(message: MailMessage) {
@@ -21,7 +22,7 @@ export function createPostmarkTransport(config: {
 					Subject: message.subject,
 					TextBody: message.text,
 					HtmlBody: message.html,
-					MessageStream: 'outbound',
+					MessageStream: config.messageStream,
 					Attachments: message.attachments?.map((attachment) => ({
 						Name: attachment.filename,
 						Content: attachment.content.toString('base64'),
