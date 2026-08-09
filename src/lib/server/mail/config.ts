@@ -31,11 +31,12 @@ export function getSmtpConfig() {
 
 export function getPostmarkConfig() {
 	const serverToken = env.POSTMARK_SERVER_TOKEN?.trim();
-	const from = env.SMTP_FROM?.trim();
+	const from = env.POSTMARK_FROM?.trim() || env.SMTP_FROM?.trim();
+	const messageStream = env.POSTMARK_MESSAGE_STREAM?.trim() || 'outbound';
 
 	if (!serverToken || !from) {
 		return null;
 	}
 
-	return { serverToken, from };
+	return { serverToken, from, messageStream };
 }

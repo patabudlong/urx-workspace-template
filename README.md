@@ -33,11 +33,13 @@ Copy `.env.example` to `.env` and adjust as needed.
 | `PUBLIC_BRAND_PRIMARY` | Logo primary blue — very important actions (`Button` default) |
 | `PUBLIC_BRAND_SECONDARY` | Logo mid blue — important actions (`variant="secondary"`) |
 | `PUBLIC_BRAND_TERTIARY` | Logo light blue — less important actions (`variant="tertiary"`) |
-| `SMTP_HOST` | SMTP server host (MailHog: `localhost`) |
-| `SMTP_PORT` | SMTP server port (MailHog: `1025`) |
-| `SMTP_FROM` | Default From address for outbound mail |
-| `MAIL_PROVIDER` | `smtp` (default, MailHog) or `postmark` |
+| `MAIL_PROVIDER` | `mailhog` (default, local) or `postmark` — restart after switch |
+| `SMTP_HOST` | MailHog SMTP host (`localhost`) |
+| `SMTP_PORT` | MailHog SMTP port (`1025`) |
+| `SMTP_FROM` | From address when `MAIL_PROVIDER=mailhog` |
 | `POSTMARK_SERVER_TOKEN` | Postmark server token when `MAIL_PROVIDER=postmark` |
+| `POSTMARK_FROM` | From address when `MAIL_PROVIDER=postmark` |
+| `POSTMARK_MESSAGE_STREAM` | Postmark stream (default `outbound`) |
 | `MAILBOX_IMAP_HOST` | Default IMAP host for mailbox connect (PrivateEmail: `mail.privateemail.com`) |
 | `MAILBOX_IMAP_PORT` | Default IMAP port (`993`) |
 | `MAILBOX_IMAP_SECURE` | IMAP TLS (`true` for port 993) |
@@ -106,10 +108,21 @@ MailHog captures SMTP on `localhost:1025`; open the inbox at [http://localhost:8
 ```sh
 pnpm check              # TypeScript + Svelte validation
 pnpm build              # production build
+pnpm start              # run adapter-node server (Coolify / production)
 pnpm preview            # preview production build
 pnpm rotate:jwt-secret  # rotate JWT signing key
 pnpm upload:email-assets # sync static/email/* to Linode Object Storage
 ```
+
+## Deploy (Coolify / Nixpacks)
+
+Uses the same Nixpacks layout as `ux-platform` / `platform` (`nixpacks.toml`):
+
+- Build: `pnpm install --frozen-lockfile` → `pnpm run build`
+- Start: `NODE_ENV=production node build` on `0.0.0.0:3000`
+- Adapter: `@sveltejs/adapter-node`
+
+In Coolify, set build pack to **Nixpacks**, expose port **3000**, and configure the production env vars (see `.env.example`). Do not commit `.env`.
 
 ## Workspace packages
 
