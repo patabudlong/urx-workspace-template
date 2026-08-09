@@ -15,19 +15,24 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		throw error(400, 'Invalid message id');
 	}
 
-	try {
-		const message = await getMailboxMessage(locals.user!.id, folder, uid);
-		if (!message) {
-			throw error(404, 'Message not found');
-		}
+	return {
+		folder,
+		message: (async () => {
+			try {
+				const mailboxMessage = await getMailboxMessage(locals.user!.id, folder, uid);
+				if (!mailboxMessage) {
+					throw error(404, 'Message not found');
+				}
 
-		return { folder, message };
-	} catch (loadError) {
-		if (loadError && typeof loadError === 'object' && 'status' in loadError) {
-			throw loadError;
-		}
+				return mailboxMessage;
+			} catch (loadError) {
+				if (loadError && typeof loadError === 'object' && 'status' in loadError) {
+					throw loadError;
+				}
 
-		const message = loadError instanceof Error ? loadError.message : 'Failed to load message';
-		throw error(503, message);
-	}
+				const message = loadError instanceof Error ? loadError.message : 'Failed to load message';
+				throw error(503, message);
+			}
+		})()
+	};
 };

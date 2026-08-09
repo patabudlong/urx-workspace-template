@@ -9,23 +9,13 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		return {
 			connection,
 			configured: false,
-			folders: []
+			folders: Promise.resolve([])
 		};
 	}
 
-	try {
-		const folders = await listMailboxFolders(locals.user!.id);
-		return {
-			connection,
-			configured: true,
-			folders
-		};
-	} catch {
-		return {
-			connection,
-			configured: true,
-			folders: [],
-			loadError: 'Could not load mailbox folders. Reconnect your PrivateEmail account in settings.'
-		};
-	}
+	return {
+		connection,
+		configured: true,
+		folders: listMailboxFolders(locals.user!.id)
+	};
 };
