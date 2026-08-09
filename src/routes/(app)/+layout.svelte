@@ -19,7 +19,8 @@
 	const isSettingsSection = $derived(
 		pathname === '/account' || pathname === '/security' || pathname === '/billing'
 	);
-	const isNestedAppSection = $derived(isTeamSection || isSettingsSection);
+	const isMailboxSection = $derived(pathname === '/mailbox' || pathname.startsWith('/mailbox/'));
+	const isNestedAppSection = $derived(isTeamSection || isSettingsSection || isMailboxSection);
 </script>
 
 <PreventStaleAuthView />

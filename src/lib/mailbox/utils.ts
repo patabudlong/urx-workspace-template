@@ -1,4 +1,11 @@
+import type { Component } from 'svelte';
 import type { MailboxFolder } from '$lib/shared/mailbox/schemas';
+import ArchiveIcon from '@lucide/svelte/icons/archive';
+import FileIcon from '@lucide/svelte/icons/file';
+import FolderIcon from '@lucide/svelte/icons/folder';
+import InboxIcon from '@lucide/svelte/icons/inbox';
+import SendIcon from '@lucide/svelte/icons/send';
+import Trash2Icon from '@lucide/svelte/icons/trash-2';
 
 const SPECIAL_FOLDER_LABELS: Record<string, string> = {
 	'\\Inbox': 'Inbox',
@@ -15,6 +22,23 @@ export function encodeMailboxFolder(path: string): string {
 
 export function decodeMailboxFolder(encoded: string): string {
 	return decodeURIComponent(encoded);
+}
+
+export function getMailboxFolderIcon(folder: MailboxFolder): Component {
+	switch (folder.specialUse) {
+		case '\\Inbox':
+			return InboxIcon;
+		case '\\Sent':
+			return SendIcon;
+		case '\\Drafts':
+			return FileIcon;
+		case '\\Trash':
+			return Trash2Icon;
+		case '\\Archive':
+			return ArchiveIcon;
+		default:
+			return FolderIcon;
+	}
 }
 
 export function getMailboxFolderLabel(folder: MailboxFolder): string {
