@@ -205,6 +205,7 @@ export type MailboxComposeDraft = {
 	cc: string;
 	subject: string;
 	quotedText: string;
+	quotedHtml: string;
 };
 
 function extractMailboxEmail(address: string): string {
@@ -240,6 +241,41 @@ function buildQuotedText(message: MailboxMessageDetail): string {
 	return lines.join('\n');
 }
 
+export function buildQuotedHtml(message: MailboxMessageDetail): string {
+	const from = escapeMailboxHtml(message.from || 'Unknown sender');
+	const to = escapeMailboxHtml(message.to.join(', ') || '—');
+	const cc =
+		message.cc.length > 0 ? escapeMailboxHtml(message.cc.join(', ')) : '';
+	const date = escapeMailboxHtml(formatMailboxDate(message.date));
+	const subject = escapeMailboxHtml(message.subject || '(No subject)');
+
+	const header = [
+		'<div style="margin:1em 0 0;padding-top:12px;',
+		'border-top:1px solid #e4e4e7;color:#52525b;',
+		'font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.5;">',
+		'<p style="margin:0 0 10px 0;font-weight:600;">',
+		'---------- Forwarded message ----------',
+		'</p>',
+		`<p style="margin:0 0 4px 0;"><strong>From:</strong> ${from}</p>`,
+		`<p style="margin:0 0 4px 0;"><strong>Date:</strong> ${date}</p>`,
+		`<p style="margin:0 0 4px 0;"><strong>Subject:</strong> ${subject}</p>`,
+		`<p style="margin:0 0 4px 0;"><strong>To:</strong> ${to}</p>`,
+		...(cc ? [`<p style="margin:0 0 4px 0;"><strong>Cc:</strong> ${cc}</p>`] : []),
+		'</div>'
+	].join('');
+
+	const body = message.html?.trim()
+		? [
+				'<div style="margin:8px 0 0;font-size:14px;line-height:1.65;',
+				'color:#18181b;overflow-wrap:anywhere;word-break:break-word;">',
+				message.html,
+				'</div>'
+			].join('')
+		: plainTextToQuotedHtml((message.text || message.preview || '(Empty message)').trim());
+
+	return `${header}${body}`;
+}
+
 export function buildMailboxComposeDraft(
 	mode: MailboxComposeMode,
 	message: MailboxMessageDetail,
@@ -254,7 +290,8 @@ export function buildMailboxComposeDraft(
 			to: '',
 			cc: '',
 			subject: withSubjectPrefix(message.subject, 'Fwd'),
-			quotedText
+			quotedText,
+			quotedHtml: buildQuotedHtml(message)
 		};
 	}
 
@@ -276,7 +313,8 @@ export function buildMailboxComposeDraft(
 		to: fromEmail,
 		cc,
 		subject: withSubjectPrefix(message.subject, 'Re'),
-		quotedText
+		quotedText,
+		quotedHtml: ''
 	};
 }
 

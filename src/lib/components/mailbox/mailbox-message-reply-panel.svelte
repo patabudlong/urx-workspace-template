@@ -11,7 +11,6 @@
 		htmlToPlainText,
 		isMailboxComposeHtmlEmpty,
 		parseRecipientInput,
-		plainTextToQuotedHtml,
 		type MailboxComposeMode
 	} from '$lib/mailbox/utils';
 	import type { MailboxSignature } from '$lib/shared/mailbox/signature';
@@ -83,7 +82,7 @@
 		const ccRecipients = parseRecipientInput(cc);
 		const plainMessage = htmlToPlainText(html);
 		const includeQuotedMessage = mode === 'forward';
-		const quotedHtml = includeQuotedMessage ? plainTextToQuotedHtml(draft.quotedText) : '';
+		const quotedHtml = includeQuotedMessage ? draft.quotedHtml : '';
 		const hasUserContent = !isMailboxComposeHtmlEmpty(html);
 		const { text: textBody, html: htmlBody } = appendMailboxSignatureToBodies({
 			plainMessage: hasUserContent ? plainMessage : '',

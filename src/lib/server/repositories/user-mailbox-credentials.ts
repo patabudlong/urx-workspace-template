@@ -6,7 +6,7 @@ import type {
 	UserMailboxCredentialsStatus
 } from '$lib/shared/models/user-mailbox-credentials';
 import type { MailboxSignature } from '$lib/shared/mailbox/signature';
-import { EMPTY_MAILBOX_SIGNATURE } from '$lib/shared/mailbox/signature';
+import { EMPTY_MAILBOX_SIGNATURE, normalizeMailboxSignature } from '$lib/shared/mailbox/signature';
 import { ObjectId } from 'mongodb';
 
 const statusProjection = {
@@ -28,7 +28,7 @@ function mapMailboxSignature(
 	}
 
 	const { updatedAt: _updatedAt, ...signature } = record.signature;
-	return signature;
+	return normalizeMailboxSignature(signature);
 }
 
 let indexPromise: Promise<void> | null = null;

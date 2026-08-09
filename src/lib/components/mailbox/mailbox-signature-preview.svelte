@@ -12,9 +12,13 @@
 		class?: string;
 	} = $props();
 
-	const configured = $derived(isMailboxSignatureConfigured(signature));
-	const previewHtml = $derived(configured ? buildMailboxSignatureHtml(signature) : '');
-	const previewText = $derived(configured ? buildMailboxSignatureText(signature) : '');
+	const configured = $derived.by(() => isMailboxSignatureConfigured(signature));
+	const previewHtml = $derived.by(() =>
+		configured ? buildMailboxSignatureHtml(signature) : ''
+	);
+	const previewText = $derived.by(() =>
+		configured ? buildMailboxSignatureText(signature) : ''
+	);
 </script>
 
 {#if configured}

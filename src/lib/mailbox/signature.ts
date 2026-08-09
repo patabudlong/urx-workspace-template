@@ -22,6 +22,9 @@ export function buildMailboxSignatureText(signature: MailboxSignature): string {
 	if (signature.phone.trim()) {
 		contacts.push(signature.phone.trim());
 	}
+	if (signature.mobile.trim()) {
+		contacts.push(signature.mobile.trim());
+	}
 	if (contacts.length > 0) {
 		lines.push(contacts.join(' · '));
 	}
@@ -38,6 +41,7 @@ export function buildMailboxSignatureHtml(signature: MailboxSignature): string {
 	const company = escapeMailboxHtml(signature.companyName.trim());
 	const email = escapeMailboxHtml(signature.email.trim());
 	const phone = escapeMailboxHtml(signature.phone.trim());
+	const mobile = escapeMailboxHtml(signature.mobile.trim());
 	const address = escapeMailboxHtml(signature.address.trim());
 	const logoUrl = signature.logoUrl.trim();
 
@@ -49,6 +53,9 @@ export function buildMailboxSignatureHtml(signature: MailboxSignature): string {
 	}
 	if (phone) {
 		contactParts.push(`<span>${phone}</span>`);
+	}
+	if (mobile) {
+		contactParts.push(`<span>${mobile}</span>`);
 	}
 
 	const hasDetailsBelowCompany = contactParts.length > 0 || Boolean(address);

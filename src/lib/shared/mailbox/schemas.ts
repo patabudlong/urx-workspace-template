@@ -25,7 +25,7 @@ export const MAILBOX_SEND_MESSAGE_SCHEMA = z.object({
 	bcc: z.array(z.email()).max(50).optional(),
 	subject: z.string().trim().min(1).max(998),
 	text: z.string().trim().min(1).max(100_000),
-	html: z.string().trim().max(200_000).optional(),
+	html: z.string().trim().max(1_000_000).optional(),
 	replyTo: z.email().optional()
 });
 

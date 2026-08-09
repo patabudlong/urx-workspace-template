@@ -4,8 +4,7 @@ import {
 	getMailboxConnectionStatus,
 	upsertMailboxSignature
 } from '$lib/server/repositories/user-mailbox-credentials';
-import { MAILBOX_SIGNATURE_SCHEMA } from '$lib/shared/mailbox/signature';
-import { isMailboxSignatureConfigured } from '$lib/shared/mailbox/signature';
+import { MAILBOX_SIGNATURE_SCHEMA, normalizeMailboxSignature, isMailboxSignatureConfigured } from '$lib/shared/mailbox/signature';
 
 export const load: PageServerLoad = async () => ({
 	meta: {
@@ -31,6 +30,7 @@ export const actions: Actions = {
 			companyName: String(formData.get('companyName') ?? ''),
 			logoUrl: String(formData.get('logoUrl') ?? ''),
 			phone: String(formData.get('phone') ?? ''),
+			mobile: String(formData.get('mobile') ?? ''),
 			address: String(formData.get('address') ?? '')
 		});
 
@@ -40,14 +40,16 @@ export const actions: Actions = {
 			});
 		}
 
-		if (!isMailboxSignatureConfigured(parsed.data)) {
+		const signature = normalizeMailboxSignature(parsed.data);
+
+		if (!isMailboxSignatureConfigured(signature)) {
 			return fail(400, {
 				signatureError: 'Add at least a name, email, company, or contact detail for your signature.'
 			});
 		}
 
 		try {
-			await upsertMailboxSignature(locals.user!.id, parsed.data);
+			await upsertMailboxSignature(locals.user!.id, signature);
 		} catch (error) {
 			const message =
 				error instanceof Error ? error.message : 'Could not save your email signature.';

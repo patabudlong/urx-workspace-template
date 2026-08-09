@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { page } from '$app/state';
 	import MailboxSignaturePreview from '$lib/components/mailbox/mailbox-signature-preview.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -8,20 +9,32 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Textarea } from '$lib/components/ui/textarea/index.js';
-	import { EMPTY_MAILBOX_SIGNATURE, isMailboxSignatureConfigured } from '$lib/shared/mailbox/signature';
+	import {
+		EMPTY_MAILBOX_SIGNATURE,
+		isMailboxSignatureConfigured,
+		normalizeMailboxSignature,
+		type MailboxSignature
+	} from '$lib/shared/mailbox/signature';
 	import SignatureIcon from '@lucide/svelte/icons/signature';
 
 	let { data, form } = $props();
 
 	let savingSignature = $state(false);
-	let signature = $state({ ...EMPTY_MAILBOX_SIGNATURE });
-	let includeByDefault = $state(true);
+	let signature = $state<MailboxSignature>({ ...EMPTY_MAILBOX_SIGNATURE });
+	let syncedServerSignature = $state<string | null>(null);
 
-	const signatureConfigured = $derived(isMailboxSignatureConfigured(signature));
+	const serverSignature = $derived(normalizeMailboxSignature(page.data.signature));
+	const signatureConfigured = $derived.by(() => isMailboxSignatureConfigured(signature));
 
 	$effect(() => {
-		signature = { ...data.signature };
-		includeByDefault = data.signature.includeByDefault;
+		const nextKey = JSON.stringify(serverSignature);
+
+		if (nextKey === syncedServerSignature) {
+			return;
+		}
+
+		syncedServerSignature = nextKey;
+		signature = { ...serverSignature };
 	});
 </script>
 
@@ -80,7 +93,10 @@
 					<div class="bg-muted/30 flex items-start gap-3 rounded-lg border p-4">
 						<Checkbox
 							id="includeByDefault"
-							bind:checked={includeByDefault}
+							checked={signature.includeByDefault}
+							onCheckedChange={(checked) => {
+								signature.includeByDefault = checked === true;
+							}}
 							disabled={savingSignature}
 						/>
 						<div class="space-y-1">
@@ -91,7 +107,11 @@
 								When replying or composing, the signature checkbox will start checked.
 							</p>
 						</div>
-						<input type="hidden" name="includeByDefault" value={includeByDefault ? 'on' : ''} />
+						<input
+							type="hidden"
+							name="includeByDefault"
+							value={signature.includeByDefault ? 'on' : ''}
+						/>
 					</div>
 
 					<div class="grid gap-4 sm:grid-cols-2">
@@ -161,6 +181,17 @@
 								type="tel"
 								autocomplete="tel"
 								bind:value={signature.phone}
+								disabled={savingSignature}
+							/>
+						</div>
+						<div class="space-y-2">
+							<Label for="signature-mobile">Mobile number</Label>
+							<Input
+								id="signature-mobile"
+								name="mobile"
+								type="tel"
+								autocomplete="tel"
+								bind:value={signature.mobile}
 								disabled={savingSignature}
 							/>
 						</div>

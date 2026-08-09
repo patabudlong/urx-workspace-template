@@ -4,6 +4,7 @@ import { createImapClient } from './verify';
 import { sortMailboxFolders } from '$lib/mailbox/utils';
 import type { MailboxFolder, MailboxMessageDetail, MailboxMessageSummary } from '$lib/shared/mailbox/schemas';
 import { getMailboxConfig } from './config';
+import { inlineCidImagesInHtml } from './html';
 import { verifyMailboxCredentials } from './verify';
 
 type AddressLike = {
@@ -282,6 +283,10 @@ export async function getMailboxMessage(
 			const parsed = await simpleParser(message.source);
 			const summary = mapSummary(message);
 			let seen = summary.seen;
+			const rawHtml = parsed.html ? String(parsed.html) : null;
+			const html = rawHtml
+				? inlineCidImagesInHtml(rawHtml, parsed.attachments)
+				: null;
 
 			if (options.markSeen && !seen) {
 				await client.messageFlagsAdd(uid, ['\\Seen'], { uid: true });
@@ -296,7 +301,7 @@ export async function getMailboxMessage(
 				messageId: parsed.messageId ?? null,
 				inReplyTo: parsed.inReplyTo ?? null,
 				text: parsed.text?.trim() || parsed.textAsHtml?.replace(/<[^>]+>/g, ' ').trim() || '',
-				html: parsed.html ? String(parsed.html) : null
+				html
 			};
 		} finally {
 			lock.release();
