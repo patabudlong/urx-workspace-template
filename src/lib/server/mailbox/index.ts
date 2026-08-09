@@ -7,6 +7,7 @@ export {
 export { encryptMailboxPassword, decryptMailboxPassword } from './credentials';
 export {
 	getMailboxMessage,
+	invalidateMailboxImapSession,
 	listMailboxFolderPage,
 	listMailboxFolders,
 	listMailboxMessages,

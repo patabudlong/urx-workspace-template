@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
 import { decodeMailboxFolder } from '$lib/mailbox/utils';
-import { listMailboxFolderPage } from '$lib/server/mailbox';
+import { listMailboxFolders, listMailboxMessages } from '$lib/server/mailbox';
 
 export const load: LayoutServerLoad = async ({ locals, parent, params, url, depends }) => {
 	depends('mailbox:messages');
@@ -14,23 +14,25 @@ export const load: LayoutServerLoad = async ({ locals, parent, params, url, depe
 	const folder = decodeMailboxFolder(params.folder);
 	const page = Number(url.searchParams.get('page') ?? '1');
 	const limit = 25;
+	const userId = locals.user!.id;
 
-	// Return promises so IMAP stays off the navigation critical path.
-	// SvelteKit streams them; the shell paints immediately, then the list fills in.
-	const folderPage = listMailboxFolderPage(locals.user!.id, folder, page, limit);
+	// Stream messages independently of folder STATUS. Queue order matters: start
+	// the message list first so it resolves (and paints) before sidebar counts.
+	const messagesPromise = listMailboxMessages(userId, folder, page, limit);
+	const foldersPromise = listMailboxFolders(userId);
 
 	return {
 		folder,
 		page,
 		limit,
-		folders: folderPage.then((result) => result.folders),
-		mailbox: folderPage.then((result) => ({
-			messages: result.items,
+		folders: foldersPromise,
+		mailbox: messagesPromise.then(({ items, total }) => ({
+			messages: items,
 			pagination: {
 				page,
 				limit,
-				total: result.total,
-				hasMore: page * limit < result.total
+				total,
+				hasMore: page * limit < total
 			}
 		}))
 	};

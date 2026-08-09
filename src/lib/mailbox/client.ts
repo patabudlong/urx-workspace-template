@@ -10,6 +10,9 @@ import type { ApiSuccessResponse, PaginationMeta } from '$lib/shared/api/types';
 const messageCache = new Map<string, MailboxMessageDetail>();
 const inflightRequests = new Map<string, Promise<MailboxMessageDetail>>();
 
+/** Hover prefetch is gated so it cannot compete with an in-flight folder list load. */
+let messagePrefetchEnabled = false;
+
 type FetchMailboxMessageOptions = {
 	signal?: AbortSignal;
 	/** When true, sets the IMAP \\Seen flag (opening a message). Prefetch must leave this false. */
@@ -67,7 +70,20 @@ export function getCachedMailboxMessage(
 	return messageCache.get(cacheKey(folder, uid)) ?? null;
 }
 
+export function setMailboxMessagePrefetchEnabled(enabled: boolean): void {
+	messagePrefetchEnabled = enabled;
+}
+
 export function prefetchMailboxMessage(folder: string, uid: number): void {
+	if (!messagePrefetchEnabled) {
+		return;
+	}
+
+	const key = cacheKey(folder, uid);
+	if (messageCache.has(key) || inflightRequests.has(key)) {
+		return;
+	}
+
 	void fetchMailboxMessage(folder, uid).catch(() => undefined);
 }
 

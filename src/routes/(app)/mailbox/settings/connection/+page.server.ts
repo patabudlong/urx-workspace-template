@@ -1,6 +1,10 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { buildMailboxConfigFromConnect, verifyMailboxCredentials } from '$lib/server/mailbox';
+import {
+	buildMailboxConfigFromConnect,
+	invalidateMailboxImapSession,
+	verifyMailboxCredentials
+} from '$lib/server/mailbox';
 import {
 	deleteMailboxCredentialsForUser,
 	upsertMailboxCredentialsForUser
@@ -36,6 +40,7 @@ export const actions: Actions = {
 		}
 
 		try {
+			await invalidateMailboxImapSession(locals.user!.id);
 			await upsertMailboxCredentialsForUser(locals.user!.id, verification.config);
 		} catch (error) {
 			const message =
@@ -48,6 +53,7 @@ export const actions: Actions = {
 		return { success: true };
 	},
 	disconnect: async ({ locals }) => {
+		await invalidateMailboxImapSession(locals.user!.id);
 		await deleteMailboxCredentialsForUser(locals.user!.id);
 		return { disconnected: true };
 	}

@@ -52,23 +52,92 @@ function hasAttachments(bodyStructure: unknown): boolean {
 /** PrivateEmail (and similar) often choke on concurrent IMAP logins — serialize per user. */
 const imapQueues = new Map<string, Promise<unknown>>();
 
+/** Keep the TLS session warm briefly so list → open / folders → messages skip reconnect. */
+const IMAP_SESSION_IDLE_MS = 60_000;
+
+type ImapSession = {
+	client: ImapFlow;
+	idleTimer: ReturnType<typeof setTimeout> | null;
+};
+
+const imapSessions = new Map<string, ImapSession>();
+
+async function destroyImapSession(userId: string): Promise<void> {
+	const session = imapSessions.get(userId);
+	if (!session) {
+		return;
+	}
+
+	imapSessions.delete(userId);
+	if (session.idleTimer) {
+		clearTimeout(session.idleTimer);
+		session.idleTimer = null;
+	}
+
+	await session.client.logout().catch(() => undefined);
+}
+
+function scheduleImapIdleLogout(userId: string): void {
+	const session = imapSessions.get(userId);
+	if (!session) {
+		return;
+	}
+
+	if (session.idleTimer) {
+		clearTimeout(session.idleTimer);
+	}
+
+	session.idleTimer = setTimeout(() => {
+		void destroyImapSession(userId);
+	}, IMAP_SESSION_IDLE_MS);
+}
+
+async function acquireImapClient(userId: string): Promise<ImapFlow> {
+	const existing = imapSessions.get(userId);
+	if (existing) {
+		if (existing.idleTimer) {
+			clearTimeout(existing.idleTimer);
+			existing.idleTimer = null;
+		}
+
+		if (existing.client.usable) {
+			return existing.client;
+		}
+
+		await destroyImapSession(userId);
+	}
+
+	const config = await getMailboxConfig(userId);
+	if (!config) {
+		throw new Error('Mailbox is not configured');
+	}
+
+	const client = createImapClient(config);
+	await client.connect();
+	imapSessions.set(userId, { client, idleTimer: null });
+	return client;
+}
+
+/** Drop a pooled IMAP session (e.g. after reconnect / disconnect). */
+export async function invalidateMailboxImapSession(userId: string): Promise<void> {
+	await destroyImapSession(userId);
+}
+
 async function withImapClient<T>(userId: string, fn: (client: ImapFlow) => Promise<T>): Promise<T> {
 	const previous = imapQueues.get(userId) ?? Promise.resolve();
 
 	const run = previous.catch(() => undefined).then(async () => {
-		const config = await getMailboxConfig(userId);
-		if (!config) {
-			throw new Error('Mailbox is not configured');
-		}
-
-		const client = createImapClient(config);
-
-		await client.connect();
+		const client = await acquireImapClient(userId);
 
 		try {
 			return await fn(client);
+		} catch (error) {
+			if (!client.usable) {
+				await destroyImapSession(userId);
+			}
+			throw error;
 		} finally {
-			await client.logout().catch(() => undefined);
+			scheduleImapIdleLogout(userId);
 		}
 	});
 
@@ -232,7 +301,10 @@ export async function listMailboxMessages(
 	return withImapClient(userId, (client) => fetchMailboxMessages(client, folder, page, limit));
 }
 
-/** One IMAP connection for sidebar folders + message list (Overview → Mailbox entry). */
+/**
+ * Messages first so the inbox list can stream before folder STATUS finishes.
+ * Uses one pooled session for both steps when called from the API.
+ */
 export async function listMailboxFolderPage(
 	userId: string,
 	folder: string,
@@ -244,8 +316,8 @@ export async function listMailboxFolderPage(
 	total: number;
 }> {
 	return withImapClient(userId, async (client) => {
-		const folders = await fetchMailboxFolders(client);
 		const { items, total } = await fetchMailboxMessages(client, folder, page, limit);
+		const folders = await fetchMailboxFolders(client);
 		return { folders, items, total };
 	});
 }

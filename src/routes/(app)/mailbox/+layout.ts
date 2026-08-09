@@ -13,7 +13,7 @@ export const load: LayoutLoad = async ({ data, fetch, params }) => {
 		};
 	}
 
-	// Folder routes load folders with messages in one server-streamed request.
+	// Folder routes stream messages + folders from [folder]/+layout.server.ts.
 	// Track `params.folder` only — never `url.pathname`, or this re-runs on every
 	// message open (/mailbox/INBOX → /mailbox/INBOX/123) and stalls navigation.
 	if (params.folder) {

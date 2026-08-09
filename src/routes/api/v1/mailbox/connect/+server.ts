@@ -1,6 +1,10 @@
 import type { RequestHandler } from './$types';
 import { jsonError, jsonOk } from '$lib/server/api/response';
-import { buildMailboxConfigFromConnect, verifyMailboxCredentials } from '$lib/server/mailbox';
+import {
+	buildMailboxConfigFromConnect,
+	invalidateMailboxImapSession,
+	verifyMailboxCredentials
+} from '$lib/server/mailbox';
 import {
 	deleteMailboxCredentialsForUser,
 	upsertMailboxCredentialsForUser
@@ -29,6 +33,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		return jsonError('BAD_REQUEST', verification.message, { requestId });
 	}
 
+	await invalidateMailboxImapSession(locals.user.id);
 	const status = await upsertMailboxCredentialsForUser(locals.user.id, verification.config);
 	return jsonOk(status, { requestId, status: 201 });
 };
@@ -40,6 +45,7 @@ export const DELETE: RequestHandler = async ({ locals, request }) => {
 		return jsonError('UNAUTHORIZED', 'Authentication required', { requestId });
 	}
 
+	await invalidateMailboxImapSession(locals.user.id);
 	await deleteMailboxCredentialsForUser(locals.user.id);
 	return jsonOk({ connected: false }, { requestId });
 };

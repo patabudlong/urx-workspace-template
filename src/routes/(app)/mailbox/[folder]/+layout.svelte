@@ -6,6 +6,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import type { MailboxFolder, MailboxMessageSummary } from '$lib/shared/mailbox/schemas';
+	import { setMailboxMessagePrefetchEnabled } from '$lib/mailbox/client';
 	import { getMailboxFolderLabel, isMailboxInboxPath } from '$lib/mailbox/utils';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
@@ -41,12 +42,14 @@
 			mailbox = next as MailboxListData;
 			mailboxFolder = folder;
 			mailboxPage = pageNum;
+			setMailboxMessagePrefetchEnabled(true);
 			return;
 		}
 
 		// Clear only when folder/page changes — keep the list during message opens.
 		if (mailboxFolder !== folder || mailboxPage !== pageNum) {
 			mailbox = null;
+			setMailboxMessagePrefetchEnabled(false);
 		}
 
 		void (next as Promise<MailboxListData>)
@@ -55,6 +58,7 @@
 					mailbox = resolved;
 					mailboxFolder = folder;
 					mailboxPage = pageNum;
+					setMailboxMessagePrefetchEnabled(true);
 				}
 			})
 			.catch((error: unknown) => {
@@ -64,6 +68,7 @@
 					mailbox = null;
 					mailboxFolder = null;
 					mailboxPage = null;
+					setMailboxMessagePrefetchEnabled(false);
 				}
 			});
 	});
