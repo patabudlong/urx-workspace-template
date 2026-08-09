@@ -1,4 +1,5 @@
 <script lang="ts">
+	import MailboxMessageReplyPanel from '$lib/components/mailbox/mailbox-message-reply-panel.svelte';
 	import MailboxMessageToolbar from '$lib/components/mailbox/mailbox-message-toolbar.svelte';
 	import MailboxMessageView from '$lib/components/mailbox/mailbox-message-view.svelte';
 	import MailboxMessageViewSkeleton from '$lib/components/mailbox/mailbox-message-view-skeleton.svelte';
@@ -7,9 +8,10 @@
 		fetchMailboxMessage,
 		getCachedMailboxMessage
 	} from '$lib/mailbox/client';
-	import { mailboxSummaryToPreviewDetail } from '$lib/mailbox/utils';
+	import { mailboxSummaryToPreviewDetail, type MailboxComposeMode } from '$lib/mailbox/utils';
 	import type { MailboxMessageDetail, MailboxMessageSummary } from '$lib/shared/mailbox/schemas';
 	import MailOpenIcon from '@lucide/svelte/icons/mail-open';
+	import { page } from '$app/state';
 	import { cn } from '$lib/utils.js';
 
 	let {
@@ -32,8 +34,19 @@
 	let detailMessage = $state<MailboxMessageDetail | null>(null);
 	let loadingBody = $state(false);
 	let loadError = $state(false);
+	let composeMode = $state<MailboxComposeMode | null>(null);
 
 	const previewDetail = $derived(preview ? mailboxSummaryToPreviewDetail(preview) : null);
+	const userEmail = $derived(
+		page.data.connection && 'email' in page.data.connection
+			? (page.data.connection.email ?? '')
+			: ''
+	);
+
+	$effect(() => {
+		targetUid;
+		composeMode = null;
+	});
 
 	function syncListUpdate(message: MailboxMessageDetail) {
 		onListUpdate?.(message.uid, { seen: message.seen, flagged: message.flagged });
@@ -119,6 +132,15 @@
 
 	function handleMessageRemoved() {
 		detailMessage = null;
+		composeMode = null;
+	}
+
+	function handleCompose(mode: MailboxComposeMode) {
+		composeMode = composeMode === mode ? null : mode;
+	}
+
+	function closeCompose() {
+		composeMode = null;
 	}
 </script>
 
@@ -154,9 +176,19 @@
 		<MailboxMessageToolbar
 			{folder}
 			message={detailMessage}
+			{composeMode}
+			onCompose={handleCompose}
 			onUpdated={handleMessageUpdated}
 			onRemoved={handleMessageRemoved}
 		/>
+		{#if composeMode}
+			<MailboxMessageReplyPanel
+				mode={composeMode}
+				message={detailMessage}
+				{userEmail}
+				onClose={closeCompose}
+			/>
+		{/if}
 		<MailboxMessageView message={detailMessage} layout="panel" />
 	{:else if previewDetail}
 		<MailboxMessageView message={previewDetail} layout="panel" loadingBody />

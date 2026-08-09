@@ -200,6 +200,86 @@ export function getMailboxAddressInitials(value: string): string {
 
 export type MailboxComposeMode = 'reply' | 'replyAll' | 'forward';
 
+export type MailboxComposeDraft = {
+	to: string;
+	cc: string;
+	subject: string;
+	quotedText: string;
+};
+
+function extractMailboxEmail(address: string): string {
+	return parseMailboxAddress(address).email;
+}
+
+function withSubjectPrefix(subject: string, prefix: 'Re' | 'Fwd'): string {
+	const trimmed = subject.trim();
+	if (!trimmed) {
+		return `${prefix}:`;
+	}
+
+	if (/^(re|fwd):\s*/i.test(trimmed)) {
+		return prefix === 'Fwd' ? trimmed.replace(/^(re|fwd):\s*/i, 'Fwd: ') : trimmed;
+	}
+
+	return `${prefix}: ${trimmed}`;
+}
+
+function buildQuotedText(message: MailboxMessageDetail): string {
+	const lines = [
+		'',
+		'---',
+		`From: ${message.from || 'Unknown sender'}`,
+		...(message.to.length > 0 ? [`To: ${message.to.join(', ')}`] : []),
+		...(message.cc.length > 0 ? [`Cc: ${message.cc.join(', ')}`] : []),
+		`Date: ${formatMailboxDate(message.date)}`,
+		`Subject: ${message.subject}`,
+		'',
+		message.text || message.preview
+	];
+
+	return lines.join('\n');
+}
+
+export function buildMailboxComposeDraft(
+	mode: MailboxComposeMode,
+	message: MailboxMessageDetail,
+	userEmail: string
+): MailboxComposeDraft {
+	const quotedText = buildQuotedText(message);
+	const self = userEmail.trim().toLowerCase();
+	const fromEmail = extractMailboxEmail(message.from);
+
+	if (mode === 'forward') {
+		return {
+			to: '',
+			cc: '',
+			subject: withSubjectPrefix(message.subject, 'Fwd'),
+			quotedText
+		};
+	}
+
+	let cc = '';
+	if (mode === 'replyAll') {
+		const recipients = [...message.to, ...message.cc]
+			.map(extractMailboxEmail)
+			.filter(
+				(email) =>
+					email &&
+					email.toLowerCase() !== self &&
+					email.toLowerCase() !== fromEmail.toLowerCase()
+			);
+
+		cc = [...new Set(recipients)].join(', ');
+	}
+
+	return {
+		to: fromEmail,
+		cc,
+		subject: withSubjectPrefix(message.subject, 'Re'),
+		quotedText
+	};
+}
+
 export function buildMailboxComposeHref(
 	mode: MailboxComposeMode,
 	folder: string,

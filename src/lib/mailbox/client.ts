@@ -2,7 +2,8 @@ import type {
 	MailboxFolder,
 	MailboxMessageAction,
 	MailboxMessageDetail,
-	MailboxMessageSummary
+	MailboxMessageSummary,
+	MailboxSendMessageInput
 } from '$lib/shared/mailbox/schemas';
 import type { ApiSuccessResponse, PaginationMeta } from '$lib/shared/api/types';
 
@@ -211,6 +212,24 @@ export async function patchMailboxMessage(
 		});
 	} else {
 		invalidateMailboxMessageCache(folder, uid);
+	}
+
+	return body.data;
+}
+
+export async function sendMailboxMessage(input: MailboxSendMessageInput): Promise<{ messageId: string | null }> {
+	const response = await fetch('/api/v1/mailbox/send', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(input)
+	});
+
+	const body = (await response.json()) as ApiSuccessResponse<{ messageId: string | null }> & {
+		error?: { message?: string };
+	};
+
+	if (!response.ok) {
+		throw new Error(body.error?.message ?? 'Failed to send message');
 	}
 
 	return body.data;

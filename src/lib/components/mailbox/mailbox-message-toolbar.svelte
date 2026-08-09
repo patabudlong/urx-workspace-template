@@ -3,7 +3,7 @@
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import { patchMailboxMessage } from '$lib/mailbox/client';
-	import { buildMailboxComposeHref, encodeMailboxFolder } from '$lib/mailbox/utils';
+	import { encodeMailboxFolder, type MailboxComposeMode } from '$lib/mailbox/utils';
 	import type { MailboxMessageDetail } from '$lib/shared/mailbox/schemas';
 	import ArchiveIcon from '@lucide/svelte/icons/archive';
 	import ForwardIcon from '@lucide/svelte/icons/forward';
@@ -20,11 +20,15 @@
 	let {
 		folder,
 		message,
+		composeMode = null,
+		onCompose,
 		onUpdated,
 		onRemoved
 	}: {
 		folder: string;
 		message: MailboxMessageDetail;
+		composeMode?: MailboxComposeMode | null;
+		onCompose?: (mode: MailboxComposeMode) => void;
 		onUpdated: (message: MailboxMessageDetail) => void;
 		onRemoved: () => void;
 	} = $props();
@@ -82,10 +86,11 @@
 				{#snippet child({ props })}
 					<Button
 						{...props}
-						href={buildMailboxComposeHref('reply', folder, message.uid)}
 						variant="ghost"
 						size="icon-sm"
 						aria-label="Reply"
+						aria-pressed={composeMode === 'reply'}
+						onclick={() => onCompose?.('reply')}
 					>
 						<ReplyIcon aria-hidden="true" />
 					</Button>
@@ -99,10 +104,11 @@
 				{#snippet child({ props })}
 					<Button
 						{...props}
-						href={buildMailboxComposeHref('replyAll', folder, message.uid)}
 						variant="ghost"
 						size="icon-sm"
 						aria-label="Reply all"
+						aria-pressed={composeMode === 'replyAll'}
+						onclick={() => onCompose?.('replyAll')}
 					>
 						<ReplyAllIcon aria-hidden="true" />
 					</Button>
@@ -116,10 +122,11 @@
 				{#snippet child({ props })}
 					<Button
 						{...props}
-						href={buildMailboxComposeHref('forward', folder, message.uid)}
 						variant="ghost"
 						size="icon-sm"
 						aria-label="Forward"
+						aria-pressed={composeMode === 'forward'}
+						onclick={() => onCompose?.('forward')}
 					>
 						<ForwardIcon aria-hidden="true" />
 					</Button>
