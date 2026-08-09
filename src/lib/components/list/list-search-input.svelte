@@ -18,7 +18,7 @@
 
 <InputGroup.Root
 	class={cn(
-		'bg-muted/40 border-border/60 h-10 w-full sm:w-52 lg:w-60',
+		'border-border bg-muted/40 h-10 w-full border sm:w-52 lg:w-60',
 		className
 	)}
 >

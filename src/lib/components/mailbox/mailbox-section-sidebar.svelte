@@ -2,6 +2,7 @@
 	import MailboxComposeButton from '$lib/components/mailbox/mailbox-compose-button.svelte';
 	import MailboxFolderCount from '$lib/components/mailbox/mailbox-folder-count.svelte';
 	import MailboxSettingsSectionMenu from '$lib/components/mailbox/mailbox-settings-section-menu.svelte';
+	import MailboxSidebarRefresh from '$lib/components/mailbox/mailbox-sidebar-refresh.svelte';
 	import MailboxSidebarTools from '$lib/components/mailbox/mailbox-sidebar-tools.svelte';
 	import {
 		encodeMailboxFolder,
@@ -34,11 +35,14 @@
 
 <aside class="border-border bg-muted/30 shrink-0 border-b" aria-label="Mailbox navigation">
 	<div class="flex flex-col gap-3 px-4 pt-4 pb-2">
-		<div>
-			<h2 class="text-sm font-semibold">Mailbox</h2>
-			<p class="text-muted-foreground mt-1 text-xs leading-relaxed">
-				Browse folders and read messages from your connected PrivateEmail account.
-			</p>
+		<div class="flex items-start justify-between gap-2">
+			<div class="min-w-0">
+				<h2 class="text-sm font-semibold">Mailbox</h2>
+				<p class="text-muted-foreground mt-1 text-xs leading-relaxed">
+					Browse folders and read messages from your connected PrivateEmail account.
+				</p>
+			</div>
+			<MailboxSidebarRefresh {configured} class="-me-1 -mt-0.5" />
 		</div>
 		<MailboxSidebarTools {configured} {activeFolder} {searchQuery} />
 	</div>

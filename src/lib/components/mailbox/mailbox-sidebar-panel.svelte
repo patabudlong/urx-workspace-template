@@ -3,6 +3,7 @@
 	import MailboxFolderList from '$lib/components/mailbox/mailbox-folder-list.svelte';
 	import MailboxInboxMenu from '$lib/components/mailbox/mailbox-inbox-menu.svelte';
 	import MailboxSettingsSidebarMenu from '$lib/components/mailbox/mailbox-settings-sidebar-menu.svelte';
+	import MailboxSidebarRefresh from '$lib/components/mailbox/mailbox-sidebar-refresh.svelte';
 	import MailboxSidebarTools from '$lib/components/mailbox/mailbox-sidebar-tools.svelte';
 	import { findMailboxInboxFolder } from '$lib/mailbox/utils';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
@@ -26,11 +27,14 @@
 </script>
 
 <Sidebar.Header class="border-sidebar-border shrink-0 gap-3 border-b p-4">
-	<div>
-		<h2 class="text-sm font-semibold">Mailbox</h2>
-		<p class="text-muted-foreground mt-1 text-xs leading-relaxed">
-			Browse folders and read messages from your connected PrivateEmail account.
-		</p>
+	<div class="flex items-start justify-between gap-2">
+		<div class="min-w-0">
+			<h2 class="text-sm font-semibold">Mailbox</h2>
+			<p class="text-muted-foreground mt-1 text-xs leading-relaxed">
+				Browse folders and read messages from your connected PrivateEmail account.
+			</p>
+		</div>
+		<MailboxSidebarRefresh {configured} class="-me-1 -mt-0.5" />
 	</div>
 	<MailboxSidebarTools {configured} {activeFolder} {searchQuery} />
 </Sidebar.Header>
