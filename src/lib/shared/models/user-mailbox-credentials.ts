@@ -1,4 +1,5 @@
 import type { ObjectId } from 'mongodb';
+import type { MailboxSignature } from '$lib/shared/mailbox/signature';
 
 export type MailboxServerSettings = {
 	host: string;
@@ -14,6 +15,7 @@ export type UserMailboxCredentialsDocument = {
 	displayName: string;
 	imap: MailboxServerSettings;
 	smtp: MailboxServerSettings;
+	signature?: MailboxSignature & { updatedAt: Date };
 	connectedAt: Date;
 	lastVerifiedAt?: Date;
 	updatedAt: Date;

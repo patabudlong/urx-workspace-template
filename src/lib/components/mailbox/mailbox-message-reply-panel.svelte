@@ -1,29 +1,40 @@
 <script lang="ts">
+	import MailboxComposeEditor from '$lib/components/mailbox/mailbox-compose-editor.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
-	import { Textarea } from '$lib/components/ui/textarea/index.js';
+	import { appendMailboxSignatureToBodies } from '$lib/mailbox/signature';
 	import { sendMailboxMessage } from '$lib/mailbox/client';
 	import {
 		buildMailboxComposeDraft,
+		htmlToPlainText,
+		isMailboxComposeHtmlEmpty,
 		parseRecipientInput,
+		plainTextToQuotedHtml,
 		type MailboxComposeMode
 	} from '$lib/mailbox/utils';
+	import type { MailboxSignature } from '$lib/shared/mailbox/signature';
+	import { isMailboxSignatureConfigured } from '$lib/shared/mailbox/signature';
 	import type { MailboxMessageDetail } from '$lib/shared/mailbox/schemas';
 	import SendIcon from '@lucide/svelte/icons/send';
 	import XIcon from '@lucide/svelte/icons/x';
+	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 
 	let {
 		mode,
 		message,
 		userEmail,
-		onClose
+		signature = null,
+		onClose,
+		onSent
 	}: {
 		mode: MailboxComposeMode;
 		message: MailboxMessageDetail;
 		userEmail: string;
+		signature?: MailboxSignature | null;
 		onClose: () => void;
+		onSent?: () => void;
 	} = $props();
 
 	const draft = $derived(buildMailboxComposeDraft(mode, message, userEmail));
@@ -31,11 +42,13 @@
 		mode === 'forward' ? 'Forward' : mode === 'replyAll' ? 'Reply all' : 'Reply'
 	);
 	const fieldId = $derived(`mailbox-reply-${message.uid}`);
+	const signatureConfigured = $derived(isMailboxSignatureConfigured(signature));
 
 	let to = $state('');
 	let cc = $state('');
 	let subject = $state('');
-	let text = $state('');
+	let html = $state('');
+	let includeSignature = $state(true);
 	let submitting = $state(false);
 	let sendError = $state<string | null>(null);
 	let sendSuccess = $state(false);
@@ -43,11 +56,13 @@
 	$effect(() => {
 		mode;
 		message.uid;
+		signature;
 		const nextDraft = buildMailboxComposeDraft(mode, message, userEmail);
 		to = nextDraft.to;
 		cc = nextDraft.cc;
 		subject = nextDraft.subject;
-		text = '';
+		html = '';
+		includeSignature = signature?.includeByDefault ?? true;
 		sendError = null;
 		sendSuccess = false;
 	});
@@ -66,12 +81,19 @@
 		}
 
 		const ccRecipients = parseRecipientInput(cc);
-		const trimmedText = text.trim();
-		const body = trimmedText
-			? `${trimmedText}${draft.quotedText}`
-			: draft.quotedText.trim();
+		const plainMessage = htmlToPlainText(html);
+		const quotedHtml = plainTextToQuotedHtml(draft.quotedText);
+		const hasUserContent = !isMailboxComposeHtmlEmpty(html);
+		const { text: textBody, html: htmlBody } = appendMailboxSignatureToBodies({
+			plainMessage: hasUserContent ? plainMessage : '',
+			htmlMessage: hasUserContent ? html : '',
+			quotedText: draft.quotedText,
+			quotedHtml,
+			signature,
+			includeSignature: includeSignature && signatureConfigured
+		});
 
-		if (!body) {
+		if (!textBody.trim()) {
 			sendError = 'Write a message before sending.';
 			return;
 		}
@@ -85,10 +107,15 @@
 				to: recipients,
 				cc: ccRecipients.length > 0 ? ccRecipients : undefined,
 				subject: subject.trim(),
-				text: body
+				text: textBody,
+				html: htmlBody || undefined
 			});
 			sendSuccess = true;
-			onClose();
+			if (onSent) {
+				onSent();
+			} else {
+				onClose();
+			}
 		} catch (error) {
 			sendError = error instanceof Error ? error.message : 'Failed to send message';
 		} finally {
@@ -141,8 +168,33 @@
 
 		<div class="space-y-2">
 			<Label for="{fieldId}-text">Message</Label>
-			<Textarea id="{fieldId}-text" bind:value={text} rows={6} class="min-h-32 bg-background" />
+			<MailboxComposeEditor
+				id="{fieldId}-text"
+				bind:value={html}
+				disabled={submitting}
+				aria-label="Message body"
+			/>
 		</div>
+
+		{#if signatureConfigured}
+			<div class="flex items-start gap-3">
+				<Checkbox
+					id="{fieldId}-signature"
+					bind:checked={includeSignature}
+					disabled={submitting}
+				/>
+				<Label for="{fieldId}-signature" class="cursor-pointer text-sm font-normal">
+					Include signature
+				</Label>
+			</div>
+		{:else}
+			<p class="text-muted-foreground text-sm">
+				<a href="/mailbox/settings/signature" class="text-primary font-medium hover:underline">
+					Set up your email signature
+				</a>
+				to add your name, role, and contact details to outgoing mail.
+			</p>
+		{/if}
 
 		<div class="flex flex-wrap items-center gap-2">
 			<Button type="submit" class="h-10" disabled={submitting || sendSuccess}>

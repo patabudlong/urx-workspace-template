@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { brandTheme } from '$lib/brand';
+	import { Toaster } from '$lib/components/ui/sonner/index.js';
 	import { formatPageTitle } from '$lib/shared/site-meta';
 	import { ModeWatcher } from 'mode-watcher';
 	import '../routes/layout.css';
@@ -37,5 +38,6 @@
 </svelte:head>
 
 <ModeWatcher />
+<Toaster richColors closeButton />
 
 {@render children()}

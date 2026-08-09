@@ -301,6 +301,44 @@ export function parseRecipientInput(value: string): string[] {
 		.filter(Boolean);
 }
 
+export function escapeMailboxHtml(value: string): string {
+	return value
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;');
+}
+
+export function htmlToPlainText(html: string): string {
+	if (!html.trim()) {
+		return '';
+	}
+
+	if (typeof document === 'undefined') {
+		return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+	}
+
+	const container = document.createElement('div');
+	container.innerHTML = html;
+	return (container.textContent ?? container.innerText ?? '')
+		.replace(/\u00a0/g, ' ')
+		.replace(/\n{3,}/g, '\n\n')
+		.trim();
+}
+
+export function plainTextToQuotedHtml(text: string): string {
+	const trimmed = text.trim();
+	if (!trimmed) {
+		return '';
+	}
+
+	return `<blockquote style="margin:1em 0 0;padding-left:1em;border-left:3px solid #e4e4e7;color:#52525b"><pre style="margin:0;white-space:pre-wrap;font-family:inherit;font-size:15px;line-height:1.65">${escapeMailboxHtml(trimmed)}</pre></blockquote>`;
+}
+
+export function isMailboxComposeHtmlEmpty(html: string): boolean {
+	return htmlToPlainText(html).length === 0;
+}
+
 export function buildMailboxEmailSrcdoc(html: string): string {
 	return `<!DOCTYPE html>
 <html lang="en">

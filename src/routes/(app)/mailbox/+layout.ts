@@ -8,6 +8,7 @@ export const load: LayoutLoad = async ({ data, fetch, params }) => {
 		return {
 			connection: data.connection,
 			configured: false as const,
+			signature: data.signature,
 			folders: Promise.resolve([]) as Promise<MailboxFolder[]>
 		};
 	}
@@ -18,7 +19,8 @@ export const load: LayoutLoad = async ({ data, fetch, params }) => {
 	if (params.folder) {
 		return {
 			connection: data.connection,
-			configured: true as const
+			configured: true as const,
+			signature: data.signature
 		};
 	}
 
@@ -27,6 +29,7 @@ export const load: LayoutLoad = async ({ data, fetch, params }) => {
 	return {
 		connection: data.connection,
 		configured: true as const,
+		signature: data.signature,
 		// SSR: await so settings/compose HTML includes the sidebar. Client nav: stream.
 		folders: browser ? folders : await folders
 	};

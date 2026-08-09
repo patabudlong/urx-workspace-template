@@ -2,12 +2,10 @@
 	import MailboxComposeButton from '$lib/components/mailbox/mailbox-compose-button.svelte';
 	import MailboxFolderList from '$lib/components/mailbox/mailbox-folder-list.svelte';
 	import MailboxInboxMenu from '$lib/components/mailbox/mailbox-inbox-menu.svelte';
+	import MailboxSettingsSidebarMenu from '$lib/components/mailbox/mailbox-settings-sidebar-menu.svelte';
 	import { findMailboxInboxFolder } from '$lib/mailbox/utils';
-	import { MAILBOX_SETTINGS_NAV_ITEM } from '$lib/navigation/mailbox-nav';
-	import { isAppNavActive } from '$lib/navigation/app-nav';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import type { MailboxFolder } from '$lib/shared/mailbox/schemas';
-	import { page } from '$app/state';
 
 	let {
 		folders,
@@ -22,7 +20,6 @@
 	} = $props();
 
 	const inboxFolder = $derived(configured ? findMailboxInboxFolder(folders) : null);
-	const isSettingsActive = $derived(isAppNavActive(page.url.pathname, MAILBOX_SETTINGS_NAV_ITEM));
 </script>
 
 <Sidebar.Header class="border-sidebar-border shrink-0 gap-1 border-b p-4">
@@ -48,15 +45,6 @@
 
 <Sidebar.Footer class="border-sidebar-border mt-auto shrink-0 border-t p-2">
 	<Sidebar.Menu>
-		<Sidebar.MenuItem>
-			<Sidebar.MenuButton isActive={isSettingsActive} tooltipContent="Settings">
-				{#snippet child({ props })}
-					<a href={MAILBOX_SETTINGS_NAV_ITEM.href} {...props}>
-						<MAILBOX_SETTINGS_NAV_ITEM.icon class="size-4" aria-hidden="true" />
-						<span>Settings</span>
-					</a>
-				{/snippet}
-			</Sidebar.MenuButton>
-		</Sidebar.MenuItem>
+		<MailboxSettingsSidebarMenu />
 	</Sidebar.Menu>
 </Sidebar.Footer>

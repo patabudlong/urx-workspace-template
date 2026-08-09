@@ -5,6 +5,8 @@ import type {
 	UserMailboxCredentialsDocument,
 	UserMailboxCredentialsStatus
 } from '$lib/shared/models/user-mailbox-credentials';
+import type { MailboxSignature } from '$lib/shared/mailbox/signature';
+import { EMPTY_MAILBOX_SIGNATURE } from '$lib/shared/mailbox/signature';
 import { ObjectId } from 'mongodb';
 
 const statusProjection = {
@@ -13,6 +15,21 @@ const statusProjection = {
 	connectedAt: 1,
 	lastVerifiedAt: 1
 } as const;
+
+const signatureProjection = {
+	signature: 1
+} as const;
+
+function mapMailboxSignature(
+	record: Pick<UserMailboxCredentialsDocument, 'signature'> | null
+): MailboxSignature | null {
+	if (!record?.signature) {
+		return null;
+	}
+
+	const { updatedAt: _updatedAt, ...signature } = record.signature;
+	return signature;
+}
 
 let indexPromise: Promise<void> | null = null;
 
@@ -105,6 +122,49 @@ export async function upsertMailboxCredentialsForUser(
 	);
 
 	return getMailboxConnectionStatus(userId);
+}
+
+export async function getMailboxSignature(userId: string): Promise<MailboxSignature | null> {
+	await ensureUserMailboxCredentialIndexes();
+	const collection =
+		await getUserMailboxCredentialsCollection<
+			Pick<UserMailboxCredentialsDocument, keyof typeof signatureProjection>
+		>();
+	const record = await collection.findOne(
+		{ userId: new ObjectId(userId) },
+		{ projection: signatureProjection }
+	);
+
+	return mapMailboxSignature(record);
+}
+
+export async function upsertMailboxSignature(
+	userId: string,
+	signature: MailboxSignature
+): Promise<MailboxSignature> {
+	await ensureUserMailboxCredentialIndexes();
+	const collection =
+		await getUserMailboxCredentialsCollection<UserMailboxCredentialsDocument>();
+	const now = new Date();
+	const result = await collection.updateOne(
+		{ userId: new ObjectId(userId) },
+		{
+			$set: {
+				signature: {
+					...EMPTY_MAILBOX_SIGNATURE,
+					...signature,
+					updatedAt: now
+				},
+				updatedAt: now
+			}
+		}
+	);
+
+	if (result.matchedCount === 0) {
+		throw new Error('Mailbox is not connected');
+	}
+
+	return signature;
 }
 
 export async function deleteMailboxCredentialsForUser(userId: string): Promise<void> {

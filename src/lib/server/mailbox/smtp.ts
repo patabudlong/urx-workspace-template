@@ -1,10 +1,20 @@
 import { getMailboxConfig } from './config';
 import { createSmtpTransport } from './verify';
+import {
+	buildMailboxOutboundEmailHtml,
+	buildMailboxOutboundEmailText,
+	plainTextToMailboxBodyHtml
+} from '$lib/server/mail/templates/mailbox-outbound-email';
 import type { MailboxSendMessageInput } from '$lib/shared/mailbox/schemas';
+
+export type SendMailboxMessageOptions = {
+	requestOrigin: string;
+};
 
 export async function sendMailboxMessage(
 	userId: string,
-	input: MailboxSendMessageInput
+	input: MailboxSendMessageInput,
+	options: SendMailboxMessageOptions
 ): Promise<{ messageId: string | null }> {
 	const config = await getMailboxConfig(userId);
 	if (!config) {
@@ -12,6 +22,13 @@ export async function sendMailboxMessage(
 	}
 
 	const transport = createSmtpTransport(config);
+	const bodyHtml = input.html?.trim() || plainTextToMailboxBodyHtml(input.text);
+	const html = buildMailboxOutboundEmailHtml({
+		subject: input.subject,
+		bodyHtml,
+		requestOrigin: options.requestOrigin
+	});
+	const text = buildMailboxOutboundEmailText(input.subject, input.text);
 
 	const info = await transport.sendMail({
 		from: {
@@ -23,8 +40,8 @@ export async function sendMailboxMessage(
 		bcc: input.bcc,
 		replyTo: input.replyTo,
 		subject: input.subject,
-		text: input.text,
-		html: input.html
+		text,
+		html
 	});
 
 	return { messageId: info.messageId ?? null };

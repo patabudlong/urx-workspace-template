@@ -24,7 +24,9 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 	}
 
 	try {
-		const result = await sendMailboxMessage(locals.user.id, parsed.data);
+		const result = await sendMailboxMessage(locals.user.id, parsed.data, {
+			requestOrigin: new URL(request.url).origin
+		});
 		return jsonOk(result, { requestId, status: 201 });
 	} catch (error) {
 		const message = error instanceof Error ? error.message : 'Failed to send message';

@@ -15,7 +15,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ locals, request }) => {
+	default: async ({ locals, request, url }) => {
 		if (!(await isMailboxConfigured(locals.user!.id))) {
 			return fail(503, { error: 'Mailbox is not connected' });
 		}
@@ -40,7 +40,9 @@ export const actions: Actions = {
 		}
 
 		try {
-			await sendMailboxMessage(locals.user!.id, parsed.data);
+			await sendMailboxMessage(locals.user!.id, parsed.data, {
+				requestOrigin: url.origin
+			});
 			return { success: true };
 		} catch (error) {
 			const message = error instanceof Error ? error.message : 'Failed to send message';

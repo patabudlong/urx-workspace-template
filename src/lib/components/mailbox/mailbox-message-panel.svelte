@@ -13,6 +13,7 @@
 	import MailOpenIcon from '@lucide/svelte/icons/mail-open';
 	import { page } from '$app/state';
 	import { cn } from '$lib/utils.js';
+	import { toast } from 'svelte-sonner';
 
 	let {
 		folder,
@@ -42,6 +43,7 @@
 			? (page.data.connection.email ?? '')
 			: ''
 	);
+	const signature = $derived(page.data.signature ?? null);
 
 	$effect(() => {
 		targetUid;
@@ -142,6 +144,13 @@
 	function closeCompose() {
 		composeMode = null;
 	}
+
+	function handleReplySent() {
+		toast.success('Email sent', {
+			description: 'Your message was delivered successfully.'
+		});
+		closeCompose();
+	}
 </script>
 
 <section
@@ -186,7 +195,9 @@
 				mode={composeMode}
 				message={detailMessage}
 				{userEmail}
+				{signature}
 				onClose={closeCompose}
+				onSent={handleReplySent}
 			/>
 		{/if}
 		<MailboxMessageView message={detailMessage} layout="panel" />
