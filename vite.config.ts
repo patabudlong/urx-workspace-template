@@ -1,11 +1,27 @@
 import adapter from '@sveltejs/adapter-node';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
 	server: {
 		host: true
+	},
+	build: {
+		rolldownOptions: {
+			// SvelteKit guard plugins routinely dominate CPU time; suppress noisy timing report.
+			checks: {
+				pluginTimings: false
+			}
+		}
+	},
+	resolve: {
+		alias: {
+			// sveltekit-superforms/adapters re-exports Vine; stub it so the client build
+			// never analyzes node:dns/promises from @vinejs/vine (Zod-only app).
+			'@vinejs/vine': fileURLToPath(new URL('./src/lib/stubs/vinejs.ts', import.meta.url))
+		}
 	},
 	plugins: [
 		tailwindcss(),
