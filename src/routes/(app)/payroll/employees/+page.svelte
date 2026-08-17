@@ -7,7 +7,6 @@
 	import * as Form from '$lib/components/ui/form/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
-	import { Label } from '$lib/components/ui/label/index.js';
 	import { formatPayRateCents } from '$lib/shared/payroll/format';
 	import {
 		PAYROLL_EMPLOYEE_CREATED_MESSAGE,
@@ -157,20 +156,23 @@
 				</div>
 
 				<div class="grid gap-5 sm:grid-cols-2">
-					<div class="space-y-2">
-						<Label for="payType">Pay type</Label>
-						<select
-							id="payType"
-							name="payType"
-							bind:value={$form.payType}
-							class="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-						>
-							{#each PAYROLL_PAY_TYPES as payType (payType)}
-								<option value={payType}>{payType === 'hourly' ? 'Hourly' : 'Salary'}</option>
-							{/each}
-						</select>
+					<Form.Field form={superform} name="payType">
+						<Form.Control>
+							{#snippet children({ props })}
+								<Form.Label>Pay type</Form.Label>
+								<select
+									{...props}
+									bind:value={$form.payType}
+									class="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+								>
+									{#each PAYROLL_PAY_TYPES as payType (payType)}
+										<option value={payType}>{payType === 'hourly' ? 'Hourly' : 'Salary'}</option>
+									{/each}
+								</select>
+							{/snippet}
+						</Form.Control>
 						<SingleFieldErrors />
-					</div>
+					</Form.Field>
 
 					<Form.Field form={superform} name="payRate">
 						<Form.Control>
