@@ -154,7 +154,7 @@ pnpm workspace:payroll:sync       # copy payroll changes from this app back into
 pnpm workspace:payroll:uninstall  # remove package files and patches
 ```
 
-Open **Payroll** at `/payroll` (workspace owners and admins). API routes live under `/api/v1/payroll/*`.
+Open **Payroll** at `/payroll` (workspace owners and admins). Add employees at `/payroll/employees`, then create draft pay runs at `/payroll/runs`. API routes live under `/api/v1/payroll/*` and are documented at `/docs`.
 
 ## Dev credentials
 

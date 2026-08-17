@@ -1,11 +1,14 @@
 import type { RequestHandler } from './$types';
-import { jsonError, jsonPaginated, jsonOk } from '$lib/server/api/response';
+import { jsonError, jsonOk, jsonPaginated } from '$lib/server/api/response';
 import { requirePayrollWorkspace } from '$lib/server/payroll/api-context';
 import {
-	createPayrollRunForWorkspace,
-	listPayrollRunsForWorkspace
-} from '$lib/server/repositories/payroll-runs';
-import { createPayrollRunSchema, payrollRunsQuerySchema } from '$lib/shared/payroll/schemas';
+	createPayrollEmployeeForWorkspace,
+	listPayrollEmployeesForWorkspace
+} from '$lib/server/repositories/payroll-employees';
+import {
+	createPayrollEmployeeSchema,
+	payrollEmployeesQuerySchema
+} from '$lib/shared/payroll/schemas';
 
 export const GET: RequestHandler = async ({ locals, request, url }) => {
 	const requestId = request.headers.get('x-request-id') ?? undefined;
@@ -19,7 +22,7 @@ export const GET: RequestHandler = async ({ locals, request, url }) => {
 		return context.response;
 	}
 
-	const parsed = payrollRunsQuerySchema.safeParse(Object.fromEntries(url.searchParams));
+	const parsed = payrollEmployeesQuerySchema.safeParse(Object.fromEntries(url.searchParams));
 	if (!parsed.success) {
 		return jsonError('BAD_REQUEST', 'Invalid query parameters', {
 			details: { issues: parsed.error.flatten() },
@@ -28,7 +31,7 @@ export const GET: RequestHandler = async ({ locals, request, url }) => {
 	}
 
 	const { page, limit } = parsed.data;
-	const { items, total } = await listPayrollRunsForWorkspace({
+	const { items, total } = await listPayrollEmployeesForWorkspace({
 		workspaceId: context.workspace.workspaceId,
 		page,
 		limit
@@ -65,7 +68,7 @@ export const POST: RequestHandler = async ({ locals, request, url }) => {
 		return jsonError('BAD_REQUEST', 'Invalid JSON body', { requestId });
 	}
 
-	const parsed = createPayrollRunSchema.safeParse(body);
+	const parsed = createPayrollEmployeeSchema.safeParse(body);
 	if (!parsed.success) {
 		return jsonError('BAD_REQUEST', 'Invalid request body', {
 			details: { issues: parsed.error.flatten() },
@@ -73,10 +76,10 @@ export const POST: RequestHandler = async ({ locals, request, url }) => {
 		});
 	}
 
-	const run = await createPayrollRunForWorkspace({
+	const employee = await createPayrollEmployeeForWorkspace({
 		workspaceId: context.workspace.workspaceId,
 		data: parsed.data
 	});
 
-	return jsonOk(run, { status: 201, requestId });
+	return jsonOk(employee, { status: 201, requestId });
 };

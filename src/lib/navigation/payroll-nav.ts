@@ -2,12 +2,19 @@ import type { AppNavItem } from '$lib/navigation/app-nav';
 import { canManagePayroll } from '$lib/shared/payroll/access';
 import BanknoteIcon from '@lucide/svelte/icons/banknote';
 import CalendarRangeIcon from '@lucide/svelte/icons/calendar-range';
+import UsersIcon from '@lucide/svelte/icons/users';
 
 export const PAYROLL_NAV_ITEMS: AppNavItem[] = [
 	{
 		title: 'Overview',
 		href: '/payroll',
 		icon: BanknoteIcon,
+		match: 'exact'
+	},
+	{
+		title: 'Employees',
+		href: '/payroll/employees',
+		icon: UsersIcon,
 		match: 'exact'
 	},
 	{

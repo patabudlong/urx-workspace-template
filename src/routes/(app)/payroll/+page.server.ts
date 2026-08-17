@@ -1,4 +1,5 @@
 import type { PageServerLoad } from './$types';
+import { countPayrollEmployeesForWorkspace } from '$lib/server/repositories/payroll-employees';
 import { countPayrollRunsForWorkspace } from '$lib/server/repositories/payroll-runs';
 
 export const load: PageServerLoad = async ({ parent, isDataRequest }) => {
@@ -6,13 +7,27 @@ export const load: PageServerLoad = async ({ parent, isDataRequest }) => {
 
 	if (!workspace || !canManagePayroll) {
 		return {
-			runCount: 0
+			runCount: 0,
+			employeeCount: 0
 		};
 	}
 
-	const runCountQuery = countPayrollRunsForWorkspace(workspace.workspaceId);
+	const countsQuery = Promise.all([
+		countPayrollRunsForWorkspace(workspace.workspaceId),
+		countPayrollEmployeesForWorkspace(workspace.workspaceId)
+	]).then(([runCount, employeeCount]) => ({ runCount, employeeCount }));
+
+	if (isDataRequest) {
+		return {
+			runCount: countsQuery.then((counts) => counts.runCount),
+			employeeCount: countsQuery.then((counts) => counts.employeeCount)
+		};
+	}
+
+	const counts = await countsQuery;
 
 	return {
-		runCount: isDataRequest ? runCountQuery : await runCountQuery
+		runCount: counts.runCount,
+		employeeCount: counts.employeeCount
 	};
 };

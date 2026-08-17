@@ -16,7 +16,8 @@ export const CollectionNames = {
 	userMailboxCredentials: 'user_mailbox_credentials',
 // urixoft-workspace-mailbox:collections:end
 // urixoft-workspace-payroll:collections:start
-	payrollRuns: 'payroll_runs'
+	payrollRuns: 'payroll_runs',
+	payrollEmployees: 'payroll_employees'
 // urixoft-workspace-payroll:collections:end
 } as const;
 
@@ -86,5 +87,9 @@ export async function getUserMailboxCredentialsCollection<T extends Document = D
 // urixoft-workspace-payroll:getter:start
 export async function getPayrollRunsCollection<T extends Document = Document>(): Promise<Collection<T>> {
 	return getCollection<T>('payrollRuns');
+}
+
+export async function getPayrollEmployeesCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('payrollEmployees');
 }
 // urixoft-workspace-payroll:getter:end

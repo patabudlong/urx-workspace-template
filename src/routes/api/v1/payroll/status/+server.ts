@@ -1,38 +1,32 @@
 import type { RequestHandler } from './$types';
-import { jsonError, jsonOk } from '$lib/server/api/response';
+import { requirePayrollWorkspace } from '$lib/server/payroll/api-context';
+import { countPayrollEmployeesForWorkspace } from '$lib/server/repositories/payroll-employees';
 import { countPayrollRunsForWorkspace } from '$lib/server/repositories/payroll-runs';
-import { canManagePayroll } from '$lib/shared/payroll/access';
-import {
-	listUserWorkspaceContexts,
-	resolveActiveWorkspaceContext
-} from '$lib/server/workspace-context';
-import { getWorkspaceHostSuffix } from '$lib/server/workspace-host';
+import { jsonOk } from '$lib/server/api/response';
 
 export const GET: RequestHandler = async ({ locals, request, url }) => {
 	const requestId = request.headers.get('x-request-id') ?? undefined;
+	const context = await requirePayrollWorkspace({
+		userId: locals.user?.id,
+		url,
+		requestId
+	});
 
-	if (!locals.user) {
-		return jsonError('UNAUTHORIZED', 'Authentication required', { requestId });
+	if (!context.ok) {
+		return context.response;
 	}
 
-	const workspaces = await listUserWorkspaceContexts(locals.user.id);
-	const workspace = resolveActiveWorkspaceContext(workspaces, url, getWorkspaceHostSuffix());
-
-	if (!workspace) {
-		return jsonError('FORBIDDEN', 'No active workspace', { requestId });
-	}
-
-	if (!canManagePayroll(workspace.role)) {
-		return jsonError('FORBIDDEN', 'Payroll access required', { requestId });
-	}
-
-	const runCount = await countPayrollRunsForWorkspace(workspace.workspaceId);
+	const [runCount, employeeCount] = await Promise.all([
+		countPayrollRunsForWorkspace(context.workspace.workspaceId),
+		countPayrollEmployeesForWorkspace(context.workspace.workspaceId)
+	]);
 
 	return jsonOk(
 		{
 			enabled: true,
-			workspaceId: workspace.workspaceId,
-			runCount
+			workspaceId: context.workspace.workspaceId,
+			runCount,
+			employeeCount
 		},
 		{ requestId }
 	);
