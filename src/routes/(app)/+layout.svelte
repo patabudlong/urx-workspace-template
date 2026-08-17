@@ -23,8 +23,11 @@
 	// urixoft-workspace-mailbox:layout:start
 	const isMailboxSection = $derived(pathname === '/mailbox' || pathname.startsWith('/mailbox/'));
 	// urixoft-workspace-mailbox:layout:end
+	// urixoft-workspace-payroll:layout:start
+	const isPayrollSection = $derived(pathname === '/payroll' || pathname.startsWith('/payroll/'));
+	// urixoft-workspace-payroll:layout:end
 	const isNestedAppSection = $derived(
-		isTeamSection || isSettingsSection || isMailboxSection
+		isTeamSection || isSettingsSection || isMailboxSection || isPayrollSection
 	);
 </script>
 

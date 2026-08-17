@@ -13,8 +13,11 @@ export const CollectionNames = {
 	workspaceInvitations: 'workspace_invitations',
 	twoFactorOtpTokens: 'two_factor_otp_tokens',
 // urixoft-workspace-mailbox:collections:start
-	userMailboxCredentials: 'user_mailbox_credentials'
+	userMailboxCredentials: 'user_mailbox_credentials',
 // urixoft-workspace-mailbox:collections:end
+// urixoft-workspace-payroll:collections:start
+	payrollRuns: 'payroll_runs'
+// urixoft-workspace-payroll:collections:end
 } as const;
 
 type CollectionName = keyof typeof CollectionNames;
@@ -80,3 +83,8 @@ export async function getUserMailboxCredentialsCollection<T extends Document = D
 	return getCollection<T>('userMailboxCredentials');
 }
 // urixoft-workspace-mailbox:getter:end
+// urixoft-workspace-payroll:getter:start
+export async function getPayrollRunsCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('payrollRuns');
+}
+// urixoft-workspace-payroll:getter:end
