@@ -2,6 +2,7 @@ import type { AppNavItem } from '$lib/navigation/app-nav';
 import { canManagePayroll } from '$lib/shared/payroll/access';
 import BanknoteIcon from '@lucide/svelte/icons/banknote';
 import CalendarRangeIcon from '@lucide/svelte/icons/calendar-range';
+import SettingsIcon from '@lucide/svelte/icons/settings';
 import UsersIcon from '@lucide/svelte/icons/users';
 
 export const PAYROLL_NAV_ITEMS: AppNavItem[] = [
@@ -21,6 +22,12 @@ export const PAYROLL_NAV_ITEMS: AppNavItem[] = [
 		title: 'Pay runs',
 		href: '/payroll/runs',
 		icon: CalendarRangeIcon,
+		match: 'exact'
+	},
+	{
+		title: 'Settings',
+		href: '/payroll/settings',
+		icon: SettingsIcon,
 		match: 'exact'
 	}
 ];

@@ -75,6 +75,18 @@
 			$formMessage !== PAYROLL_RUN_CREATED_MESSAGE
 	);
 
+	const suggestedPeriodDescription = $derived.by(() => {
+		if (!data.payFrequencyLabel) {
+			return '';
+		}
+
+		const scheduleLabel = data.settingsConfigured
+			? `Based on your ${data.payFrequencyLabel.toLowerCase()} schedule.`
+			: `Using default ${data.payFrequencyLabel.toLowerCase()} schedule.`;
+
+		return `${scheduleLabel} Dates below are pre-filled — adjust if needed or update settings.`;
+	});
+
 	function formatDate(value: string): string {
 		return new Intl.DateTimeFormat(undefined, {
 			year: 'numeric',
@@ -102,6 +114,14 @@
 		title="Pay runs"
 		description="Payroll runs for the active workspace. Each run covers a pay period and tracks processing status."
 	/>
+
+	{#if data.payFrequencyLabel}
+		<StatusAlert
+			variant="info"
+			title="Suggested period"
+			description={suggestedPeriodDescription}
+		/>
+	{/if}
 
 	<Card.Root>
 		<Card.Header>

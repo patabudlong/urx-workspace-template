@@ -1054,6 +1054,92 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 					}
 				}
 			},
+			'/payroll/settings': {
+				get: {
+					tags: ['Payroll'],
+					summary: 'Get payroll settings',
+					description: 'Returns pay schedule settings for the active workspace.',
+					operationId: 'getPayrollSettings',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Payroll settings',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/PayrollSettingsSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Payroll access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				put: {
+					tags: ['Payroll'],
+					summary: 'Update payroll settings',
+					description: 'Creates or updates pay schedule settings for the active workspace.',
+					operationId: 'updatePayrollSettings',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/PayrollSettingsUpdateRequest' }
+							}
+						}
+					},
+					responses: {
+						'200': {
+							description: 'Updated payroll settings',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/PayrollSettingsSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Payroll access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
 			'/payroll/runs': {
 				get: {
 					tags: ['Payroll'],
@@ -2300,6 +2386,130 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						}
 					}
 				},
+				PayrollSettings: {
+					type: 'object',
+					required: [
+						'workspaceId',
+						'payFrequency',
+						'timezone',
+						'currency',
+						'weekStartDay',
+						'periodAnchorDate',
+						'configured',
+						'updatedAt'
+					],
+					properties: {
+						workspaceId: { type: 'string' },
+						payFrequency: {
+							type: 'string',
+							enum: ['weekly', 'bi-weekly', 'semi-monthly', 'monthly']
+						},
+						timezone: {
+							type: 'string',
+							enum: [
+								'Asia/Manila',
+								'UTC',
+								'Asia/Singapore',
+								'Asia/Tokyo',
+								'Asia/Hong_Kong',
+								'Asia/Seoul',
+								'Asia/Kolkata',
+								'Asia/Dubai',
+								'Europe/London',
+								'Europe/Paris',
+								'Europe/Berlin',
+								'America/New_York',
+								'America/Chicago',
+								'America/Denver',
+								'America/Los_Angeles',
+								'America/Toronto',
+								'America/Vancouver',
+								'Australia/Sydney',
+								'Pacific/Auckland'
+							]
+						},
+						currency: {
+							type: 'string',
+							enum: ['PHP', 'USD', 'EUR', 'GBP', 'AUD', 'CAD', 'SGD', 'HKD', 'JPY', 'INR', 'AED', 'NZD']
+						},
+						weekStartDay: {
+							type: 'string',
+							nullable: true,
+							enum: [
+								'sunday',
+								'monday',
+								'tuesday',
+								'wednesday',
+								'thursday',
+								'friday',
+								'saturday',
+								null
+							]
+						},
+						periodAnchorDate: { type: 'string', format: 'date', nullable: true },
+						configured: { type: 'boolean' },
+						updatedAt: { type: 'string', format: 'date-time', nullable: true }
+					}
+				},
+				PayrollSettingsUpdateRequest: {
+					type: 'object',
+					required: ['payFrequency', 'timezone', 'currency'],
+					properties: {
+						payFrequency: {
+							type: 'string',
+							enum: ['weekly', 'bi-weekly', 'semi-monthly', 'monthly']
+						},
+						timezone: {
+							type: 'string',
+							enum: [
+								'Asia/Manila',
+								'UTC',
+								'Asia/Singapore',
+								'Asia/Tokyo',
+								'Asia/Hong_Kong',
+								'Asia/Seoul',
+								'Asia/Kolkata',
+								'Asia/Dubai',
+								'Europe/London',
+								'Europe/Paris',
+								'Europe/Berlin',
+								'America/New_York',
+								'America/Chicago',
+								'America/Denver',
+								'America/Los_Angeles',
+								'America/Toronto',
+								'America/Vancouver',
+								'Australia/Sydney',
+								'Pacific/Auckland'
+							]
+						},
+						currency: {
+							type: 'string',
+							enum: ['PHP', 'USD', 'EUR', 'GBP', 'AUD', 'CAD', 'SGD', 'HKD', 'JPY', 'INR', 'AED', 'NZD']
+						},
+						weekStartDay: {
+							type: 'string',
+							enum: [
+								'sunday',
+								'monday',
+								'tuesday',
+								'wednesday',
+								'thursday',
+								'friday',
+								'saturday'
+							]
+						},
+						periodAnchorDate: { type: 'string', format: 'date' }
+					}
+				},
+				PayrollSettingsSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/PayrollSettings' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
 				PayrollStatus: {
 					type: 'object',
 					required: ['enabled', 'workspaceId', 'runCount', 'employeeCount'],
@@ -2340,7 +2550,7 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						fullName: { type: 'string' },
 						email: { type: 'string', format: 'email', nullable: true },
 						jobTitle: { type: 'string', nullable: true },
-						payType: { type: 'string', enum: ['salary', 'hourly'] },
+						payType: { type: 'string', enum: ['hourly', 'monthly'] },
 						payRateCents: { type: 'integer', minimum: 0 },
 						isActive: { type: 'boolean' },
 						createdAt: { type: 'string', format: 'date-time' },
@@ -2355,7 +2565,7 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						lastName: { type: 'string', maxLength: 80 },
 						email: { type: 'string', format: 'email' },
 						jobTitle: { type: 'string', maxLength: 120 },
-						payType: { type: 'string', enum: ['salary', 'hourly'] },
+						payType: { type: 'string', enum: ['hourly', 'monthly'] },
 						payRate: { type: 'number', minimum: 0 }
 					}
 				},

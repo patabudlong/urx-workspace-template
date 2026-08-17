@@ -81,6 +81,25 @@ export async function countPayrollRunsForWorkspace(workspaceId: string): Promise
 	return collection.countDocuments({ workspaceId: new ObjectId(workspaceId) });
 }
 
+export async function getLatestPayrollRunPeriodEnd(
+	workspaceId: string
+): Promise<string | null> {
+	await ensurePayrollRunIndexes();
+
+	const collection = await getPayrollRunsCollection<PayrollRunDocument>();
+	const latest = await collection.findOne(
+		{ workspaceId: new ObjectId(workspaceId) },
+		{
+			projection: { periodEnd: 1 },
+			sort: { periodEnd: -1, createdAt: -1 }
+		}
+	);
+
+	return latest
+		? `${latest.periodEnd.getUTCFullYear()}-${String(latest.periodEnd.getUTCMonth() + 1).padStart(2, '0')}-${String(latest.periodEnd.getUTCDate()).padStart(2, '0')}`
+		: null;
+}
+
 export async function createPayrollRunForWorkspace(input: {
 	workspaceId: string;
 	data: CreatePayrollRunInput;

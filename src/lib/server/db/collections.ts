@@ -17,7 +17,8 @@ export const CollectionNames = {
 // urixoft-workspace-mailbox:collections:end
 // urixoft-workspace-payroll:collections:start
 	payrollRuns: 'payroll_runs',
-	payrollEmployees: 'payroll_employees'
+	payrollEmployees: 'payroll_employees',
+	payrollSettings: 'payroll_settings'
 // urixoft-workspace-payroll:collections:end
 } as const;
 
@@ -91,5 +92,9 @@ export async function getPayrollRunsCollection<T extends Document = Document>():
 
 export async function getPayrollEmployeesCollection<T extends Document = Document>(): Promise<Collection<T>> {
 	return getCollection<T>('payrollEmployees');
+}
+
+export async function getPayrollSettingsCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('payrollSettings');
 }
 // urixoft-workspace-payroll:getter:end

@@ -6,6 +6,7 @@ import {
 	createPayrollEmployeeForWorkspace,
 	listPayrollEmployeesForWorkspace
 } from '$lib/server/repositories/payroll-employees';
+import { getPayrollSettingsForWorkspace } from '$lib/server/repositories/payroll-settings';
 import {
 	listUserWorkspaceContexts,
 	resolveActiveWorkspaceContext
@@ -32,10 +33,12 @@ export const load: PageServerLoad = async ({ parent, isDataRequest }) => {
 	if (!workspace || !canManage) {
 		return {
 			form,
-			employees: []
+			employees: [],
+			payrollCurrency: 'PHP' as const
 		};
 	}
 
+	const settings = await getPayrollSettingsForWorkspace(workspace.workspaceId);
 	const employeesQuery = listPayrollEmployeesForWorkspace({
 		workspaceId: workspace.workspaceId,
 		page: 1,
@@ -44,6 +47,7 @@ export const load: PageServerLoad = async ({ parent, isDataRequest }) => {
 
 	return {
 		form,
+		payrollCurrency: settings.currency,
 		employees: isDataRequest ? employeesQuery : await employeesQuery
 	};
 };
@@ -67,10 +71,13 @@ export const actions: Actions = {
 			return fail(400, { form });
 		}
 
+		const settings = await getPayrollSettingsForWorkspace(workspace.workspaceId);
+
 		try {
 			await createPayrollEmployeeForWorkspace({
 				workspaceId: workspace.workspaceId,
-				data: form.data
+				data: form.data,
+				currency: settings.currency
 			});
 		} catch {
 			return message(form, PAYROLL_EMPLOYEE_CREATE_FAILED_MESSAGE, { status: 500 });

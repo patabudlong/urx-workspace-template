@@ -1,12 +1,25 @@
 import { z } from 'zod';
+import {
+	PAYROLL_CURRENCY_VALUES,
+	resolvePayrollCurrency,
+	type PayrollCurrency
+} from '$lib/shared/payroll/currency';
+import {
+	PAY_FREQUENCIES,
+	WEEK_START_DAYS,
+	requiresPeriodAnchor,
+	type WeekStartDay
+} from '$lib/shared/payroll/frequency';
+import { PAYROLL_PAY_TYPES } from '$lib/shared/payroll/pay-rate';
+import {
+	PAYROLL_TIMEZONE_VALUES,
+	resolvePayrollTimezone,
+	type PayrollTimezone
+} from '$lib/shared/payroll/timezone';
 
 export const PAYROLL_RUN_STATUSES = ['draft', 'processing', 'completed', 'failed'] as const;
 
 export type PayrollRunStatus = (typeof PAYROLL_RUN_STATUSES)[number];
-
-export const PAYROLL_PAY_TYPES = ['salary', 'hourly'] as const;
-
-export type PayrollPayType = (typeof PAYROLL_PAY_TYPES)[number];
 
 const payrollDateInputSchema = z
 	.string()
@@ -45,7 +58,7 @@ export const createPayrollEmployeeDefaults: CreatePayrollEmployeeInput = {
 	lastName: '',
 	email: '',
 	jobTitle: '',
-	payType: 'salary',
+	payType: 'monthly',
 	payRate: 0
 };
 
@@ -67,3 +80,48 @@ export const createPayrollRunDefaults: CreatePayrollRunInput = {
 	periodStart: '',
 	periodEnd: ''
 };
+
+export const payrollSettingsSchema = z
+	.object({
+		payFrequency: z.enum(PAY_FREQUENCIES),
+		timezone: z.enum(PAYROLL_TIMEZONE_VALUES),
+		currency: z.enum(PAYROLL_CURRENCY_VALUES),
+		weekStartDay: z.enum(WEEK_START_DAYS).optional().or(z.literal('')),
+		periodAnchorDate: payrollDateInputSchema.optional().or(z.literal(''))
+	})
+	.superRefine((data, ctx) => {
+		if (!requiresPeriodAnchor(data.payFrequency)) {
+			return;
+		}
+
+		if (!data.periodAnchorDate) {
+			ctx.addIssue({
+				code: 'custom',
+				message: 'Period anchor date is required.',
+				path: ['periodAnchorDate']
+			});
+		}
+
+		if (!data.weekStartDay) {
+			ctx.addIssue({
+				code: 'custom',
+				message: 'Week start day is required.',
+				path: ['weekStartDay']
+			});
+		}
+	});
+
+export type PayrollSettingsInput = z.infer<typeof payrollSettingsSchema>;
+
+export function createPayrollSettingsDefaults(input: {
+	timezone: PayrollTimezone;
+	currency: PayrollCurrency;
+}): PayrollSettingsInput {
+	return {
+		payFrequency: 'semi-monthly',
+		timezone: resolvePayrollTimezone(input.timezone),
+		currency: resolvePayrollCurrency(input.currency),
+		weekStartDay: 'monday' satisfies WeekStartDay,
+		periodAnchorDate: ''
+	};
+}

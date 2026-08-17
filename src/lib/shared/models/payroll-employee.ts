@@ -1,5 +1,5 @@
 import type { ObjectId } from 'mongodb';
-import type { PayrollPayType } from '$lib/shared/payroll/schemas';
+import type { PayrollPayType } from '$lib/shared/payroll/pay-rate';
 
 export type PayrollEmployeeDocument = {
 	_id: ObjectId;

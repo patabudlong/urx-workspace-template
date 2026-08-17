@@ -6,16 +6,19 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Form from '$lib/components/ui/form/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
+	import * as Select from '$lib/components/ui/select/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+	import { getPayrollCurrencyLabel } from '$lib/shared/payroll/currency';
 	import { formatPayRateCents } from '$lib/shared/payroll/format';
 	import {
 		PAYROLL_EMPLOYEE_CREATED_MESSAGE,
 		PAYROLL_EMPLOYEE_CREATE_FAILED_MESSAGE
 	} from '$lib/shared/payroll/messages';
 	import {
-		createPayrollEmployeeSchema,
+		PAYROLL_PAY_TYPE_LABELS,
 		PAYROLL_PAY_TYPES
-	} from '$lib/shared/payroll/schemas';
+	} from '$lib/shared/payroll/pay-rate';
+	import { createPayrollEmployeeSchema } from '$lib/shared/payroll/schemas';
 	import type { PayrollEmployeeDto } from '$lib/shared/models/payroll-employee';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import UserPlusIcon from '@lucide/svelte/icons/user-plus';
@@ -51,6 +54,9 @@
 	});
 
 	const { enhance, form, message: formMessage } = superform;
+
+	const currencyLabel = $derived(getPayrollCurrencyLabel(data.payrollCurrency));
+	const payRateStep = $derived(data.payrollCurrency === 'JPY' ? '1' : '0.01');
 
 	$effect(() => {
 		const next = data.employees as Promise<PayrollEmployeeDto[]> | PayrollEmployeeDto[];
@@ -159,16 +165,24 @@
 					<Form.Field form={superform} name="payType">
 						<Form.Control>
 							{#snippet children({ props })}
-								<Form.Label>Pay type</Form.Label>
-								<select
-									{...props}
-									bind:value={$form.payType}
-									class="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-								>
-									{#each PAYROLL_PAY_TYPES as payType (payType)}
-										<option value={payType}>{payType === 'hourly' ? 'Hourly' : 'Salary'}</option>
-									{/each}
-								</select>
+								<Form.Label>Pay rate type</Form.Label>
+								<Select.Root type="single" bind:value={$form.payType}>
+									<Select.Trigger class="h-10 w-full">
+										<span class="truncate">
+											{PAYROLL_PAY_TYPE_LABELS[$form.payType] ?? 'Select pay rate type'}
+										</span>
+									</Select.Trigger>
+									<Select.Content>
+										<Select.Group>
+											{#each PAYROLL_PAY_TYPES as payType (payType)}
+												<Select.Item value={payType} label={PAYROLL_PAY_TYPE_LABELS[payType]}>
+													{PAYROLL_PAY_TYPE_LABELS[payType]}
+												</Select.Item>
+											{/each}
+										</Select.Group>
+									</Select.Content>
+								</Select.Root>
+								<input type="hidden" name={props.name} value={$form.payType} />
 							{/snippet}
 						</Form.Control>
 						<SingleFieldErrors />
@@ -178,12 +192,19 @@
 						<Form.Control>
 							{#snippet children({ props })}
 								<Form.Label required>
-									Pay rate (USD)
+									Pay rate ({currencyLabel})
 									<span class="text-muted-foreground font-normal">
-										{$form.payType === 'hourly' ? 'per hour' : 'per year'}
+										{$form.payType === 'hourly' ? 'per hour' : 'per month'}
 									</span>
 								</Form.Label>
-								<Input {...props} bind:value={$form.payRate} type="number" min="0" step="0.01" inputmode="decimal" />
+								<Input
+									{...props}
+									bind:value={$form.payRate}
+									type="number"
+									min="0"
+									step={payRateStep}
+									inputmode="decimal"
+								/>
 							{/snippet}
 						</Form.Control>
 						<SingleFieldErrors />
@@ -240,7 +261,7 @@
 								</p>
 							</div>
 							<p class="text-sm font-medium">
-								{formatPayRateCents(employee.payRateCents, employee.payType)}
+								{formatPayRateCents(employee.payRateCents, employee.payType, data.payrollCurrency)}
 							</p>
 						</li>
 					{/each}

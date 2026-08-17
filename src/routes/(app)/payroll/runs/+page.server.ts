@@ -2,40 +2,44 @@ import { fail } from '@sveltejs/kit';
 import { message, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import type { Actions, PageServerLoad } from './$types';
+import { buildSuggestedPayRunDefaults } from '$lib/server/payroll/suggestions';
 import {
 	createPayrollRunForWorkspace,
 	listPayrollRunsForWorkspace
 } from '$lib/server/repositories/payroll-runs';
+import { getPayrollSettingsForWorkspace } from '$lib/server/repositories/payroll-settings';
 import {
 	listUserWorkspaceContexts,
 	resolveActiveWorkspaceContext
 } from '$lib/server/workspace-context';
 import { getWorkspaceHostSuffix } from '$lib/server/workspace-host';
 import { canManagePayroll } from '$lib/shared/payroll/access';
+import { PAY_FREQUENCY_LABELS } from '$lib/shared/payroll/frequency';
 import {
 	PAYROLL_RUN_CREATED_MESSAGE,
 	PAYROLL_RUN_CREATE_FAILED_MESSAGE
 } from '$lib/shared/payroll/messages';
-import {
-	createPayrollRunSchema,
-	createPayrollRunDefaults
-} from '$lib/shared/payroll/schemas';
+import { createPayrollRunSchema } from '$lib/shared/payroll/schemas';
 
 const DEFAULT_LIMIT = 20;
 
 export const load: PageServerLoad = async ({ parent, isDataRequest }) => {
 	const { workspace, canManagePayroll: canManage } = await parent();
-	const form = await superValidate(zod4(createPayrollRunSchema), {
-		defaults: createPayrollRunDefaults
-	});
 
 	if (!workspace || !canManage) {
 		return {
-			form,
+			form: await superValidate(zod4(createPayrollRunSchema)),
 			runs: [],
-			total: 0
+			total: 0,
+			settingsConfigured: false,
+			payFrequencyLabel: null
 		};
 	}
+
+	const [suggestedDefaults, settings] = await Promise.all([
+		buildSuggestedPayRunDefaults(workspace.workspaceId),
+		getPayrollSettingsForWorkspace(workspace.workspaceId)
+	]);
 
 	const runsQuery = listPayrollRunsForWorkspace({
 		workspaceId: workspace.workspaceId,
@@ -43,10 +47,14 @@ export const load: PageServerLoad = async ({ parent, isDataRequest }) => {
 		limit: DEFAULT_LIMIT
 	});
 
+	const form = await superValidate(suggestedDefaults, zod4(createPayrollRunSchema));
+
 	return {
 		form,
 		runs: isDataRequest ? runsQuery.then((result) => result.items) : (await runsQuery).items,
-		total: isDataRequest ? runsQuery.then((result) => result.total) : (await runsQuery).total
+		total: isDataRequest ? runsQuery.then((result) => result.total) : (await runsQuery).total,
+		settingsConfigured: settings.configured,
+		payFrequencyLabel: PAY_FREQUENCY_LABELS[settings.payFrequency]
 	};
 };
 

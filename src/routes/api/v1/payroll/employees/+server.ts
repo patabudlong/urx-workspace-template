@@ -5,6 +5,7 @@ import {
 	createPayrollEmployeeForWorkspace,
 	listPayrollEmployeesForWorkspace
 } from '$lib/server/repositories/payroll-employees';
+import { getPayrollSettingsForWorkspace } from '$lib/server/repositories/payroll-settings';
 import {
 	createPayrollEmployeeSchema,
 	payrollEmployeesQuerySchema
@@ -76,9 +77,11 @@ export const POST: RequestHandler = async ({ locals, request, url }) => {
 		});
 	}
 
+	const settings = await getPayrollSettingsForWorkspace(context.workspace.workspaceId);
 	const employee = await createPayrollEmployeeForWorkspace({
 		workspaceId: context.workspace.workspaceId,
-		data: parsed.data
+		data: parsed.data,
+		currency: settings.currency
 	});
 
 	return jsonOk(employee, { status: 201, requestId });

@@ -5,6 +5,7 @@ import type {
 import { getPayrollEmployeesCollection } from '$lib/server/db/collections';
 import { dollarsToCents } from '$lib/shared/payroll/format';
 import type { CreatePayrollEmployeeInput } from '$lib/shared/payroll/schemas';
+import { normalizePayrollPayType } from '$lib/shared/payroll/pay-rate';
 import { ObjectId } from 'mongodb';
 
 let payrollEmployeeIndexesPromise: Promise<void> | null = null;
@@ -31,7 +32,7 @@ function toPayrollEmployeeDto(doc: PayrollEmployeeDocument): PayrollEmployeeDto 
 		fullName: `${doc.firstName} ${doc.lastName}`.trim(),
 		email: doc.email,
 		jobTitle: doc.jobTitle,
-		payType: doc.payType,
+		payType: normalizePayrollPayType(doc.payType),
 		payRateCents: doc.payRateCents,
 		isActive: doc.isActive,
 		createdAt: doc.createdAt.toISOString(),
@@ -92,6 +93,7 @@ export async function countPayrollEmployeesForWorkspace(workspaceId: string): Pr
 export async function createPayrollEmployeeForWorkspace(input: {
 	workspaceId: string;
 	data: CreatePayrollEmployeeInput;
+	currency: Parameters<typeof dollarsToCents>[1];
 }): Promise<PayrollEmployeeDto> {
 	await ensurePayrollEmployeeIndexes();
 
@@ -107,7 +109,7 @@ export async function createPayrollEmployeeForWorkspace(input: {
 		email,
 		jobTitle,
 		payType: input.data.payType,
-		payRateCents: dollarsToCents(input.data.payRate),
+		payRateCents: dollarsToCents(input.data.payRate, input.currency),
 		isActive: true,
 		createdAt: now,
 		updatedAt: now
