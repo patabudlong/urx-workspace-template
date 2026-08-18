@@ -161,6 +161,19 @@
 					</Form.Field>
 				</div>
 
+				<Form.Field form={superform} name="employeeCode">
+					<Form.Control>
+						{#snippet children({ props })}
+							<Form.Label>
+								Employee code
+								<span class="text-muted-foreground">(optional, for biometrics)</span>
+							</Form.Label>
+							<Input {...props} bind:value={$form.employeeCode} autocomplete="off" />
+						{/snippet}
+					</Form.Control>
+					<SingleFieldErrors />
+				</Form.Field>
+
 				<div class="grid gap-5 sm:grid-cols-2">
 					<Form.Field form={superform} name="payType">
 						<Form.Control>

@@ -47,6 +47,12 @@ export const createPayrollEmployeeSchema = z.object({
 		.optional()
 		.or(z.literal('')),
 	jobTitle: z.string().trim().max(120).optional().or(z.literal('')),
+	employeeCode: z
+		.string()
+		.trim()
+		.max(40, 'Employee code must be 40 characters or fewer.')
+		.optional()
+		.or(z.literal('')),
 	payType: z.enum(PAYROLL_PAY_TYPES),
 	payRate: z.coerce.number().min(0, 'Pay rate must be zero or greater.')
 });
@@ -58,6 +64,7 @@ export const createPayrollEmployeeDefaults: CreatePayrollEmployeeInput = {
 	lastName: '',
 	email: '',
 	jobTitle: '',
+	employeeCode: '',
 	payType: 'monthly',
 	payRate: 0
 };

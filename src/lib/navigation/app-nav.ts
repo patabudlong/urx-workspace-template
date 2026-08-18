@@ -8,6 +8,7 @@ import UsersIcon from '@lucide/svelte/icons/users';
 import UserCircleIcon from '@lucide/svelte/icons/user-circle';
 import MailIcon from '@lucide/svelte/icons/mail';
 import BanknoteIcon from '@lucide/svelte/icons/banknote';
+import ClipboardClockIcon from '@lucide/svelte/icons/clipboard-clock';
 import { WORKSPACE_MEMBER_ROLES } from '$lib/shared/models/workspace-member';
 
 export type AppNavItem = {
@@ -47,6 +48,14 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
 				match: 'prefix'
 			},
 // urixoft-workspace-payroll:end
+// urixoft-workspace-dtr:start
+			{
+				title: 'DTR',
+				href: '/dtr',
+				icon: ClipboardClockIcon,
+				match: 'prefix'
+			},
+// urixoft-workspace-dtr:end
 			{
 				title: 'Overview',
 				href: '/',

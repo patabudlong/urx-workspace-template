@@ -18,8 +18,12 @@ export const CollectionNames = {
 // urixoft-workspace-payroll:collections:start
 	payrollRuns: 'payroll_runs',
 	payrollEmployees: 'payroll_employees',
-	payrollSettings: 'payroll_settings'
+	payrollSettings: 'payroll_settings',
 // urixoft-workspace-payroll:collections:end
+// urixoft-workspace-dtr:collections:start
+	dtrSettings: 'dtr_settings',
+	dtrDays: 'dtr_days'
+// urixoft-workspace-dtr:collections:end
 } as const;
 
 type CollectionName = keyof typeof CollectionNames;
@@ -98,3 +102,12 @@ export async function getPayrollSettingsCollection<T extends Document = Document
 	return getCollection<T>('payrollSettings');
 }
 // urixoft-workspace-payroll:getter:end
+// urixoft-workspace-dtr:getter:start
+export async function getDtrSettingsCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('dtrSettings');
+}
+
+export async function getDtrDaysCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('dtrDays');
+}
+// urixoft-workspace-dtr:getter:end

@@ -8,6 +8,7 @@ export type PayrollEmployeeDocument = {
 	lastName: string;
 	email: string | null;
 	jobTitle: string | null;
+	employeeCode: string | null;
 	payType: PayrollPayType;
 	payRateCents: number;
 	isActive: boolean;
@@ -23,6 +24,7 @@ export type PayrollEmployeeDto = {
 	fullName: string;
 	email: string | null;
 	jobTitle: string | null;
+	employeeCode: string | null;
 	payType: PayrollPayType;
 	payRateCents: number;
 	isActive: boolean;

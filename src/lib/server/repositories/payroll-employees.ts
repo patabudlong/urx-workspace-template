@@ -16,6 +16,7 @@ const PAYROLL_EMPLOYEE_PROJECTION = {
 	workspaceId: 1,
 	email: 1,
 	jobTitle: 1,
+	employeeCode: 1,
 	payType: 1,
 	payRateCents: 1,
 	isActive: 1,
@@ -32,6 +33,7 @@ function toPayrollEmployeeDto(doc: PayrollEmployeeDocument): PayrollEmployeeDto 
 		fullName: `${doc.firstName} ${doc.lastName}`.trim(),
 		email: doc.email,
 		jobTitle: doc.jobTitle,
+		employeeCode: doc.employeeCode ?? null,
 		payType: normalizePayrollPayType(doc.payType),
 		payRateCents: doc.payRateCents,
 		isActive: doc.isActive,
@@ -46,6 +48,13 @@ export async function ensurePayrollEmployeeIndexes(): Promise<void> {
 			const collection = await getPayrollEmployeesCollection();
 			await collection.createIndex({ workspaceId: 1, lastName: 1, firstName: 1 });
 			await collection.createIndex({ workspaceId: 1, isActive: 1, createdAt: -1 });
+			await collection.createIndex(
+				{ workspaceId: 1, employeeCode: 1 },
+				{
+					unique: true,
+					partialFilterExpression: { employeeCode: { $type: 'string' } }
+				}
+			);
 		})();
 	}
 
@@ -101,6 +110,7 @@ export async function createPayrollEmployeeForWorkspace(input: {
 	const now = new Date();
 	const email = input.data.email?.trim() ? input.data.email.trim().toLowerCase() : null;
 	const jobTitle = input.data.jobTitle?.trim() ? input.data.jobTitle.trim() : null;
+	const employeeCode = input.data.employeeCode?.trim() ? input.data.employeeCode.trim() : null;
 
 	const result = await collection.insertOne({
 		workspaceId: new ObjectId(input.workspaceId),
@@ -108,6 +118,7 @@ export async function createPayrollEmployeeForWorkspace(input: {
 		lastName: input.data.lastName.trim(),
 		email,
 		jobTitle,
+		employeeCode,
 		payType: input.data.payType,
 		payRateCents: dollarsToCents(input.data.payRate, input.currency),
 		isActive: true,
