@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PayrollSettingsSidebarMenu from '$lib/components/payroll/payroll-settings-sidebar-menu.svelte';
 	import { page } from '$app/state';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { isAppNavActive, type AppNavItem } from '$lib/navigation/app-nav';
@@ -32,3 +33,9 @@
 		</Sidebar.Menu>
 	</Sidebar.Group>
 </Sidebar.Content>
+
+<Sidebar.Footer class="border-sidebar-border mt-auto shrink-0 border-t p-2">
+	<Sidebar.Menu>
+		<PayrollSettingsSidebarMenu />
+	</Sidebar.Menu>
+</Sidebar.Footer>

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import SectionSidebar from '$lib/components/section-sidebar.svelte';
+	import PayrollSectionSidebar from '$lib/components/payroll/payroll-section-sidebar.svelte';
 	import PayrollSidebarPanel from '$lib/components/payroll/payroll-sidebar-panel.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { getPayrollNavItems } from '$lib/navigation/payroll-nav';
@@ -23,11 +23,7 @@
 
 	<div class="flex min-w-0 flex-1 flex-col gap-6 p-4 lg:gap-8 lg:p-6">
 		<div class="lg:hidden">
-			<SectionSidebar
-				title="Payroll"
-				description="Manage pay periods, runs, and compensation for this workspace."
-				items={payrollNavItems}
-			/>
+			<PayrollSectionSidebar items={payrollNavItems} />
 		</div>
 
 		{#if !canManage}
