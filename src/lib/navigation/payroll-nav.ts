@@ -23,7 +23,7 @@ export const PAYROLL_NAV_ITEMS: AppNavItem[] = [
 		title: 'Employees',
 		href: '/payroll/employees',
 		icon: UsersIcon,
-		match: 'exact'
+		match: 'prefix'
 	},
 	{
 		title: 'Pay runs',

@@ -3,6 +3,7 @@ import { getDtrSettingsCollection } from '$lib/server/db/collections';
 import type { DtrSettingsInput } from '$lib/shared/dtr/schemas';
 import { dtrSettingsDefaults } from '$lib/shared/dtr/schemas';
 import { sortWeekDays } from '$lib/shared/dtr/weekdays';
+import { normalizeLunchBreak } from '$lib/shared/dtr/work-schedule';
 import { ObjectId } from 'mongodb';
 
 let dtrSettingsIndexesPromise: Promise<void> | null = null;
@@ -11,6 +12,8 @@ const DTR_SETTINGS_PROJECTION = {
 	workspaceId: 1,
 	restDays: 1,
 	standardWorkMinutes: 1,
+	lunchBreakStart: 1,
+	lunchBreakEnd: 1,
 	updatedAt: 1
 } as const;
 
@@ -20,6 +23,7 @@ function toDtrSettingsDto(doc: DtrSettingsDocument | null, workspaceId: string):
 			workspaceId,
 			restDays: dtrSettingsDefaults.restDays,
 			standardWorkMinutes: dtrSettingsDefaults.standardWorkMinutes,
+			lunchBreak: normalizeLunchBreak(dtrSettingsDefaults),
 			configured: false,
 			updatedAt: null
 		};
@@ -29,6 +33,7 @@ function toDtrSettingsDto(doc: DtrSettingsDocument | null, workspaceId: string):
 		workspaceId: doc.workspaceId.toString(),
 		restDays: sortWeekDays(doc.restDays),
 		standardWorkMinutes: doc.standardWorkMinutes,
+		lunchBreak: normalizeLunchBreak(doc),
 		configured: true,
 		updatedAt: doc.updatedAt.toISOString()
 	};
@@ -73,6 +78,8 @@ export async function upsertDtrSettingsForWorkspace(input: {
 			$set: {
 				restDays: sortWeekDays(input.data.restDays),
 				standardWorkMinutes: input.data.standardWorkMinutes,
+				lunchBreakStart: input.data.lunchBreakStart?.trim() || null,
+				lunchBreakEnd: input.data.lunchBreakEnd?.trim() || null,
 				updatedAt: now
 			},
 			$setOnInsert: {

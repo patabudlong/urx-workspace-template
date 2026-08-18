@@ -3,6 +3,7 @@ import type {
 	PayrollEmployeeDto
 } from '$lib/shared/models/payroll-employee';
 import { getPayrollEmployeesCollection } from '$lib/server/db/collections';
+import { getDtrWorkScheduleForWorkspace } from '$lib/server/repositories/dtr-work-schedules';
 import type { PayrollEmployeeDeduction } from '$lib/shared/payroll/deductions';
 import { percentToBasisPoints } from '$lib/shared/payroll/deductions';
 import { dollarsToCents } from '$lib/shared/payroll/format';
@@ -22,6 +23,7 @@ const PAYROLL_EMPLOYEE_PROJECTION = {
 	payType: 1,
 	payRateCents: 1,
 	deductions: 1,
+	workScheduleId: 1,
 	isActive: 1,
 	createdAt: 1,
 	updatedAt: 1
@@ -43,7 +45,10 @@ function mapEmployeeDeductions(
 		}));
 }
 
-function toPayrollEmployeeDto(doc: PayrollEmployeeDocument): PayrollEmployeeDto {
+function toPayrollEmployeeDto(
+	doc: PayrollEmployeeDocument,
+	workScheduleName: string | null = null
+): PayrollEmployeeDto {
 	return {
 		id: doc._id.toString(),
 		workspaceId: doc.workspaceId.toString(),
@@ -56,6 +61,8 @@ function toPayrollEmployeeDto(doc: PayrollEmployeeDocument): PayrollEmployeeDto 
 		payType: normalizePayrollPayType(doc.payType),
 		payRateCents: doc.payRateCents,
 		deductions: doc.deductions ?? [],
+		workScheduleId: doc.workScheduleId?.toString() ?? null,
+		workScheduleName,
 		isActive: doc.isActive,
 		createdAt: doc.createdAt.toISOString(),
 		updatedAt: doc.updatedAt.toISOString()
@@ -103,8 +110,12 @@ export async function listPayrollEmployeesForWorkspace(input: {
 		collection.countDocuments(filter)
 	]);
 
+	const scheduleNames = await loadWorkScheduleNamesForEmployees(input.workspaceId, items);
+
 	return {
-		items: items.map(toPayrollEmployeeDto),
+		items: items.map((item) =>
+			toPayrollEmployeeDto(item, scheduleNames.get(item.workScheduleId?.toString() ?? '') ?? null)
+		),
 		total
 	};
 }
@@ -132,6 +143,10 @@ export async function createPayrollEmployeeForWorkspace(input: {
 	const jobTitle = input.data.jobTitle?.trim() ? input.data.jobTitle.trim() : null;
 	const employeeCode = input.data.employeeCode?.trim() ? input.data.employeeCode.trim() : null;
 	const deductions = mapEmployeeDeductions(input.data.deductions, input.currency);
+	const workScheduleId = await resolveWorkScheduleObjectId(
+		input.workspaceId,
+		input.data.workScheduleId
+	);
 
 	const result = await collection.insertOne({
 		workspaceId: new ObjectId(input.workspaceId),
@@ -143,6 +158,7 @@ export async function createPayrollEmployeeForWorkspace(input: {
 		payType: input.data.payType,
 		payRateCents: dollarsToCents(input.data.payRate, input.currency),
 		deductions,
+		workScheduleId,
 		isActive: true,
 		createdAt: now,
 		updatedAt: now
@@ -157,5 +173,98 @@ export async function createPayrollEmployeeForWorkspace(input: {
 		throw new Error('Failed to load created payroll employee');
 	}
 
-	return toPayrollEmployeeDto(created);
+	const workScheduleName = workScheduleId
+		? ((await getDtrWorkScheduleForWorkspace({
+				workspaceId: input.workspaceId,
+				scheduleId: workScheduleId.toString()
+			}))?.name ?? null)
+		: null;
+
+	return toPayrollEmployeeDto(created, workScheduleName);
+}
+
+async function resolveWorkScheduleObjectId(
+	workspaceId: string,
+	workScheduleId: string | undefined
+): Promise<ObjectId | null> {
+	const scheduleId = workScheduleId?.trim();
+
+	if (!scheduleId) {
+		return null;
+	}
+
+	const schedule = await getDtrWorkScheduleForWorkspace({
+		workspaceId,
+		scheduleId
+	});
+
+	if (!schedule) {
+		throw new Error('Invalid work schedule');
+	}
+
+	return new ObjectId(schedule.id);
+}
+
+async function loadWorkScheduleNamesForEmployees(
+	workspaceId: string,
+	employees: PayrollEmployeeDocument[]
+): Promise<Map<string, string>> {
+	const scheduleIds = [...new Set(
+		employees
+			.map((employee) => employee.workScheduleId?.toString())
+			.filter((scheduleId): scheduleId is string => Boolean(scheduleId))
+	)];
+
+	if (scheduleIds.length === 0) {
+		return new Map();
+	}
+
+	const names = new Map<string, string>();
+
+	for (const scheduleId of scheduleIds) {
+		const schedule = await getDtrWorkScheduleForWorkspace({
+			workspaceId,
+			scheduleId
+		});
+
+		if (schedule) {
+			names.set(scheduleId, schedule.name);
+		}
+	}
+
+	return names;
+}
+
+export async function getPayrollEmployeeForWorkspace(input: {
+	workspaceId: string;
+	employeeId: string;
+}): Promise<PayrollEmployeeDto | null> {
+	await ensurePayrollEmployeeIndexes();
+
+	if (!ObjectId.isValid(input.employeeId)) {
+		return null;
+	}
+
+	const collection = await getPayrollEmployeesCollection<PayrollEmployeeDocument>();
+	const employee = await collection.findOne(
+		{
+			_id: new ObjectId(input.employeeId),
+			workspaceId: new ObjectId(input.workspaceId),
+			isActive: true
+		},
+		{ projection: PAYROLL_EMPLOYEE_PROJECTION }
+	);
+
+	if (!employee) {
+		return null;
+	}
+
+	const workScheduleName = employee.workScheduleId
+		? ((await getDtrWorkScheduleForWorkspace({
+				workspaceId: input.workspaceId,
+				scheduleId: employee.workScheduleId.toString()
+			}))?.name ?? null)
+		: null;
+
+	return toPayrollEmployeeDto(employee, workScheduleName);
 }

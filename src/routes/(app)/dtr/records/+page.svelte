@@ -83,14 +83,19 @@
 		<StatusAlert
 			variant="info"
 			title="Configure your work schedule"
-			description="Set rest days under Work schedule so the calendar can mark rest days correctly."
+			description="Set rest days and lunch break under Settings → Workspace default."
 		/>
 	{/if}
 
 	<Card.Root>
 		<Card.Header>
 			<Card.Title>Calendar</Card.Title>
-			<Card.Description>Select an employee and month to review or update time records.</Card.Description>
+			<Card.Description>
+				Select an employee and month to review or update time records.
+				{#if data.workScheduleName}
+					Using named schedule: <span class="font-medium">{data.workScheduleName}</span>.
+				{/if}
+			</Card.Description>
 		</Card.Header>
 		<Card.Content class="space-y-6">
 			<div class="grid gap-5 sm:grid-cols-2">
@@ -250,6 +255,13 @@
 							<SingleFieldErrors />
 						</Form.Field>
 					</div>
+
+					{#if data.selectedRecord && data.selectedRecord.workedMinutes > 0}
+						<p class="text-muted-foreground text-sm">
+							Worked time: {Math.round((data.selectedRecord.workedMinutes / 60) * 100) / 100} hours
+							({data.selectedRecord.workedMinutes} minutes), after any lunch break deduction.
+						</p>
+					{/if}
 
 					<Form.Field form={superform} name="notes">
 						<Form.Control>

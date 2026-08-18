@@ -48,7 +48,7 @@
 		{#snippet actions()}
 			<Button href="/dtr/settings" variant="outline" class="h-10">
 				<CalendarClockIcon class="size-4" aria-hidden="true" />
-				Work schedule
+				Settings
 			</Button>
 			<Button href="/dtr/records" class="h-10">
 				<ClockIcon class="size-4" aria-hidden="true" />

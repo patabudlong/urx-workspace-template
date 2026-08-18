@@ -13,6 +13,7 @@ export type PayrollEmployeeDocument = {
 	payType: PayrollPayType;
 	payRateCents: number;
 	deductions: PayrollEmployeeDeduction[];
+	workScheduleId: ObjectId | null;
 	isActive: boolean;
 	createdAt: Date;
 	updatedAt: Date;
@@ -30,6 +31,8 @@ export type PayrollEmployeeDto = {
 	payType: PayrollPayType;
 	payRateCents: number;
 	deductions: PayrollEmployeeDeduction[];
+	workScheduleId: string | null;
+	workScheduleName: string | null;
 	isActive: boolean;
 	createdAt: string;
 	updatedAt: string;

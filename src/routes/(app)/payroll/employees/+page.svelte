@@ -1,62 +1,21 @@
 <script lang="ts">
-	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
+	import ListSearchInput from '$lib/components/list/list-search-input.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
-	import * as Form from '$lib/components/ui/form/index.js';
-	import { Input } from '$lib/components/ui/input/index.js';
-	import * as Select from '$lib/components/ui/select/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
-	import { getPayrollCurrencyLabel } from '$lib/shared/payroll/currency';
+	import * as Table from '$lib/components/ui/table/index.js';
+	import { filterPayrollEmployees } from '$lib/shared/payroll/filter-employees';
 	import { formatPayRateCents } from '$lib/shared/payroll/format';
-	import {
-		PAYROLL_EMPLOYEE_CREATED_MESSAGE,
-		PAYROLL_EMPLOYEE_CREATE_FAILED_MESSAGE
-	} from '$lib/shared/payroll/messages';
-	import {
-		PAYROLL_PAY_TYPE_LABELS,
-		PAYROLL_PAY_TYPES
-	} from '$lib/shared/payroll/pay-rate';
-	import { createPayrollEmployeeSchema } from '$lib/shared/payroll/schemas';
+	import { PAYROLL_PAY_TYPE_LABELS } from '$lib/shared/payroll/pay-rate';
 	import type { PayrollEmployeeDto } from '$lib/shared/models/payroll-employee';
-	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import UserPlusIcon from '@lucide/svelte/icons/user-plus';
-	import { invalidateAll } from '$app/navigation';
-	import { untrack } from 'svelte';
-	import { superForm } from 'sveltekit-superforms';
-	import { zod4Client } from 'sveltekit-superforms/adapters';
 
 	let { data } = $props();
 
-	let submitting = $state(false);
-	let showSuccess = $state(false);
+	let searchQuery = $state('');
 	let employees = $state<PayrollEmployeeDto[] | null>(null);
-
-	const superform = superForm(untrack(() => data.form), {
-		validators: zod4Client(createPayrollEmployeeSchema),
-		resetForm: true,
-		onSubmit: () => {
-			submitting = true;
-			showSuccess = false;
-		},
-		onUpdated: async ({ form: updatedForm }) => {
-			submitting = false;
-
-			if (updatedForm.message === PAYROLL_EMPLOYEE_CREATED_MESSAGE) {
-				showSuccess = true;
-				await invalidateAll();
-			}
-		},
-		onError: () => {
-			submitting = false;
-		}
-	});
-
-	const { enhance, form, message: formMessage } = superform;
-
-	const currencyLabel = $derived(getPayrollCurrencyLabel(data.payrollCurrency));
-	const payRateStep = $derived(data.payrollCurrency === 'JPY' ? '1' : '0.01');
 
 	$effect(() => {
 		const next = data.employees as Promise<PayrollEmployeeDto[]> | PayrollEmployeeDto[];
@@ -78,11 +37,14 @@
 		});
 	});
 
-	const formError = $derived(
-		typeof $formMessage === 'string' &&
-			$formMessage.length > 0 &&
-			$formMessage !== PAYROLL_EMPLOYEE_CREATED_MESSAGE
+	const filteredEmployees = $derived(
+		employees === null ? [] : filterPayrollEmployees(employees, searchQuery)
 	);
+	const isSearching = $derived(searchQuery.trim().length > 0);
+
+	function formatCell(value: string | null | undefined): string {
+		return value?.trim() || '—';
+	}
 </script>
 
 <div class="flex w-full min-w-0 flex-col gap-8">
@@ -90,274 +52,125 @@
 		eyebrow="Payroll"
 		title="Employees"
 		description="People paid through this workspace. Add employees before creating pay runs."
-	/>
+	>
+		{#snippet actions()}
+			<Button href="/payroll/employees/new" class="h-10">
+				<UserPlusIcon class="size-4" aria-hidden="true" />
+				Add employee
+			</Button>
+		{/snippet}
+	</PageHeader>
 
 	<Card.Root>
-		<Card.Header>
-			<Card.Title>Add employee</Card.Title>
-			<Card.Description>Store compensation details for payroll processing.</Card.Description>
-		</Card.Header>
-		<Card.Content>
-			{#if showSuccess}
-				<StatusAlert
-					variant="success"
-					title="Employee added"
-					description="The employee is now available for pay runs."
-					class="mb-6"
-				/>
-			{:else if formError}
-				<StatusAlert
-					variant="danger"
-					title="Could not add employee"
-					description={$formMessage === PAYROLL_EMPLOYEE_CREATE_FAILED_MESSAGE
-						? PAYROLL_EMPLOYEE_CREATE_FAILED_MESSAGE
-						: String($formMessage)}
-					class="mb-6"
-				/>
-			{/if}
-
-			<form method="POST" use:enhance class="space-y-5">
-				<div class="grid gap-5 sm:grid-cols-2">
-					<Form.Field form={superform} name="firstName">
-						<Form.Control>
-							{#snippet children({ props })}
-								<Form.Label required>First name</Form.Label>
-								<Input {...props} bind:value={$form.firstName} autocomplete="given-name" />
-							{/snippet}
-						</Form.Control>
-						<SingleFieldErrors />
-					</Form.Field>
-
-					<Form.Field form={superform} name="lastName">
-						<Form.Control>
-							{#snippet children({ props })}
-								<Form.Label required>Last name</Form.Label>
-								<Input {...props} bind:value={$form.lastName} autocomplete="family-name" />
-							{/snippet}
-						</Form.Control>
-						<SingleFieldErrors />
-					</Form.Field>
-				</div>
-
-				<div class="grid gap-5 sm:grid-cols-2">
-					<Form.Field form={superform} name="email">
-						<Form.Control>
-							{#snippet children({ props })}
-								<Form.Label>Email <span class="text-muted-foreground">(optional)</span></Form.Label>
-								<Input {...props} bind:value={$form.email} type="email" autocomplete="email" />
-							{/snippet}
-						</Form.Control>
-						<SingleFieldErrors />
-					</Form.Field>
-
-					<Form.Field form={superform} name="jobTitle">
-						<Form.Control>
-							{#snippet children({ props })}
-								<Form.Label>Job title <span class="text-muted-foreground">(optional)</span></Form.Label>
-								<Input {...props} bind:value={$form.jobTitle} autocomplete="organization-title" />
-							{/snippet}
-						</Form.Control>
-						<SingleFieldErrors />
-					</Form.Field>
-				</div>
-
-				<Form.Field form={superform} name="employeeCode">
-					<Form.Control>
-						{#snippet children({ props })}
-							<Form.Label>
-								Employee code
-								<span class="text-muted-foreground">(optional, for biometrics)</span>
-							</Form.Label>
-							<Input {...props} bind:value={$form.employeeCode} autocomplete="off" />
-						{/snippet}
-					</Form.Control>
-					<SingleFieldErrors />
-				</Form.Field>
-
-				<div class="grid gap-5 sm:grid-cols-2">
-					<Form.Field form={superform} name="payType">
-						<Form.Control>
-							{#snippet children({ props })}
-								<Form.Label>Pay rate type</Form.Label>
-								<Select.Root type="single" bind:value={$form.payType}>
-									<Select.Trigger class="h-10 w-full">
-										<span class="truncate">
-											{PAYROLL_PAY_TYPE_LABELS[$form.payType] ?? 'Select pay rate type'}
-										</span>
-									</Select.Trigger>
-									<Select.Content>
-										<Select.Group>
-											{#each PAYROLL_PAY_TYPES as payType (payType)}
-												<Select.Item value={payType} label={PAYROLL_PAY_TYPE_LABELS[payType]}>
-													{PAYROLL_PAY_TYPE_LABELS[payType]}
-												</Select.Item>
-											{/each}
-										</Select.Group>
-									</Select.Content>
-								</Select.Root>
-								<input type="hidden" name={props.name} value={$form.payType} />
-							{/snippet}
-						</Form.Control>
-						<SingleFieldErrors />
-					</Form.Field>
-
-					<Form.Field form={superform} name="payRate">
-						<Form.Control>
-							{#snippet children({ props })}
-								<Form.Label required>
-									Pay rate ({currencyLabel})
-									<span class="text-muted-foreground font-normal">
-										{$form.payType === 'hourly' ? 'per hour' : 'per month'}
-									</span>
-								</Form.Label>
-								<Input
-									{...props}
-									bind:value={$form.payRate}
-									type="number"
-									min="0"
-									step={payRateStep}
-									inputmode="decimal"
-								/>
-							{/snippet}
-						</Form.Control>
-						<SingleFieldErrors />
-					</Form.Field>
-				</div>
-
-				{#if data.deductionTypes.length > 0}
-					<div class="space-y-4">
-						<div>
-							<p class="text-sm font-medium">Deductions</p>
-							<p class="text-muted-foreground text-sm">
-								Enable workspace deduction types and set amounts for this employee.
-							</p>
-						</div>
-
-						<div class="space-y-3">
-							{#each $form.deductions as deduction, index (deduction.typeId)}
-								{@const deductionType = data.deductionTypes.find(
-									(type) => type.id === deduction.typeId
-								)}
-								{#if deductionType}
-									<div class="border-input rounded-lg border p-4">
-										<input
-											type="hidden"
-											name="deductions[{index}].typeId"
-											value={deduction.typeId}
-										/>
-										<div class="flex flex-col gap-4 sm:flex-row sm:items-end">
-											<label class="flex flex-1 items-center gap-3 text-sm">
-												<input
-													type="checkbox"
-													name="deductions[{index}].enabled"
-													bind:checked={$form.deductions[index].enabled}
-												/>
-												<span class="font-medium">{deductionType.name}</span>
-												<span class="text-muted-foreground">
-													({deductionType.kind === 'fixed' ? 'fixed' : 'percentage'})
-												</span>
-											</label>
-
-											{#if deductionType.kind === 'fixed'}
-												<div class="sm:w-48">
-													<Input
-														name="deductions[{index}].amount"
-														type="number"
-														min="0"
-														step={payRateStep}
-														bind:value={$form.deductions[index].amount}
-														disabled={!$form.deductions[index].enabled}
-														placeholder="Amount"
-													/>
-												</div>
-											{:else}
-												<div class="sm:w-48">
-													<Input
-														name="deductions[{index}].ratePercent"
-														type="number"
-														min="0"
-														max="100"
-														step="0.01"
-														bind:value={$form.deductions[index].ratePercent}
-														disabled={!$form.deductions[index].enabled}
-														placeholder="Rate %"
-													/>
-												</div>
-											{/if}
-										</div>
-									</div>
-								{/if}
-							{/each}
-						</div>
-					</div>
-				{:else}
+		{#if employees === null}
+			<Card.Header>
+				<Skeleton class="h-6 w-40" />
+				<Skeleton class="mt-2 h-4 w-64" />
+			</Card.Header>
+			<Card.Content class="space-y-3">
+				{#each Array.from({ length: 5 }) as _, index (index)}
+					<Skeleton class="h-14 w-full" />
+				{/each}
+			</Card.Content>
+		{:else}
+			<Card.Header>
+				<Card.Title>Active employees</Card.Title>
+				<Card.Description>
+					{employees.length === 1
+						? '1 employee on payroll.'
+						: `${employees.length} employees on payroll.`}
+				</Card.Description>
+				{#if employees.length > 0}
+					<Card.Action>
+						<ListSearchInput
+							bind:value={searchQuery}
+							placeholder="Search employees..."
+							ariaLabel="Search employees"
+						/>
+					</Card.Action>
+				{/if}
+			</Card.Header>
+			<Card.Content>
+				{#if employees.length === 0}
 					<StatusAlert
 						variant="info"
-						title="No deduction types configured"
-						description="Add deduction types under Payroll → Deductions before assigning them to employees."
+						title="No employees yet"
+						description="Add your first employee to start building payroll runs."
 					/>
-				{/if}
-
-				<Button type="submit" class="h-10" disabled={submitting}>
-					{#if submitting}
-						<Loader2Icon class="size-4 animate-spin" aria-hidden="true" />
-						Adding employee...
-					{:else}
+					<Button href="/payroll/employees/new" class="mt-4 h-10">
 						<UserPlusIcon class="size-4" aria-hidden="true" />
 						Add employee
-					{/if}
-				</Button>
-			</form>
-		</Card.Content>
-	</Card.Root>
+					</Button>
+				{:else if filteredEmployees.length === 0}
+					<p class="text-muted-foreground text-sm">No employees match your search.</p>
+				{:else}
+					<div class="overflow-x-auto rounded-lg border">
+						<Table.Root>
+							<Table.Header>
+								<Table.Row>
+									<Table.Head class="min-w-40">Name</Table.Head>
+									<Table.Head class="min-w-28">Code</Table.Head>
+									<Table.Head class="min-w-36">Job title</Table.Head>
+									<Table.Head class="min-w-44">Email</Table.Head>
+									<Table.Head class="min-w-32">Pay rate</Table.Head>
+									<Table.Head class="min-w-36">Schedule</Table.Head>
+									<Table.Head class="w-28 text-right">Deductions</Table.Head>
+								</Table.Row>
+							</Table.Header>
+							<Table.Body>
+								{#each filteredEmployees as employee (employee.id)}
+									<Table.Row>
+										<Table.Cell class="font-medium whitespace-nowrap">
+											{employee.fullName}
+										</Table.Cell>
+										<Table.Cell class="text-muted-foreground whitespace-nowrap">
+											{formatCell(employee.employeeCode)}
+										</Table.Cell>
+										<Table.Cell class="text-muted-foreground">
+											{formatCell(employee.jobTitle)}
+										</Table.Cell>
+										<Table.Cell class="text-muted-foreground">
+											<span class="block max-w-56 truncate">
+												{formatCell(employee.email)}
+											</span>
+										</Table.Cell>
+										<Table.Cell class="whitespace-nowrap">
+											<div class="space-y-0.5">
+												<p class="font-medium">
+													{formatPayRateCents(
+														employee.payRateCents,
+														employee.payType,
+														data.payrollCurrency
+													)}
+												</p>
+												<p class="text-muted-foreground text-xs">
+													{PAYROLL_PAY_TYPE_LABELS[employee.payType]}
+												</p>
+											</div>
+										</Table.Cell>
+										<Table.Cell class="text-muted-foreground whitespace-nowrap">
+											{employee.workScheduleName ?? 'Workspace default'}
+										</Table.Cell>
+										<Table.Cell class="text-right whitespace-nowrap">
+											{#if (employee.deductions?.length ?? 0) > 0}
+												{employee.deductions.length}
+											{:else}
+												<span class="text-muted-foreground">None</span>
+											{/if}
+										</Table.Cell>
+									</Table.Row>
+								{/each}
+							</Table.Body>
+						</Table.Root>
+					</div>
 
-	<Card.Root>
-		<Card.Header>
-			<Card.Title>Active employees</Card.Title>
-			<Card.Description>Compensation records for this workspace.</Card.Description>
-		</Card.Header>
-		<Card.Content>
-			{#if employees === null}
-				<div class="space-y-3" aria-busy="true" aria-label="Loading employees">
-					{#each Array.from({ length: 4 }) as _, index (index)}
-						<Skeleton class="h-14 w-full" />
-					{/each}
-				</div>
-			{:else if employees.length === 0}
-				<StatusAlert
-					variant="info"
-					title="No employees yet"
-					description="Add your first employee above to start building payroll runs."
-				/>
-			{:else}
-				<ul class="divide-border divide-y">
-					{#each employees as employee (employee.id)}
-						<li class="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between">
-							<div class="min-w-0 space-y-1">
-								<p class="truncate font-medium">{employee.fullName}</p>
-								<p class="text-muted-foreground text-sm">
-									{#if employee.jobTitle}
-										{employee.jobTitle}
-										{#if employee.email}
-											<span aria-hidden="true"> · </span>
-										{/if}
-									{/if}
-									{#if employee.email}
-										{employee.email}
-									{/if}
-									{#if (employee.deductions?.length ?? 0) > 0}
-										<span aria-hidden="true"> · </span>
-										{employee.deductions.length} deduction{employee.deductions.length === 1 ? '' : 's'}
-									{/if}
-								</p>
-							</div>
-							<p class="text-sm font-medium">
-								{formatPayRateCents(employee.payRateCents, employee.payType, data.payrollCurrency)}
-							</p>
-						</li>
-					{/each}
-				</ul>
-			{/if}
-		</Card.Content>
+					{#if isSearching}
+						<p class="text-muted-foreground mt-4 text-sm">
+							Showing {filteredEmployees.length} of {employees.length} employees.
+						</p>
+					{/if}
+				{/if}
+			</Card.Content>
+		{/if}
 	</Card.Root>
 </div>

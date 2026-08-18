@@ -1,6 +1,8 @@
 import { isRestDay, type DtrWeekDay } from '$lib/shared/dtr/weekdays';
+import { isWorkScheduleRestDay } from '$lib/shared/dtr/work-schedule';
 import type { DtrDayStatus } from '$lib/shared/dtr/status';
 import type { DtrDayDto } from '$lib/shared/models/dtr-day';
+import type { DtrWorkScheduleDto } from '$lib/shared/models/dtr-work-schedule';
 
 export type DtrCalendarCell = {
 	date: string;
@@ -33,10 +35,19 @@ export function getMonthDateRange(month: string): { start: string; end: string; 
 export function resolveDtrDayStatus(input: {
 	date: string;
 	restDays: DtrWeekDay[];
+	workSchedule?: DtrWorkScheduleDto | null;
 	record: DtrDayDto | null;
 }): DtrDayStatus {
 	if (input.record) {
 		return input.record.status;
+	}
+
+	if (input.workSchedule) {
+		if (isWorkScheduleRestDay(input.workSchedule, input.date)) {
+			return 'rest';
+		}
+
+		return 'pending';
 	}
 
 	if (isRestDay(input.date, input.restDays)) {
@@ -46,9 +57,22 @@ export function resolveDtrDayStatus(input: {
 	return 'pending';
 }
 
+function isCalendarRestDay(input: {
+	date: string;
+	restDays: DtrWeekDay[];
+	workSchedule?: DtrWorkScheduleDto | null;
+}): boolean {
+	if (input.workSchedule) {
+		return isWorkScheduleRestDay(input.workSchedule, input.date);
+	}
+
+	return isRestDay(input.date, input.restDays);
+}
+
 export function buildEmployeeMonthCalendar(input: {
 	month: string;
 	restDays: DtrWeekDay[];
+	workSchedule?: DtrWorkScheduleDto | null;
 	records: DtrDayDto[];
 }): DtrCalendarCell[] {
 	const { days } = getMonthDateRange(input.month);
@@ -56,32 +80,85 @@ export function buildEmployeeMonthCalendar(input: {
 
 	return days.map((date) => {
 		const record = recordByDate.get(date) ?? null;
-		const status = resolveDtrDayStatus({ date, restDays: input.restDays, record });
+		const status = resolveDtrDayStatus({
+			date,
+			restDays: input.restDays,
+			workSchedule: input.workSchedule,
+			record
+		});
 
 		return {
 			date,
 			dayOfMonth: Number(date.slice(8, 10)),
 			isCurrentMonth: true,
-			isRestDay: isRestDay(date, input.restDays),
+			isRestDay: isCalendarRestDay({
+				date,
+				restDays: input.restDays,
+				workSchedule: input.workSchedule
+			}),
 			status,
 			recordId: record?.id ?? null
 		};
 	});
 }
 
-export function computeWorkedMinutes(timeIn: string | null, timeOut: string | null): number {
+export type DtrLunchBreakWindow = {
+	startTime: string;
+	endTime: string;
+};
+
+export function parseTimeToMinutes(time: string): number {
+	const [hour, minute] = time.split(':').map(Number);
+	return hour * 60 + minute;
+}
+
+export function computeOverlapMinutes(
+	windowStart: string,
+	windowEnd: string,
+	overlapStart: string,
+	overlapEnd: string
+): number {
+	const start = parseTimeToMinutes(windowStart);
+	const end = parseTimeToMinutes(windowEnd);
+	const breakStart = parseTimeToMinutes(overlapStart);
+	const breakEnd = parseTimeToMinutes(overlapEnd);
+
+	if (end <= start || breakEnd <= breakStart) {
+		return 0;
+	}
+
+	const overlap = Math.min(end, breakEnd) - Math.max(start, breakStart);
+	return Math.max(0, overlap);
+}
+
+export function computeWorkedMinutes(
+	timeIn: string | null,
+	timeOut: string | null,
+	lunchBreak?: DtrLunchBreakWindow | null
+): number {
 	if (!timeIn || !timeOut) {
 		return 0;
 	}
 
-	const [inHour, inMinute] = timeIn.split(':').map(Number);
-	const [outHour, outMinute] = timeOut.split(':').map(Number);
-	const start = inHour * 60 + inMinute;
-	const end = outHour * 60 + outMinute;
+	const start = parseTimeToMinutes(timeIn);
+	const end = parseTimeToMinutes(timeOut);
 
 	if (end <= start) {
 		return 0;
 	}
 
-	return end - start;
+	const grossMinutes = end - start;
+
+	if (!lunchBreak?.startTime || !lunchBreak.endTime) {
+		return grossMinutes;
+	}
+
+	const breakMinutes = computeOverlapMinutes(
+		timeIn,
+		timeOut,
+		lunchBreak.startTime,
+		lunchBreak.endTime
+	);
+
+	return Math.max(0, grossMinutes - breakMinutes);
 }

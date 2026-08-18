@@ -78,11 +78,21 @@ export const POST: RequestHandler = async ({ locals, request, url }) => {
 	}
 
 	const settings = await getPayrollSettingsForWorkspace(context.workspace.workspaceId);
-	const employee = await createPayrollEmployeeForWorkspace({
-		workspaceId: context.workspace.workspaceId,
-		data: parsed.data,
-		currency: settings.currency
-	});
+	try {
+		const employee = await createPayrollEmployeeForWorkspace({
+			workspaceId: context.workspace.workspaceId,
+			data: parsed.data,
+			currency: settings.currency
+		});
 
-	return jsonOk(employee, { status: 201, requestId });
+		return jsonOk(employee, { status: 201, requestId });
+	} catch (error) {
+		if (error instanceof Error && error.message === 'Invalid work schedule') {
+			return jsonError('BAD_REQUEST', 'Selected work schedule is invalid or no longer available.', {
+				requestId
+			});
+		}
+
+		throw error;
+	}
 };

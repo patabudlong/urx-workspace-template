@@ -4,7 +4,11 @@ import { zod4 } from 'sveltekit-superforms/adapters';
 import type { Actions, PageServerLoad } from './$types';
 import { listDtrDaysForWorkspace, upsertDtrDayForWorkspace } from '$lib/server/repositories/dtr-days';
 import { getDtrSettingsForWorkspace } from '$lib/server/repositories/dtr-settings';
-import { listPayrollEmployeesForWorkspace } from '$lib/server/repositories/payroll-employees';
+import { getDtrWorkScheduleForWorkspace } from '$lib/server/repositories/dtr-work-schedules';
+import {
+	getPayrollEmployeeForWorkspace,
+	listPayrollEmployeesForWorkspace
+} from '$lib/server/repositories/payroll-employees';
 import {
 	listUserWorkspaceContexts,
 	resolveActiveWorkspaceContext
@@ -61,6 +65,18 @@ export const load: PageServerLoad = async ({ parent, url }) => {
 
 	const employees = employeesResult.items;
 	const selectedEmployeeId = employeeId || employees[0]?.id || '';
+	const selectedEmployee = selectedEmployeeId
+		? await getPayrollEmployeeForWorkspace({
+				workspaceId: workspace.workspaceId,
+				employeeId: selectedEmployeeId
+			})
+		: null;
+	const workSchedule = selectedEmployee?.workScheduleId
+		? await getDtrWorkScheduleForWorkspace({
+				workspaceId: workspace.workspaceId,
+				scheduleId: selectedEmployee.workScheduleId
+			})
+		: null;
 	const { start, end } = getMonthDateRange(month);
 	const records = selectedEmployeeId
 		? await listDtrDaysForWorkspace({
@@ -75,6 +91,7 @@ export const load: PageServerLoad = async ({ parent, url }) => {
 		? buildEmployeeMonthCalendar({
 				month,
 				restDays: settings.restDays,
+				workSchedule,
 				records
 			})
 		: [];
@@ -102,7 +119,8 @@ export const load: PageServerLoad = async ({ parent, url }) => {
 		calendar,
 		selectedDate,
 		selectedRecord,
-		settingsConfigured: settings.configured
+		settingsConfigured: settings.configured,
+		workScheduleName: selectedEmployee?.workScheduleName ?? null
 	};
 };
 

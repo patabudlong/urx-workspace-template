@@ -1,5 +1,5 @@
 <script lang="ts">
-	import SectionSidebar from '$lib/components/section-sidebar.svelte';
+	import DtrSectionSidebar from '$lib/components/dtr/dtr-section-sidebar.svelte';
 	import DtrSidebarPanel from '$lib/components/dtr/dtr-sidebar-panel.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { getDtrNavItems } from '$lib/navigation/dtr-nav';
@@ -23,11 +23,7 @@
 
 	<div class="flex min-w-0 flex-1 flex-col gap-6 p-4 lg:gap-8 lg:p-6">
 		<div class="lg:hidden">
-			<SectionSidebar
-				title="DTR"
-				description="Daily time records and work schedules for this workspace."
-				items={dtrNavItems}
-			/>
+			<DtrSectionSidebar items={dtrNavItems} />
 		</div>
 
 		{#if !canManage}

@@ -1,5 +1,6 @@
 import type { DtrDayDocument, DtrDayDto } from '$lib/shared/models/dtr-day';
 import { getDtrDaysCollection } from '$lib/server/db/collections';
+import { resolveLunchBreakForEmployeeDay } from '$lib/server/dtr/lunch-break';
 import { computeWorkedMinutes } from '$lib/shared/dtr/calendar';
 import type { UpsertDtrDayInput } from '$lib/shared/dtr/schemas';
 import { ObjectId } from 'mongodb';
@@ -93,7 +94,12 @@ export async function upsertDtrDayForWorkspace(input: {
 	const timeIn = input.data.timeIn?.trim() ? input.data.timeIn.trim() : null;
 	const timeOut = input.data.timeOut?.trim() ? input.data.timeOut.trim() : null;
 	const notes = input.data.notes?.trim() ? input.data.notes.trim() : null;
-	const workedMinutes = computeWorkedMinutes(timeIn, timeOut);
+	const lunchBreak = await resolveLunchBreakForEmployeeDay({
+		workspaceId: input.workspaceId,
+		employeeId: input.data.employeeId,
+		date: input.data.date
+	});
+	const workedMinutes = computeWorkedMinutes(timeIn, timeOut, lunchBreak);
 
 	await collection.updateOne(
 		{

@@ -64,8 +64,8 @@
 <div class="flex w-full min-w-0 flex-col gap-8">
 	<PageHeader
 		eyebrow="DTR"
-		title="Work schedule"
-		description="Set rest days and standard work hours. Time records use this schedule to mark rest days on the calendar."
+		title="Workspace default"
+		description="Set rest days, standard work hours, and lunch break for employees without a named schedule."
 	/>
 
 	{#if !data.settingsConfigured}
@@ -80,7 +80,7 @@
 		<Card.Header>
 			<Card.Title>Schedule</Card.Title>
 			<Card.Description>
-				Rest days appear on the time records calendar. Employees are expected to work on all other days.
+				Used when an employee has no named schedule. Rest days appear on the time records calendar.
 			</Card.Description>
 		</Card.Header>
 		<Card.Content>
@@ -154,6 +154,36 @@
 					</Form.Control>
 					<SingleFieldErrors />
 				</Form.Field>
+
+				<div class="space-y-4">
+					<div>
+						<p class="text-sm font-medium">Lunch break</p>
+						<p class="text-muted-foreground text-sm">
+							Deducted from worked hours when time in and time out span this window.
+						</p>
+					</div>
+					<div class="grid gap-5 sm:grid-cols-2">
+						<Form.Field form={superform} name="lunchBreakStart">
+							<Form.Control>
+								{#snippet children({ props })}
+									<Form.Label>Lunch break start</Form.Label>
+									<Input {...props} type="time" class="h-10" bind:value={$form.lunchBreakStart} />
+								{/snippet}
+							</Form.Control>
+							<SingleFieldErrors />
+						</Form.Field>
+
+						<Form.Field form={superform} name="lunchBreakEnd">
+							<Form.Control>
+								{#snippet children({ props })}
+									<Form.Label>Lunch break end</Form.Label>
+									<Input {...props} type="time" class="h-10" bind:value={$form.lunchBreakEnd} />
+								{/snippet}
+							</Form.Control>
+							<SingleFieldErrors />
+						</Form.Field>
+					</div>
+				</div>
 
 				<Button type="submit" class="h-10" disabled={submitting}>
 					{#if submitting}

@@ -2,7 +2,11 @@ import { fail } from '@sveltejs/kit';
 import { message, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import type { Actions, PageServerLoad } from './$types';
-import { getDtrSettingsForWorkspace, upsertDtrSettingsForWorkspace } from '$lib/server/repositories/dtr-settings';
+import {
+	getWorkSchedulesFormDefaults,
+	listDtrWorkSchedulesForWorkspace,
+	replaceDtrWorkSchedulesForWorkspace
+} from '$lib/server/repositories/dtr-work-schedules';
 import {
 	listUserWorkspaceContexts,
 	resolveActiveWorkspaceContext
@@ -10,41 +14,36 @@ import {
 import { getWorkspaceHostSuffix } from '$lib/server/workspace-host';
 import { canManageDtr } from '$lib/shared/dtr/access';
 import {
-	DTR_SETTINGS_SAVED_MESSAGE,
-	DTR_SETTINGS_SAVE_FAILED_MESSAGE
+	DTR_WORK_SCHEDULES_SAVED_MESSAGE,
+	DTR_WORK_SCHEDULES_SAVE_FAILED_MESSAGE
 } from '$lib/shared/dtr/messages';
-import { dtrSettingsDefaults, dtrSettingsSchema } from '$lib/shared/dtr/schemas';
+import { dtrWorkSchedulesSchema } from '$lib/shared/dtr/schemas';
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const { workspace, canManageDtr: canManage } = await parent();
 
 	if (!workspace || !canManage) {
 		return {
-			form: await superValidate(zod4(dtrSettingsSchema), { defaults: dtrSettingsDefaults }),
-			settingsConfigured: false
+			form: await superValidate(zod4(dtrWorkSchedulesSchema), {
+				defaults: { schedules: [] }
+			})
 		};
 	}
 
-	const settings = await getDtrSettingsForWorkspace(workspace.workspaceId);
+	const schedules = await listDtrWorkSchedulesForWorkspace(workspace.workspaceId);
 	const form = await superValidate(
-		{
-			restDays: settings.restDays,
-			standardWorkMinutes: settings.standardWorkMinutes,
-			lunchBreakStart: settings.lunchBreak?.startTime ?? '',
-			lunchBreakEnd: settings.lunchBreak?.endTime ?? ''
-		},
-		zod4(dtrSettingsSchema)
+		getWorkSchedulesFormDefaults(schedules),
+		zod4(dtrWorkSchedulesSchema)
 	);
 
 	return {
-		form,
-		settingsConfigured: settings.configured
+		form
 	};
 };
 
 export const actions: Actions = {
 	default: async ({ request, url, locals }) => {
-		const form = await superValidate(request, zod4(dtrSettingsSchema));
+		const form = await superValidate(request, zod4(dtrWorkSchedulesSchema));
 
 		if (!locals.user) {
 			return fail(401, { form });
@@ -58,18 +57,25 @@ export const actions: Actions = {
 		}
 
 		if (!form.valid) {
-			return fail(400, { form });
+			return fail(400, {
+				form,
+				message: 'Check each schedule name, work day times, and lunch break fields.'
+			});
 		}
 
 		try {
-			await upsertDtrSettingsForWorkspace({
+			const savedSchedules = await replaceDtrWorkSchedulesForWorkspace({
 				workspaceId: workspace.workspaceId,
-				data: form.data
+				schedules: form.data.schedules
 			});
-		} catch {
-			return message(form, DTR_SETTINGS_SAVE_FAILED_MESSAGE, { status: 500 });
-		}
+			const refreshedForm = await superValidate(
+				getWorkSchedulesFormDefaults(savedSchedules),
+				zod4(dtrWorkSchedulesSchema)
+			);
 
-		return message(form, DTR_SETTINGS_SAVED_MESSAGE);
+			return message(refreshedForm, DTR_WORK_SCHEDULES_SAVED_MESSAGE);
+		} catch {
+			return message(form, DTR_WORK_SCHEDULES_SAVE_FAILED_MESSAGE, { status: 500 });
+		}
 	}
 };

@@ -69,7 +69,8 @@ export const createPayrollEmployeeSchema = z.object({
 				ratePercent: z.coerce.number().min(0).max(100).default(0)
 			})
 		)
-		.default([])
+		.default([]),
+	workScheduleId: z.string().trim().optional().or(z.literal(''))
 });
 
 export type CreatePayrollEmployeeInput = z.infer<typeof createPayrollEmployeeSchema>;
@@ -82,7 +83,8 @@ export const createPayrollEmployeeDefaults: CreatePayrollEmployeeInput = {
 	employeeCode: '',
 	payType: 'monthly',
 	payRate: 0,
-	deductions: []
+	deductions: [],
+	workScheduleId: ''
 };
 
 export const createPayrollRunSchema = z

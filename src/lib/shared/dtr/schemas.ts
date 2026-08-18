@@ -12,23 +12,62 @@ const dtrDateSchema = z
 	.trim()
 	.regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a valid date.');
 
-export const dtrSettingsSchema = z.object({
-	restDays: z
-		.array(z.enum(DTR_WEEK_DAYS))
-		.min(1, 'Select at least one rest day.')
-		.max(6, 'At least one work day is required.'),
-	standardWorkMinutes: z.coerce
-		.number()
-		.int()
-		.min(60, 'Standard work time must be at least 60 minutes.')
-		.max(720, 'Standard work time cannot exceed 12 hours.')
-});
+export const dtrSettingsSchema = z
+	.object({
+		restDays: z
+			.array(z.enum(DTR_WEEK_DAYS))
+			.min(1, 'Select at least one rest day.')
+			.max(6, 'At least one work day is required.'),
+		standardWorkMinutes: z.coerce
+			.number()
+			.int()
+			.min(60, 'Standard work time must be at least 60 minutes.')
+			.max(720, 'Standard work time cannot exceed 12 hours.'),
+		lunchBreakStart: timeInputSchema.optional().or(z.literal('')),
+		lunchBreakEnd: timeInputSchema.optional().or(z.literal(''))
+	})
+	.superRefine((data, ctx) => {
+		const hasStart = Boolean(data.lunchBreakStart);
+		const hasEnd = Boolean(data.lunchBreakEnd);
+
+		if (hasStart && !hasEnd) {
+			ctx.addIssue({
+				code: 'custom',
+				message: 'Lunch break end time is required.',
+				path: ['lunchBreakEnd']
+			});
+		}
+
+		if (!hasStart && hasEnd) {
+			ctx.addIssue({
+				code: 'custom',
+				message: 'Lunch break start time is required.',
+				path: ['lunchBreakStart']
+			});
+		}
+
+		if (
+			hasStart &&
+			hasEnd &&
+			data.lunchBreakEnd &&
+			data.lunchBreakStart &&
+			data.lunchBreakEnd <= data.lunchBreakStart
+		) {
+			ctx.addIssue({
+				code: 'custom',
+				message: 'Lunch break end time must be after start time.',
+				path: ['lunchBreakEnd']
+			});
+		}
+	});
 
 export type DtrSettingsInput = z.infer<typeof dtrSettingsSchema>;
 
 export const dtrSettingsDefaults: DtrSettingsInput = {
 	restDays: ['sunday'],
-	standardWorkMinutes: 480
+	standardWorkMinutes: 480,
+	lunchBreakStart: '12:00',
+	lunchBreakEnd: '13:00'
 };
 
 export const dtrDaysQuerySchema = z.object({
@@ -64,3 +103,93 @@ export const upsertDtrDaySchema = z
 	});
 
 export type UpsertDtrDayInput = z.infer<typeof upsertDtrDaySchema>;
+
+const dtrWorkScheduleDaySchema = z
+	.object({
+		day: z.enum(DTR_WEEK_DAYS),
+		kind: z.enum(['rest', 'work']),
+		startTime: timeInputSchema.optional().or(z.literal('')),
+		endTime: timeInputSchema.optional().or(z.literal(''))
+	})
+	.superRefine((data, ctx) => {
+		if (data.kind !== 'work') {
+			return;
+		}
+
+		if (!data.startTime) {
+			ctx.addIssue({
+				code: 'custom',
+				message: 'Start time is required for work days.',
+				path: ['startTime']
+			});
+		}
+
+		if (!data.endTime) {
+			ctx.addIssue({
+				code: 'custom',
+				message: 'End time is required for work days.',
+				path: ['endTime']
+			});
+		}
+
+		if (data.startTime && data.endTime && data.endTime <= data.startTime) {
+			ctx.addIssue({
+				code: 'custom',
+				message: 'End time must be after start time.',
+				path: ['endTime']
+			});
+		}
+	});
+
+export const dtrWorkScheduleInputSchema = z
+	.object({
+		id: z.string().trim().min(1),
+		name: z.string().trim().min(1, 'Schedule name is required.').max(80),
+		days: z.array(dtrWorkScheduleDaySchema).length(7, 'All weekdays must be configured.'),
+		lunchBreakStart: timeInputSchema.optional().or(z.literal('')),
+		lunchBreakEnd: timeInputSchema.optional().or(z.literal(''))
+	})
+	.superRefine((data, ctx) => {
+		const hasStart = Boolean(data.lunchBreakStart);
+		const hasEnd = Boolean(data.lunchBreakEnd);
+
+		if (hasStart && !hasEnd) {
+			ctx.addIssue({
+				code: 'custom',
+				message: 'Lunch break end time is required.',
+				path: ['lunchBreakEnd']
+			});
+		}
+
+		if (!hasStart && hasEnd) {
+			ctx.addIssue({
+				code: 'custom',
+				message: 'Lunch break start time is required.',
+				path: ['lunchBreakStart']
+			});
+		}
+
+		if (
+			hasStart &&
+			hasEnd &&
+			data.lunchBreakEnd &&
+			data.lunchBreakStart &&
+			data.lunchBreakEnd <= data.lunchBreakStart
+		) {
+			ctx.addIssue({
+				code: 'custom',
+				message: 'Lunch break end time must be after start time.',
+				path: ['lunchBreakEnd']
+			});
+		}
+	});
+
+export type DtrWorkScheduleInput = z.infer<typeof dtrWorkScheduleInputSchema>;
+
+export const dtrWorkSchedulesSchema = z.object({
+	schedules: z
+		.array(dtrWorkScheduleInputSchema)
+		.max(20, 'Too many work schedules.')
+});
+
+export type DtrWorkSchedulesInput = z.infer<typeof dtrWorkSchedulesSchema>;
