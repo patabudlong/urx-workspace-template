@@ -21,24 +21,37 @@ import {
 	createPayrollEmployeeSchema,
 	createPayrollEmployeeDefaults
 } from '$lib/shared/payroll/schemas';
+import { buildEmployeeDeductionFormDefaults } from '$lib/shared/payroll/deductions';
 
 const DEFAULT_LIMIT = 50;
 
+function buildEmployeeFormDefaults(deductionTypes: Awaited<
+	ReturnType<typeof getPayrollSettingsForWorkspace>
+>['deductionTypes']) {
+	return {
+		...createPayrollEmployeeDefaults,
+		deductions: buildEmployeeDeductionFormDefaults(deductionTypes)
+	};
+}
+
 export const load: PageServerLoad = async ({ parent, isDataRequest }) => {
 	const { workspace, canManagePayroll: canManage } = await parent();
-	const form = await superValidate(zod4(createPayrollEmployeeSchema), {
-		defaults: createPayrollEmployeeDefaults
-	});
 
 	if (!workspace || !canManage) {
 		return {
-			form,
+			form: await superValidate(zod4(createPayrollEmployeeSchema), {
+				defaults: createPayrollEmployeeDefaults
+			}),
 			employees: [],
-			payrollCurrency: 'PHP' as const
+			payrollCurrency: 'PHP' as const,
+			deductionTypes: []
 		};
 	}
 
 	const settings = await getPayrollSettingsForWorkspace(workspace.workspaceId);
+	const form = await superValidate(zod4(createPayrollEmployeeSchema), {
+		defaults: buildEmployeeFormDefaults(settings.deductionTypes)
+	});
 	const employeesQuery = listPayrollEmployeesForWorkspace({
 		workspaceId: workspace.workspaceId,
 		page: 1,
@@ -48,6 +61,7 @@ export const load: PageServerLoad = async ({ parent, isDataRequest }) => {
 	return {
 		form,
 		payrollCurrency: settings.currency,
+		deductionTypes: settings.deductionTypes.filter((type) => type.isActive),
 		employees: isDataRequest ? employeesQuery : await employeesQuery
 	};
 };

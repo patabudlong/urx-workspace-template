@@ -1,4 +1,5 @@
 import type { ObjectId } from 'mongodb';
+import type { PayrollEmployeeDeduction } from '$lib/shared/payroll/deductions';
 import type { PayrollPayType } from '$lib/shared/payroll/pay-rate';
 
 export type PayrollEmployeeDocument = {
@@ -11,6 +12,7 @@ export type PayrollEmployeeDocument = {
 	employeeCode: string | null;
 	payType: PayrollPayType;
 	payRateCents: number;
+	deductions: PayrollEmployeeDeduction[];
 	isActive: boolean;
 	createdAt: Date;
 	updatedAt: Date;
@@ -27,6 +29,7 @@ export type PayrollEmployeeDto = {
 	employeeCode: string | null;
 	payType: PayrollPayType;
 	payRateCents: number;
+	deductions: PayrollEmployeeDeduction[];
 	isActive: boolean;
 	createdAt: string;
 	updatedAt: string;

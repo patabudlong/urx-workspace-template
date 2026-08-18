@@ -224,6 +224,80 @@
 					</Form.Field>
 				</div>
 
+				{#if data.deductionTypes.length > 0}
+					<div class="space-y-4">
+						<div>
+							<p class="text-sm font-medium">Deductions</p>
+							<p class="text-muted-foreground text-sm">
+								Enable workspace deduction types and set amounts for this employee.
+							</p>
+						</div>
+
+						<div class="space-y-3">
+							{#each $form.deductions as deduction, index (deduction.typeId)}
+								{@const deductionType = data.deductionTypes.find(
+									(type) => type.id === deduction.typeId
+								)}
+								{#if deductionType}
+									<div class="border-input rounded-lg border p-4">
+										<input
+											type="hidden"
+											name="deductions[{index}].typeId"
+											value={deduction.typeId}
+										/>
+										<div class="flex flex-col gap-4 sm:flex-row sm:items-end">
+											<label class="flex flex-1 items-center gap-3 text-sm">
+												<input
+													type="checkbox"
+													name="deductions[{index}].enabled"
+													bind:checked={$form.deductions[index].enabled}
+												/>
+												<span class="font-medium">{deductionType.name}</span>
+												<span class="text-muted-foreground">
+													({deductionType.kind === 'fixed' ? 'fixed' : 'percentage'})
+												</span>
+											</label>
+
+											{#if deductionType.kind === 'fixed'}
+												<div class="sm:w-48">
+													<Input
+														name="deductions[{index}].amount"
+														type="number"
+														min="0"
+														step={payRateStep}
+														bind:value={$form.deductions[index].amount}
+														disabled={!$form.deductions[index].enabled}
+														placeholder="Amount"
+													/>
+												</div>
+											{:else}
+												<div class="sm:w-48">
+													<Input
+														name="deductions[{index}].ratePercent"
+														type="number"
+														min="0"
+														max="100"
+														step="0.01"
+														bind:value={$form.deductions[index].ratePercent}
+														disabled={!$form.deductions[index].enabled}
+														placeholder="Rate %"
+													/>
+												</div>
+											{/if}
+										</div>
+									</div>
+								{/if}
+							{/each}
+						</div>
+					</div>
+				{:else}
+					<StatusAlert
+						variant="info"
+						title="No deduction types configured"
+						description="Add deduction types under Payroll → Deductions before assigning them to employees."
+					/>
+				{/if}
+
 				<Button type="submit" class="h-10" disabled={submitting}>
 					{#if submitting}
 						<Loader2Icon class="size-4 animate-spin" aria-hidden="true" />
@@ -270,6 +344,10 @@
 									{/if}
 									{#if employee.email}
 										{employee.email}
+									{/if}
+									{#if (employee.deductions?.length ?? 0) > 0}
+										<span aria-hidden="true"> · </span>
+										{employee.deductions.length} deduction{employee.deductions.length === 1 ? '' : 's'}
 									{/if}
 								</p>
 							</div>

@@ -12,6 +12,11 @@ import {
 } from '$lib/shared/payroll/frequency';
 import { PAYROLL_PAY_TYPES } from '$lib/shared/payroll/pay-rate';
 import {
+	PAYROLL_DEDUCTION_KINDS,
+	percentToBasisPoints
+} from '$lib/shared/payroll/deductions';
+import { dollarsToCents } from '$lib/shared/payroll/format';
+import {
 	PAYROLL_TIMEZONE_VALUES,
 	resolvePayrollTimezone,
 	type PayrollTimezone
@@ -54,7 +59,17 @@ export const createPayrollEmployeeSchema = z.object({
 		.optional()
 		.or(z.literal('')),
 	payType: z.enum(PAYROLL_PAY_TYPES),
-	payRate: z.coerce.number().min(0, 'Pay rate must be zero or greater.')
+	payRate: z.coerce.number().min(0, 'Pay rate must be zero or greater.'),
+	deductions: z
+		.array(
+			z.object({
+				typeId: z.string().trim().min(1),
+				enabled: z.coerce.boolean(),
+				amount: z.coerce.number().min(0).default(0),
+				ratePercent: z.coerce.number().min(0).max(100).default(0)
+			})
+		)
+		.default([])
 });
 
 export type CreatePayrollEmployeeInput = z.infer<typeof createPayrollEmployeeSchema>;
@@ -66,7 +81,8 @@ export const createPayrollEmployeeDefaults: CreatePayrollEmployeeInput = {
 	jobTitle: '',
 	employeeCode: '',
 	payType: 'monthly',
-	payRate: 0
+	payRate: 0,
+	deductions: []
 };
 
 export const createPayrollRunSchema = z
@@ -131,4 +147,51 @@ export function createPayrollSettingsDefaults(input: {
 		weekStartDay: 'monday' satisfies WeekStartDay,
 		periodAnchorDate: ''
 	};
+}
+
+const payrollDeductionTypeInputSchema = z.object({
+	id: z.string().trim().min(1).max(64),
+	name: z.string().trim().min(1, 'Name is required.').max(80),
+	kind: z.enum(PAYROLL_DEDUCTION_KINDS),
+	defaultAmount: z.coerce.number().min(0, 'Amount must be zero or greater.'),
+	defaultRatePercent: z.coerce
+		.number()
+		.min(0, 'Rate must be zero or greater.')
+		.max(100, 'Rate cannot exceed 100%.'),
+	isActive: z.coerce.boolean()
+});
+
+export const payrollDeductionTypesSchema = z.object({
+	types: z.array(payrollDeductionTypeInputSchema).max(30, 'Too many deduction types.')
+});
+
+export type PayrollDeductionTypesInput = z.infer<typeof payrollDeductionTypesSchema>;
+
+export function mapDeductionTypesInputToDocument(
+	input: PayrollDeductionTypesInput['types'],
+	currency: PayrollCurrency = 'PHP'
+): import('$lib/shared/payroll/deductions').PayrollDeductionType[] {
+	return input.map((type) => ({
+		id: type.id,
+		name: type.name.trim(),
+		kind: type.kind,
+		defaultAmountCents:
+			type.kind === 'fixed' ? dollarsToCents(type.defaultAmount, currency) : 0,
+		defaultRateBasisPoints:
+			type.kind === 'percentage' ? percentToBasisPoints(type.defaultRatePercent) : 0,
+		isActive: type.isActive
+	}));
+}
+
+export function mapDeductionTypesToFormInput(
+	types: import('$lib/shared/payroll/deductions').PayrollDeductionType[]
+): PayrollDeductionTypesInput['types'] {
+	return types.map((type) => ({
+		id: type.id,
+		name: type.name,
+		kind: type.kind,
+		defaultAmount: type.defaultAmountCents / 100,
+		defaultRatePercent: type.defaultRateBasisPoints / 100,
+		isActive: type.isActive
+	}));
 }

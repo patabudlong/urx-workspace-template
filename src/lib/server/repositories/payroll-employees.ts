@@ -3,6 +3,8 @@ import type {
 	PayrollEmployeeDto
 } from '$lib/shared/models/payroll-employee';
 import { getPayrollEmployeesCollection } from '$lib/server/db/collections';
+import type { PayrollEmployeeDeduction } from '$lib/shared/payroll/deductions';
+import { percentToBasisPoints } from '$lib/shared/payroll/deductions';
 import { dollarsToCents } from '$lib/shared/payroll/format';
 import type { CreatePayrollEmployeeInput } from '$lib/shared/payroll/schemas';
 import { normalizePayrollPayType } from '$lib/shared/payroll/pay-rate';
@@ -19,10 +21,27 @@ const PAYROLL_EMPLOYEE_PROJECTION = {
 	employeeCode: 1,
 	payType: 1,
 	payRateCents: 1,
+	deductions: 1,
 	isActive: 1,
 	createdAt: 1,
 	updatedAt: 1
 } as const;
+
+function mapEmployeeDeductions(
+	input: CreatePayrollEmployeeInput['deductions'],
+	currency: Parameters<typeof dollarsToCents>[1]
+): PayrollEmployeeDeduction[] {
+	return input
+		.filter((deduction) => deduction.enabled)
+		.map((deduction) => ({
+			typeId: deduction.typeId,
+			amountCents:
+				deduction.amount > 0 ? dollarsToCents(deduction.amount, currency) : null,
+			rateBasisPoints:
+				deduction.ratePercent > 0 ? percentToBasisPoints(deduction.ratePercent) : null,
+			isActive: true
+		}));
+}
 
 function toPayrollEmployeeDto(doc: PayrollEmployeeDocument): PayrollEmployeeDto {
 	return {
@@ -36,6 +55,7 @@ function toPayrollEmployeeDto(doc: PayrollEmployeeDocument): PayrollEmployeeDto 
 		employeeCode: doc.employeeCode ?? null,
 		payType: normalizePayrollPayType(doc.payType),
 		payRateCents: doc.payRateCents,
+		deductions: doc.deductions ?? [],
 		isActive: doc.isActive,
 		createdAt: doc.createdAt.toISOString(),
 		updatedAt: doc.updatedAt.toISOString()
@@ -111,6 +131,7 @@ export async function createPayrollEmployeeForWorkspace(input: {
 	const email = input.data.email?.trim() ? input.data.email.trim().toLowerCase() : null;
 	const jobTitle = input.data.jobTitle?.trim() ? input.data.jobTitle.trim() : null;
 	const employeeCode = input.data.employeeCode?.trim() ? input.data.employeeCode.trim() : null;
+	const deductions = mapEmployeeDeductions(input.data.deductions, input.currency);
 
 	const result = await collection.insertOne({
 		workspaceId: new ObjectId(input.workspaceId),
@@ -121,6 +142,7 @@ export async function createPayrollEmployeeForWorkspace(input: {
 		employeeCode,
 		payType: input.data.payType,
 		payRateCents: dollarsToCents(input.data.payRate, input.currency),
+		deductions,
 		isActive: true,
 		createdAt: now,
 		updatedAt: now

@@ -247,4 +247,18 @@
 			</form>
 		</Card.Content>
 	</Card.Root>
+
+	<Card.Root>
+		<Card.Header>
+			<Card.Title>Deductions</Card.Title>
+			<Card.Description>
+				Configure SSS, PhilHealth, loans, and other deduction types used when setting up employees.
+			</Card.Description>
+		</Card.Header>
+		<Card.Content>
+			<Button href="/payroll/settings/deductions" variant="outline" class="h-10">
+				Manage deduction types
+			</Button>
+		</Card.Content>
+	</Card.Root>
 </div>

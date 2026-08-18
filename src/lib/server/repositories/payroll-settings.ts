@@ -7,8 +7,14 @@ import {
 	getDefaultPayrollCurrency,
 	getDefaultPayrollTimezone
 } from '$lib/server/payroll/config';
+import type { PayrollDeductionType } from '$lib/shared/payroll/deductions';
+import { normalizePayrollDeductionTypes } from '$lib/shared/payroll/deductions';
 import type { PayrollSettingsInput } from '$lib/shared/payroll/schemas';
-import { createPayrollSettingsDefaults } from '$lib/shared/payroll/schemas';
+import {
+	createPayrollSettingsDefaults,
+	mapDeductionTypesToFormInput,
+	type PayrollDeductionTypesInput
+} from '$lib/shared/payroll/schemas';
 import { resolvePayrollCurrency } from '$lib/shared/payroll/currency';
 import { normalizePayrollTimezone, resolvePayrollTimezone } from '$lib/shared/payroll/timezone';
 import { ObjectId } from 'mongodb';
@@ -22,6 +28,7 @@ const PAYROLL_SETTINGS_PROJECTION = {
 	currency: 1,
 	weekStartDay: 1,
 	periodAnchorDate: 1,
+	deductionTypes: 1,
 	updatedAt: 1
 } as const;
 
@@ -42,6 +49,7 @@ function toPayrollSettingsDto(
 			currency: defaults.currency,
 			weekStartDay: defaults.weekStartDay || null,
 			periodAnchorDate: defaults.periodAnchorDate || null,
+			deductionTypes: [],
 			configured: false,
 			updatedAt: null
 		};
@@ -54,6 +62,7 @@ function toPayrollSettingsDto(
 		currency: resolvePayrollCurrency(doc.currency ?? getDefaultPayrollCurrency()),
 		weekStartDay: doc.weekStartDay,
 		periodAnchorDate: doc.periodAnchorDate,
+		deductionTypes: normalizePayrollDeductionTypes(doc.deductionTypes),
 		configured: true,
 		updatedAt: doc.updatedAt.toISOString()
 	};
@@ -109,6 +118,7 @@ export async function upsertPayrollSettingsForWorkspace(input: {
 			},
 			$setOnInsert: {
 				workspaceId: workspaceObjectId,
+				deductionTypes: [],
 				createdAt: now
 			}
 		},
@@ -116,4 +126,46 @@ export async function upsertPayrollSettingsForWorkspace(input: {
 	);
 
 	return getPayrollSettingsForWorkspace(input.workspaceId);
+}
+
+export async function savePayrollDeductionTypesForWorkspace(input: {
+	workspaceId: string;
+	types: PayrollDeductionType[];
+}): Promise<PayrollSettingsDto> {
+	await ensurePayrollSettingsIndexes();
+
+	const collection = await getPayrollSettingsCollection<PayrollSettingsDocument>();
+	const now = new Date();
+	const workspaceObjectId = new ObjectId(input.workspaceId);
+	const deductionTypes = normalizePayrollDeductionTypes(input.types);
+
+	await collection.updateOne(
+		{ workspaceId: workspaceObjectId },
+		{
+			$set: {
+				deductionTypes,
+				updatedAt: now
+			},
+			$setOnInsert: {
+				workspaceId: workspaceObjectId,
+				payFrequency: 'semi-monthly',
+				timezone: getDefaultPayrollTimezone(),
+				currency: getDefaultPayrollCurrency(),
+				weekStartDay: null,
+				periodAnchorDate: null,
+				createdAt: now
+			}
+		},
+		{ upsert: true }
+	);
+
+	return getPayrollSettingsForWorkspace(input.workspaceId);
+}
+
+export function getPayrollDeductionTypesFormDefaults(
+	types: PayrollDeductionType[]
+): PayrollDeductionTypesInput {
+	return {
+		types: mapDeductionTypesToFormInput(types)
+	};
 }
