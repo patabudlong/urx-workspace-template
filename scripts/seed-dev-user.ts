@@ -11,10 +11,10 @@ if (!envPath) {
 	console.warn('No .env file found — using process environment and defaults.');
 }
 
-const DEFAULT_EMAIL = 'admin@urx.local';
-const DEFAULT_PASSWORD = 'changeme123';
-const DEFAULT_FIRST_NAME = 'Admin';
-const DEFAULT_LAST_NAME = 'User';
+const DEFAULT_EMAIL = 'superadmin@urixoft.com';
+const DEFAULT_PASSWORD = 'urx-sa-Pass1234!';
+const DEFAULT_FIRST_NAME = 'Super';
+const DEFAULT_LAST_NAME = 'Admin';
 
 function resolveSeedNames(): { firstName: string; lastName: string } {
 	if (process.env.SEED_USER_FIRST_NAME || process.env.SEED_USER_LAST_NAME) {
