@@ -50,6 +50,10 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 				description: 'Authenticated user profile'
 			},
 			{
+				name: 'Payroll',
+				description: 'Workspace payroll employees and pay runs'
+			},
+			{
 				name: 'Mailbox',
 				description: 'Per-user IMAP mailbox read and SMTP send (PrivateEmail compatible)'
 			}
@@ -909,6 +913,325 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 									schema: {
 										$ref: '#/components/schemas/ApiErrorResponse'
 									}
+								}
+							}
+						}
+					}
+				}
+			},
+			'/payroll/status': {
+				get: {
+					tags: ['Payroll'],
+					summary: 'Payroll module status',
+					description:
+						'Returns payroll counts for the active workspace. Requires workspace owner or admin role.',
+					operationId: 'getPayrollStatus',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Payroll status for the active workspace',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/PayrollStatusSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Payroll access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/payroll/employees': {
+				get: {
+					tags: ['Payroll'],
+					summary: 'List payroll employees',
+					description: 'Paginated list of active employees for the active workspace.',
+					operationId: 'listPayrollEmployees',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{
+							name: 'page',
+							in: 'query',
+							schema: { type: 'integer', minimum: 1, default: 1 }
+						},
+						{
+							name: 'limit',
+							in: 'query',
+							schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 }
+						}
+					],
+					responses: {
+						'200': {
+							description: 'Paginated employee list',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/PayrollEmployeesPaginatedResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Payroll access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				post: {
+					tags: ['Payroll'],
+					summary: 'Create payroll employee',
+					description: 'Adds an active employee record for the active workspace.',
+					operationId: 'createPayrollEmployee',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/PayrollEmployeeCreateRequest' }
+							}
+						}
+					},
+					responses: {
+						'201': {
+							description: 'Employee created',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/PayrollEmployeeSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Payroll access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/payroll/settings': {
+				get: {
+					tags: ['Payroll'],
+					summary: 'Get payroll settings',
+					description: 'Returns pay schedule settings for the active workspace.',
+					operationId: 'getPayrollSettings',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Payroll settings',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/PayrollSettingsSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Payroll access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				put: {
+					tags: ['Payroll'],
+					summary: 'Update payroll settings',
+					description: 'Creates or updates pay schedule settings for the active workspace.',
+					operationId: 'updatePayrollSettings',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/PayrollSettingsUpdateRequest' }
+							}
+						}
+					},
+					responses: {
+						'200': {
+							description: 'Updated payroll settings',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/PayrollSettingsSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Payroll access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/payroll/runs': {
+				get: {
+					tags: ['Payroll'],
+					summary: 'List payroll runs',
+					description: 'Paginated list of pay runs for the active workspace.',
+					operationId: 'listPayrollRuns',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{
+							name: 'page',
+							in: 'query',
+							schema: { type: 'integer', minimum: 1, default: 1 }
+						},
+						{
+							name: 'limit',
+							in: 'query',
+							schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 }
+						}
+					],
+					responses: {
+						'200': {
+							description: 'Paginated pay run list',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/PayrollRunsPaginatedResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Payroll access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				post: {
+					tags: ['Payroll'],
+					summary: 'Create payroll run',
+					description: 'Creates a draft pay run for the active workspace.',
+					operationId: 'createPayrollRun',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/PayrollRunCreateRequest' }
+							}
+						}
+					},
+					responses: {
+						'201': {
+							description: 'Pay run created',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/PayrollRunSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Payroll access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
 								}
 							}
 						}
@@ -2061,6 +2384,264 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						meta: {
 							$ref: '#/components/schemas/ApiMeta'
 						}
+					}
+				},
+				PayrollSettings: {
+					type: 'object',
+					required: [
+						'workspaceId',
+						'payFrequency',
+						'timezone',
+						'currency',
+						'weekStartDay',
+						'periodAnchorDate',
+						'configured',
+						'updatedAt'
+					],
+					properties: {
+						workspaceId: { type: 'string' },
+						payFrequency: {
+							type: 'string',
+							enum: ['weekly', 'bi-weekly', 'semi-monthly', 'monthly']
+						},
+						timezone: {
+							type: 'string',
+							enum: [
+								'Asia/Manila',
+								'UTC',
+								'Asia/Singapore',
+								'Asia/Tokyo',
+								'Asia/Hong_Kong',
+								'Asia/Seoul',
+								'Asia/Kolkata',
+								'Asia/Dubai',
+								'Europe/London',
+								'Europe/Paris',
+								'Europe/Berlin',
+								'America/New_York',
+								'America/Chicago',
+								'America/Denver',
+								'America/Los_Angeles',
+								'America/Toronto',
+								'America/Vancouver',
+								'Australia/Sydney',
+								'Pacific/Auckland'
+							]
+						},
+						currency: {
+							type: 'string',
+							enum: ['PHP', 'USD', 'EUR', 'GBP', 'AUD', 'CAD', 'SGD', 'HKD', 'JPY', 'INR', 'AED', 'NZD']
+						},
+						weekStartDay: {
+							type: 'string',
+							nullable: true,
+							enum: [
+								'sunday',
+								'monday',
+								'tuesday',
+								'wednesday',
+								'thursday',
+								'friday',
+								'saturday',
+								null
+							]
+						},
+						periodAnchorDate: { type: 'string', format: 'date', nullable: true },
+						configured: { type: 'boolean' },
+						updatedAt: { type: 'string', format: 'date-time', nullable: true }
+					}
+				},
+				PayrollSettingsUpdateRequest: {
+					type: 'object',
+					required: ['payFrequency', 'timezone', 'currency'],
+					properties: {
+						payFrequency: {
+							type: 'string',
+							enum: ['weekly', 'bi-weekly', 'semi-monthly', 'monthly']
+						},
+						timezone: {
+							type: 'string',
+							enum: [
+								'Asia/Manila',
+								'UTC',
+								'Asia/Singapore',
+								'Asia/Tokyo',
+								'Asia/Hong_Kong',
+								'Asia/Seoul',
+								'Asia/Kolkata',
+								'Asia/Dubai',
+								'Europe/London',
+								'Europe/Paris',
+								'Europe/Berlin',
+								'America/New_York',
+								'America/Chicago',
+								'America/Denver',
+								'America/Los_Angeles',
+								'America/Toronto',
+								'America/Vancouver',
+								'Australia/Sydney',
+								'Pacific/Auckland'
+							]
+						},
+						currency: {
+							type: 'string',
+							enum: ['PHP', 'USD', 'EUR', 'GBP', 'AUD', 'CAD', 'SGD', 'HKD', 'JPY', 'INR', 'AED', 'NZD']
+						},
+						weekStartDay: {
+							type: 'string',
+							enum: [
+								'sunday',
+								'monday',
+								'tuesday',
+								'wednesday',
+								'thursday',
+								'friday',
+								'saturday'
+							]
+						},
+						periodAnchorDate: { type: 'string', format: 'date' }
+					}
+				},
+				PayrollSettingsSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/PayrollSettings' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				PayrollStatus: {
+					type: 'object',
+					required: ['enabled', 'workspaceId', 'runCount', 'employeeCount'],
+					properties: {
+						enabled: { type: 'boolean' },
+						workspaceId: { type: 'string' },
+						runCount: { type: 'integer', minimum: 0 },
+						employeeCount: { type: 'integer', minimum: 0 }
+					}
+				},
+				PayrollStatusSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/PayrollStatus' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				PayrollEmployee: {
+					type: 'object',
+					required: [
+						'id',
+						'workspaceId',
+						'firstName',
+						'lastName',
+						'fullName',
+						'payType',
+						'payRateCents',
+						'isActive',
+						'createdAt',
+						'updatedAt'
+					],
+					properties: {
+						id: { type: 'string' },
+						workspaceId: { type: 'string' },
+						firstName: { type: 'string' },
+						lastName: { type: 'string' },
+						fullName: { type: 'string' },
+						email: { type: 'string', format: 'email', nullable: true },
+						jobTitle: { type: 'string', nullable: true },
+						payType: { type: 'string', enum: ['hourly', 'monthly'] },
+						payRateCents: { type: 'integer', minimum: 0 },
+						isActive: { type: 'boolean' },
+						createdAt: { type: 'string', format: 'date-time' },
+						updatedAt: { type: 'string', format: 'date-time' }
+					}
+				},
+				PayrollEmployeeCreateRequest: {
+					type: 'object',
+					required: ['firstName', 'lastName', 'payType', 'payRate'],
+					properties: {
+						firstName: { type: 'string', maxLength: 80 },
+						lastName: { type: 'string', maxLength: 80 },
+						email: { type: 'string', format: 'email' },
+						jobTitle: { type: 'string', maxLength: 120 },
+						payType: { type: 'string', enum: ['hourly', 'monthly'] },
+						payRate: { type: 'number', minimum: 0 }
+					}
+				},
+				PayrollEmployeeSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/PayrollEmployee' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				PayrollEmployeesPaginatedResponse: {
+					type: 'object',
+					required: ['data', 'pagination', 'meta'],
+					properties: {
+						data: {
+							type: 'array',
+							items: { $ref: '#/components/schemas/PayrollEmployee' }
+						},
+						pagination: { $ref: '#/components/schemas/PaginationMeta' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				PayrollRun: {
+					type: 'object',
+					required: [
+						'id',
+						'workspaceId',
+						'title',
+						'periodStart',
+						'periodEnd',
+						'status',
+						'createdAt',
+						'updatedAt'
+					],
+					properties: {
+						id: { type: 'string' },
+						workspaceId: { type: 'string' },
+						title: { type: 'string' },
+						periodStart: { type: 'string', format: 'date-time' },
+						periodEnd: { type: 'string', format: 'date-time' },
+						status: {
+							type: 'string',
+							enum: ['draft', 'processing', 'completed', 'failed']
+						},
+						createdAt: { type: 'string', format: 'date-time' },
+						updatedAt: { type: 'string', format: 'date-time' }
+					}
+				},
+				PayrollRunCreateRequest: {
+					type: 'object',
+					required: ['title', 'periodStart', 'periodEnd'],
+					properties: {
+						title: { type: 'string', maxLength: 120 },
+						periodStart: { type: 'string', format: 'date', example: '2026-01-01' },
+						periodEnd: { type: 'string', format: 'date', example: '2026-01-15' }
+					}
+				},
+				PayrollRunSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/PayrollRun' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				PayrollRunsPaginatedResponse: {
+					type: 'object',
+					required: ['data', 'pagination', 'meta'],
+					properties: {
+						data: {
+							type: 'array',
+							items: { $ref: '#/components/schemas/PayrollRun' }
+						},
+						pagination: { $ref: '#/components/schemas/PaginationMeta' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
 					}
 				},
 				MailboxConnectionStatus: {

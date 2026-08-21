@@ -13,8 +13,18 @@ export const CollectionNames = {
 	workspaceInvitations: 'workspace_invitations',
 	twoFactorOtpTokens: 'two_factor_otp_tokens',
 // urixoft-workspace-mailbox:collections:start
-	userMailboxCredentials: 'user_mailbox_credentials'
+	userMailboxCredentials: 'user_mailbox_credentials',
 // urixoft-workspace-mailbox:collections:end
+// urixoft-workspace-payroll:collections:start
+	payrollRuns: 'payroll_runs',
+	payrollEmployees: 'payroll_employees',
+	payrollSettings: 'payroll_settings',
+// urixoft-workspace-payroll:collections:end
+// urixoft-workspace-dtr:collections:start
+	dtrSettings: 'dtr_settings',
+	dtrDays: 'dtr_days',
+	dtrWorkSchedules: 'dtr_work_schedules'
+// urixoft-workspace-dtr:collections:end
 } as const;
 
 type CollectionName = keyof typeof CollectionNames;
@@ -80,3 +90,29 @@ export async function getUserMailboxCredentialsCollection<T extends Document = D
 	return getCollection<T>('userMailboxCredentials');
 }
 // urixoft-workspace-mailbox:getter:end
+// urixoft-workspace-payroll:getter:start
+export async function getPayrollRunsCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('payrollRuns');
+}
+
+export async function getPayrollEmployeesCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('payrollEmployees');
+}
+
+export async function getPayrollSettingsCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('payrollSettings');
+}
+// urixoft-workspace-payroll:getter:end
+// urixoft-workspace-dtr:getter:start
+export async function getDtrSettingsCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('dtrSettings');
+}
+
+export async function getDtrDaysCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('dtrDays');
+}
+
+export async function getDtrWorkSchedulesCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('dtrWorkSchedules');
+}
+// urixoft-workspace-dtr:getter:end

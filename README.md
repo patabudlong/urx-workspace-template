@@ -144,6 +144,18 @@ pnpm workspace:mailbox:uninstall  # remove package files and dependencies
 
 Optional host defaults in `.env` (see `.env.example` `urixoft-workspace-mailbox` block). API routes live under `/api/v1/mailbox/*` and are documented at `/docs`.
 
+### Payroll (`urixoft-workspace-payroll`)
+
+Workspace payroll runs and pay period tracking stored in MongoDB (`payroll_runs`). Installed from the sibling `urx-workspace-payroll` package.
+
+```sh
+pnpm workspace:payroll:install    # copy routes, patch nav/collections/layout, update .env.example
+pnpm workspace:payroll:sync       # copy payroll changes from this app back into the package
+pnpm workspace:payroll:uninstall  # remove package files and patches
+```
+
+Open **Payroll** at `/payroll` (workspace owners and admins). Configure pay schedule at `/payroll/settings`, add employees at `/payroll/employees`, then create draft pay runs at `/payroll/runs`. API routes live under `/api/v1/payroll/*` and are documented at `/docs`.
+
 ## Dev credentials
 
 After `pnpm seed:user`:

@@ -26,7 +26,13 @@
 		"upload:email-assets": "node --import tsx scripts/upload-email-assets.ts",
 		"workspace:mailbox:install": "node ../urx-workspace-mailbox/bin/cli.mjs install",
 		"workspace:mailbox:sync": "node ../urx-workspace-mailbox/bin/cli.mjs sync",
-		"workspace:mailbox:uninstall": "node ../urx-workspace-mailbox/bin/cli.mjs uninstall"
+		"workspace:mailbox:uninstall": "node ../urx-workspace-mailbox/bin/cli.mjs uninstall",
+		"workspace:payroll:install": "node ../urx-workspace-payroll/bin/cli.mjs install",
+		"workspace:payroll:sync": "node ../urx-workspace-payroll/bin/cli.mjs sync",
+		"workspace:payroll:uninstall": "node ../urx-workspace-payroll/bin/cli.mjs uninstall",
+		"workspace:dtr:install": "node ../urx-workspace-dtr/bin/cli.mjs install",
+		"workspace:dtr:sync": "node ../urx-workspace-dtr/bin/cli.mjs sync",
+		"workspace:dtr:uninstall": "node ../urx-workspace-dtr/bin/cli.mjs uninstall"
 	},
 	"devDependencies": {
 		"@internationalized/date": "^3.12.2",

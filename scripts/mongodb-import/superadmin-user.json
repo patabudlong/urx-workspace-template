@@ -1,0 +1,13 @@
+[
+	{
+		"_id": { "$oid": "674a00000000000000000001" },
+		"email": "superadmin@urixoft.com",
+		"passwordHash": "$2b$12$QCc9ZFlTC9.3fWjCwhMJmexuzSNZIMcPK31muA0BvNU2eLUUWNnwu",
+		"firstName": "Super",
+		"lastName": "Admin",
+		"emailVerifiedAt": { "$date": "2026-08-18T04:39:00.000Z" },
+		"platformRole": "superadmin",
+		"createdAt": { "$date": "2026-08-18T04:39:00.000Z" },
+		"updatedAt": { "$date": "2026-08-18T04:39:00.000Z" }
+	}
+]

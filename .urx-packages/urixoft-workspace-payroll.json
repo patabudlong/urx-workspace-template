@@ -1,0 +1,21 @@
+{
+  "id": "urixoft-workspace-payroll",
+  "version": "0.1.0",
+  "installedAt": "2026-08-17T16:57:52.574Z",
+  "files": [
+    "src/lib/components/payroll/payroll-sidebar-panel.svelte",
+    "src/lib/navigation/payroll-nav.ts",
+    "src/lib/server/repositories/payroll-runs.ts",
+    "src/lib/shared/models/payroll-run.ts",
+    "src/lib/shared/payroll/access.ts",
+    "src/lib/shared/payroll/schemas.ts",
+    "src/routes/(app)/payroll/+layout.server.ts",
+    "src/routes/(app)/payroll/+layout.svelte",
+    "src/routes/(app)/payroll/+page.server.ts",
+    "src/routes/(app)/payroll/+page.svelte",
+    "src/routes/(app)/payroll/runs/+page.server.ts",
+    "src/routes/(app)/payroll/runs/+page.svelte",
+    "src/routes/api/v1/payroll/runs/+server.ts",
+    "src/routes/api/v1/payroll/status/+server.ts"
+  ]
+}
