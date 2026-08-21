@@ -89,30 +89,39 @@
 	});
 </script>
 
-<h1 class="text-3xl font-semibold tracking-tight text-primary-foreground xl:text-4xl">
-	Your
-	<span class="phrase-rotator relative mx-1 inline-grid overflow-hidden align-bottom">
-		<span class="invisible col-start-1 row-start-1 whitespace-nowrap" aria-hidden="true">
-			{longestPhrase}
-		</span>
+<h1
+	class="text-primary-foreground flex w-full max-w-none flex-col text-left text-4xl font-semibold tracking-tight xl:text-5xl"
+>
+	<span class="block leading-[1.15]">
+		Your
 		<span
-			bind:this={phraseEl}
-			class="phrase-text col-start-1 row-start-1 whitespace-nowrap"
-			class:phrase-exit={phase === 'exit'}
-			class:phrase-enter={phase === 'enter'}
-			style:--phrase-from={currentItem.from}
-			style:--phrase-to={currentItem.to}
+			class="phrase-rotator relative ml-1 inline-grid justify-items-start overflow-hidden text-left align-bottom"
 		>
-			{currentItem.phrase}
+			<span class="invisible col-start-1 row-start-1 whitespace-nowrap text-left" aria-hidden="true">
+				{longestPhrase}
+			</span>
+			<span
+				bind:this={phraseEl}
+				class="phrase-text col-start-1 row-start-1 whitespace-nowrap text-left"
+				class:phrase-exit={phase === 'exit'}
+				class:phrase-enter={phase === 'enter'}
+				style:--phrase-from={currentItem.from}
+				style:--phrase-to={currentItem.to}
+			>
+				{currentItem.phrase}
+			</span>
 		</span>
 	</span>
-	workspace,
-	<span class="underline decoration-skip-ink-auto underline-offset-[0.3em]">made simple.</span>
+	<span class="block leading-[1.15] whitespace-nowrap">
+		workspace,
+		<span class="underline decoration-skip-ink-auto underline-offset-[0.3em]">made simple.</span>
+	</span>
 </h1>
 
 <style>
 	.phrase-rotator {
 		contain: layout style;
+		justify-items: start;
 	}
 
 	.phrase-text {
