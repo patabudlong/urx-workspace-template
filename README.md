@@ -160,5 +160,5 @@ Open **Payroll** at `/payroll` (workspace owners and admins). Configure pay sche
 
 After `pnpm seed:user`:
 
-- Email: `admin@urx.local`
-- Password: `changeme123`
+- Email: `superadmin@urixoft.com`
+- Password: `urx-sa-Pass1234!`
