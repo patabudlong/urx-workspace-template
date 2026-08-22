@@ -4,13 +4,19 @@ import { createWorkspaceMember } from '$lib/server/repositories/workspace-member
 import { isMailConfigured } from '$lib/server/mail/index';
 import { sendWorkspaceApprovedEmail } from '$lib/server/mail/workspace-approved';
 import { WORKSPACE_MEMBER_ROLES } from '$lib/shared/models/workspace-member';
+import type { WorkspacePackageId } from '$lib/shared/workspace-packages';
 
 export async function approveWorkspaceOwnerRequest(input: {
 	workspaceId: string;
 	reviewedByUserId: string;
 	origin: string;
+	enabledPackages?: WorkspacePackageId[];
 }): Promise<{ ok: true } | { ok: false; reason: 'NOT_FOUND' }> {
-	const workspace = await approveWorkspaceRequest(input);
+	const workspace = await approveWorkspaceRequest({
+		workspaceId: input.workspaceId,
+		reviewedByUserId: input.reviewedByUserId,
+		enabledPackages: input.enabledPackages
+	});
 
 	if (!workspace) {
 		return { ok: false, reason: 'NOT_FOUND' };

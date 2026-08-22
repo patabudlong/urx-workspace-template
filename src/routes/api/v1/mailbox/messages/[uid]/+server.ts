@@ -5,15 +5,21 @@ import {
 	MAILBOX_MESSAGE_ACTION_SCHEMA,
 	MAILBOX_MESSAGE_UID_PARAM_SCHEMA
 } from '$lib/shared/mailbox/schemas';
+import { requireMailboxWorkspace } from '$lib/server/mailbox/api-context';
 
 export const GET: RequestHandler = async ({ locals, request, params, url }) => {
 	const requestId = request.headers.get('x-request-id') ?? undefined;
+	const context = await requireMailboxWorkspace({
+		userId: locals.user?.id,
+		url,
+		requestId
+	});
 
-	if (!locals.user) {
-		return jsonError('UNAUTHORIZED', 'Authentication required', { requestId });
+	if (!context.ok) {
+		return context.response;
 	}
 
-	if (!(await isMailboxConfigured(locals.user.id))) {
+	if (!(await isMailboxConfigured(locals.user!.id))) {
 		return jsonError('SERVICE_UNAVAILABLE', 'Mailbox is not connected for this user', { requestId });
 	}
 
@@ -33,7 +39,7 @@ export const GET: RequestHandler = async ({ locals, request, params, url }) => {
 	const markSeen = url.searchParams.get('markSeen') === 'true';
 
 	try {
-		const message = await getMailboxMessage(locals.user.id, folder, parsed.data.uid, { markSeen });
+		const message = await getMailboxMessage(locals.user!.id, folder, parsed.data.uid, { markSeen });
 		if (!message) {
 			return jsonError('NOT_FOUND', 'Message not found', { requestId });
 		}
@@ -45,14 +51,19 @@ export const GET: RequestHandler = async ({ locals, request, params, url }) => {
 	}
 };
 
-export const PATCH: RequestHandler = async ({ locals, request, params }) => {
+export const PATCH: RequestHandler = async ({ locals, request, params, url }) => {
 	const requestId = request.headers.get('x-request-id') ?? undefined;
+	const context = await requireMailboxWorkspace({
+		userId: locals.user?.id,
+		url,
+		requestId
+	});
 
-	if (!locals.user) {
-		return jsonError('UNAUTHORIZED', 'Authentication required', { requestId });
+	if (!context.ok) {
+		return context.response;
 	}
 
-	if (!(await isMailboxConfigured(locals.user.id))) {
+	if (!(await isMailboxConfigured(locals.user!.id))) {
 		return jsonError('SERVICE_UNAVAILABLE', 'Mailbox is not connected for this user', { requestId });
 	}
 
@@ -81,7 +92,7 @@ export const PATCH: RequestHandler = async ({ locals, request, params }) => {
 
 	try {
 		const result = await performMailboxMessageAction(
-			locals.user.id,
+			locals.user!.id,
 			parsedBody.data.folder,
 			parsedParams.data.uid,
 			parsedBody.data.action

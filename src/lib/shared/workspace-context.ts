@@ -1,9 +1,12 @@
+import type { WorkspacePackageId } from '$lib/shared/workspace-packages';
+
 export type WorkspaceContext = {
 	workspaceId: string;
 	workspaceName: string;
 	workspaceSlug: string;
 	role: string;
 	brandLogoUrl: string | null;
+	enabledPackages: WorkspacePackageId[];
 };
 
 export function getWorkspaceInitials(workspaceName: string): string {

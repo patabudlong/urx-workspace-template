@@ -1,6 +1,7 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import * as Command from '$lib/components/ui/command/index.js';
-	import { APP_NAV_GROUPS, getProfileNavItems } from '$lib/navigation/app-nav';
+	import { getAppNavGroups, getProfileNavItems } from '$lib/navigation/app-nav';
 	import { cn } from '$lib/utils.js';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import { onMount } from 'svelte';
@@ -13,7 +14,7 @@
 
 	let open = $state(false);
 
-	const navGroups = $derived(APP_NAV_GROUPS);
+	const navGroups = $derived(getAppNavGroups(page.data.workspace?.enabledPackages ?? []));
 	const profileNavItems = $derived(getProfileNavItems(workspaceRole));
 
 	const isMac = $derived(

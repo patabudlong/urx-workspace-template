@@ -7,6 +7,11 @@ import {
 	rejectWorkspaceOwnerRequest
 } from '$lib/server/onboarding/workspace-approval';
 import { isSuperadminUser } from '$lib/server/auth/platform-admin';
+import {
+	filterEnabledPackagesForDeployment,
+	listDeployableWorkspacePackages
+} from '$lib/server/workspace-packages/installed';
+import { workspacePackageIdsSchema } from '$lib/shared/workspace-packages';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const admin = await findUserById(locals.user!.id);
@@ -41,8 +46,11 @@ export const load: PageServerLoad = async ({ locals }) => {
 		})
 	);
 
+	const deployablePackages = await listDeployableWorkspacePackages();
+
 	return {
 		requests,
+		deployablePackages,
 		meta: {
 			title: 'Workspace requests'
 		}
@@ -59,15 +67,31 @@ export const actions: Actions = {
 
 		const formData = await request.formData();
 		const workspaceId = formData.get('workspaceId');
+		const enabledPackageValues = formData.getAll('enabledPackages');
 
 		if (typeof workspaceId !== 'string' || !workspaceId) {
 			return fail(400, { message: 'Missing workspace ID.' });
 		}
 
+		const parsedPackages = workspacePackageIdsSchema.safeParse(
+			enabledPackageValues.filter((value): value is string => typeof value === 'string')
+		);
+
+		if (!parsedPackages.success) {
+			return fail(400, { message: 'Invalid workspace package selection.' });
+		}
+
+		const deployablePackages = await listDeployableWorkspacePackages();
+		const enabledPackages = filterEnabledPackagesForDeployment(
+			parsedPackages.data,
+			deployablePackages.map((entry) => entry.id)
+		);
+
 		const result = await approveWorkspaceOwnerRequest({
 			workspaceId,
 			reviewedByUserId: locals.user!.id,
-			origin: url.origin
+			origin: url.origin,
+			enabledPackages
 		});
 
 		if (!result.ok) {

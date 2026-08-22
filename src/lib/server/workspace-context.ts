@@ -1,6 +1,7 @@
 import { findWorkspaceBySlugOrId } from '$lib/server/repositories/workspaces';
 import { listWorkspaceMembersByUserId } from '$lib/server/repositories/workspace-members';
 import { WORKSPACE_STATUSES } from '$lib/shared/models/workspace';
+import { normalizeEnabledPackages } from '$lib/shared/workspace-packages';
 import type { WorkspaceContext } from '$lib/shared/workspace-context';
 import { parseWorkspaceSlugFromHost } from '$lib/shared/workspace-host';
 
@@ -20,7 +21,8 @@ export async function listUserWorkspaceContexts(userId: string): Promise<Workspa
 			workspaceName: workspace.name,
 			workspaceSlug: workspace.slug,
 			role: membership.role,
-			brandLogoUrl: workspace.brandLogoUrl?.trim() || null
+			brandLogoUrl: workspace.brandLogoUrl?.trim() || null,
+			enabledPackages: normalizeEnabledPackages(workspace.enabledPackages)
 		});
 	}
 
