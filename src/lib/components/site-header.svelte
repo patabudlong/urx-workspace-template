@@ -38,6 +38,6 @@
 		<SiteHeaderGlobalSearch workspaceRole={workspaceRole} />
 		<NotificationBellButton />
 		<ThemeToggle />
-		<UserProfileMenu {userDisplay} {workspaceRole} />
+		<UserProfileMenu {userDisplay} {workspaceRole} {workspace} />
 	</div>
 </header>

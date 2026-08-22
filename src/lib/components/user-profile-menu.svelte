@@ -1,10 +1,12 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import LogoutDialog from '$lib/components/logout-dialog.svelte';
 	import PresenceStatusIndicator from '$lib/components/presence-status-indicator.svelte';
-	import { Button } from '$lib/components/ui/button/index.js';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import UserAvatar from '$lib/components/user-avatar.svelte';
+	import WorkspaceAvatar from '$lib/components/workspace-avatar.svelte';
+	import * as Avatar from '$lib/components/ui/avatar/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { Separator } from '$lib/components/ui/separator/index.js';
+	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import { getProfileNavItems } from '$lib/navigation/app-nav';
 	import { updatePresenceStatus } from '$lib/presence/client-presence';
 	import {
@@ -13,20 +15,36 @@
 		type PresenceStatus
 	} from '$lib/shared/presence';
 	import type { UserDisplay } from '$lib/shared/user-display';
+	import type { WorkspaceContext } from '$lib/shared/workspace-context';
 	import { cn } from '$lib/utils.js';
 	import CheckIcon from '@lucide/svelte/icons/check';
-	import LogOutIcon from '@lucide/svelte/icons/log-out';
+	import HouseIcon from '@lucide/svelte/icons/house';
+	import IdCardIcon from '@lucide/svelte/icons/id-card';
+	import XIcon from '@lucide/svelte/icons/x';
+	import type { Component } from 'svelte';
 
 	let {
 		userDisplay,
+		workspace = null,
 		workspaceRole = null
 	}: {
 		userDisplay: UserDisplay;
+		workspace?: WorkspaceContext | null;
 		workspaceRole?: string | null;
 	} = $props();
 
-	const profileNavItems = $derived(getProfileNavItems(workspaceRole));
+	const workspaceName = $derived(workspace?.workspaceName ?? 'your workspace');
 
+	const profileNavItems = $derived(getProfileNavItems(workspaceRole));
+	const menuNavItems = $derived<
+		{
+			title: string;
+			href: string;
+			icon: Component;
+		}[]
+	>([{ title: 'Home', href: '/', icon: HouseIcon }, ...profileNavItems]);
+
+	let open = $state(false);
 	let logoutOpen = $state(false);
 	let presenceStatus = $state<PresenceStatus>('offline');
 	let updatingPresence = $state(false);
@@ -53,10 +71,19 @@
 			presenceStatus = profile.presenceStatus;
 		}
 	}
+
+	function closeMenu() {
+		open = false;
+	}
+
+	function handleLogout() {
+		closeMenu();
+		logoutOpen = true;
+	}
 </script>
 
-<DropdownMenu.Root>
-	<DropdownMenu.Trigger>
+<Sheet.Root bind:open>
+	<Sheet.Trigger>
 		{#snippet child({ props })}
 			<Button
 				variant="ghost"
@@ -75,67 +102,115 @@
 				</span>
 			</Button>
 		{/snippet}
-	</DropdownMenu.Trigger>
-	<DropdownMenu.Content class="min-w-56 rounded-lg" side="bottom" align="end" sideOffset={4}>
-		<DropdownMenu.Label class="p-0 font-normal">
-			<div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-				<UserAvatar
-					avatarUrl={userDisplay.avatarUrl}
-					initials={userDisplay.initials}
-					presenceStatus={presenceStatus}
-					class="size-8"
-				/>
-				<div class="grid min-w-0 flex-1 text-left text-sm leading-tight">
-					<span class="truncate font-medium">{userDisplay.fullName}</span>
-					<span class="text-muted-foreground flex items-center gap-1.5 truncate text-xs">
-						<PresenceStatusIndicator status={presenceStatus} class="size-2" />
-						{PRESENCE_STATUS_LABELS[presenceStatus]}
-					</span>
+	</Sheet.Trigger>
+	<Sheet.Content
+		side="right"
+		showCloseButton={false}
+		overlayProps={{
+			class: 'bg-background/40 backdrop-blur-md'
+		}}
+		class="bg-popover/80 data-[side=right]:w-80 data-[side=right]:sm:max-w-80 gap-0 p-0 backdrop-blur-xl"
+	>
+		<div class="relative px-6 pt-8 pb-6">
+			<Sheet.Close>
+				{#snippet child({ props })}
+					<Button
+						variant="ghost"
+						size="icon-sm"
+						class="absolute top-4 right-4 rounded-full"
+						aria-label="Close profile menu"
+						{...props}
+					>
+						<XIcon />
+					</Button>
+				{/snippet}
+			</Sheet.Close>
+
+			<div class="flex flex-col items-center gap-3 text-center">
+				<div class="relative">
+					<Avatar.Root class="size-20">
+						{#if userDisplay.avatarUrl}
+							<Avatar.Image
+								src={userDisplay.avatarUrl}
+								alt=""
+								referrerpolicy="no-referrer"
+							/>
+						{/if}
+						<Avatar.Fallback class="bg-primary text-primary-foreground text-base font-semibold">
+							{userDisplay.initials}
+						</Avatar.Fallback>
+					</Avatar.Root>
+					<PresenceStatusIndicator
+						status={presenceStatus}
+						class="absolute right-0.5 bottom-0.5 size-3"
+					/>
 				</div>
+				<Sheet.Header class="items-center gap-1 p-0">
+					<Sheet.Title class="text-base font-semibold">
+						{userDisplay.fullName}
+					</Sheet.Title>
+					<Sheet.Description
+						class="flex max-w-full items-center justify-center gap-1.5 text-xs leading-relaxed"
+					>
+						<IdCardIcon class="size-3.5 shrink-0" aria-hidden="true" />
+						<span class="truncate" title={userDisplay.email}>{userDisplay.email}</span>
+					</Sheet.Description>
+				</Sheet.Header>
 			</div>
-		</DropdownMenu.Label>
-		<DropdownMenu.Separator />
-		<DropdownMenu.Label class="text-muted-foreground text-xs font-medium">
-			Set your status
-		</DropdownMenu.Label>
-		{#each PRESENCE_STATUS_OPTIONS as status (status)}
-			<DropdownMenu.Item
-				class={cn(updatingPresence && 'pointer-events-none opacity-60')}
-				onSelect={() => {
-					void handlePresenceChange(status);
-				}}
-			>
-				<PresenceStatusIndicator status={status} class="size-2.5" />
-				<span class="flex-1">{PRESENCE_STATUS_LABELS[status]}</span>
-				{#if presenceStatus === status}
-					<CheckIcon class="text-muted-foreground size-4" aria-hidden="true" />
-				{/if}
-			</DropdownMenu.Item>
-		{/each}
-		{#if profileNavItems.length > 0}
-			<DropdownMenu.Separator />
-			{#each profileNavItems as item (item.href)}
-				<DropdownMenu.Item
-					onSelect={() => {
-						goto(item.href);
+		</div>
+
+		<Separator class="bg-transparent mx-6 h-0 border-t border-dashed" />
+
+		<nav class="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-4 py-4">
+			{#each menuNavItems as item (item.href)}
+				<Button
+					variant="ghost"
+					href={item.href}
+					class="h-10 w-full justify-start gap-3 px-3 font-medium"
+					onclick={closeMenu}
+				>
+					<item.icon class="text-muted-foreground size-4" />
+					{item.title}
+				</Button>
+			{/each}
+
+			<p class="text-muted-foreground px-3 pt-4 pb-1 text-xs font-medium">Set your status</p>
+			{#each PRESENCE_STATUS_OPTIONS as status (status)}
+				<Button
+					variant="ghost"
+					class={cn(
+						'h-10 w-full justify-start gap-3 px-3 font-medium',
+						updatingPresence && 'pointer-events-none opacity-60'
+					)}
+					onclick={() => {
+						void handlePresenceChange(status);
 					}}
 				>
-					<item.icon />
-					{item.title}
-				</DropdownMenu.Item>
+					<PresenceStatusIndicator {status} class="size-2.5" />
+					<span class="flex-1 text-left">{PRESENCE_STATUS_LABELS[status]}</span>
+					{#if presenceStatus === status}
+						<CheckIcon class="text-muted-foreground size-4" aria-hidden="true" />
+					{/if}
+				</Button>
 			{/each}
-		{/if}
-		<DropdownMenu.Separator />
-		<DropdownMenu.Item
-			variant="destructive"
-			onSelect={() => {
-				logoutOpen = true;
-			}}
-		>
-			<LogOutIcon />
-			Sign out
-		</DropdownMenu.Item>
-	</DropdownMenu.Content>
-</DropdownMenu.Root>
+		</nav>
+
+		<Separator class="bg-transparent mx-6 h-0 border-t border-dashed" />
+
+		<Sheet.Footer class="mt-auto items-center gap-4 px-6 pt-10 pb-8">
+			<WorkspaceAvatar
+				workspaceName={workspaceName}
+				brandLogoUrl={workspace?.brandLogoUrl ?? null}
+				class="size-16 grayscale"
+			/>
+			<p class="text-muted-foreground max-w-xs text-center text-xs leading-relaxed">
+				Sign out to leave this workspace. You can sign back in anytime.
+			</p>
+			<Button variant="secondary" size="lg" class="mt-2 w-full" onclick={handleLogout}>
+				Log Out
+			</Button>
+		</Sheet.Footer>
+	</Sheet.Content>
+</Sheet.Root>
 
 <LogoutDialog bind:open={logoutOpen} showTrigger={false} />
