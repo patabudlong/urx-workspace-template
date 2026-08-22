@@ -72,6 +72,35 @@
 							</div>
 						</dl>
 
+						{#if data.deployablePackages.length > 0}
+							<fieldset class="space-y-3">
+								<legend class="text-sm font-medium">Enabled modules</legend>
+								<p class="text-muted-foreground text-sm">
+									Choose which workspace modules this owner can access after approval.
+								</p>
+								<div class="grid gap-2 sm:grid-cols-2">
+									{#each data.deployablePackages as workspacePackage (workspacePackage.id)}
+										<label
+											class="border-input hover:bg-muted/40 flex cursor-pointer items-start gap-3 rounded-lg border p-3"
+										>
+											<input
+												type="checkbox"
+												name="enabledPackages"
+												value={workspacePackage.id}
+												class="mt-1"
+											/>
+											<span class="space-y-1">
+												<span class="block text-sm font-medium">{workspacePackage.label}</span>
+												<span class="text-muted-foreground block text-sm">
+													{workspacePackage.description}
+												</span>
+											</span>
+										</label>
+									{/each}
+								</div>
+							</fieldset>
+						{/if}
+
 						<div class="flex flex-col gap-3 sm:flex-row">
 							<form method="POST" action="?/approve" use:enhance>
 								<input type="hidden" name="workspaceId" value={request.id} />

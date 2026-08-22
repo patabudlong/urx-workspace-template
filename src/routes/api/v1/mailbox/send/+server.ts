@@ -2,15 +2,21 @@ import type { RequestHandler } from './$types';
 import { jsonError, jsonOk } from '$lib/server/api/response';
 import { isMailboxConfigured, sendMailboxMessage } from '$lib/server/mailbox';
 import { MAILBOX_SEND_MESSAGE_SCHEMA } from '$lib/shared/mailbox/schemas';
+import { requireMailboxWorkspace } from '$lib/server/mailbox/api-context';
 
-export const POST: RequestHandler = async ({ locals, request }) => {
+export const POST: RequestHandler = async ({ locals, request, url }) => {
 	const requestId = request.headers.get('x-request-id') ?? undefined;
+	const context = await requireMailboxWorkspace({
+		userId: locals.user?.id,
+		url,
+		requestId
+	});
 
-	if (!locals.user) {
-		return jsonError('UNAUTHORIZED', 'Authentication required', { requestId });
+	if (!context.ok) {
+		return context.response;
 	}
 
-	if (!(await isMailboxConfigured(locals.user.id))) {
+	if (!(await isMailboxConfigured(locals.user!.id))) {
 		return jsonError('SERVICE_UNAVAILABLE', 'Mailbox is not connected for this user', { requestId });
 	}
 
@@ -24,7 +30,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 	}
 
 	try {
-		const result = await sendMailboxMessage(locals.user.id, parsed.data, {
+		const result = await sendMailboxMessage(locals.user!.id, parsed.data, {
 			requestOrigin: new URL(request.url).origin
 		});
 		return jsonOk(result, { requestId, status: 201 });

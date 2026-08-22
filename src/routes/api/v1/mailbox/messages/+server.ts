@@ -2,15 +2,21 @@ import type { RequestHandler } from './$types';
 import { jsonError, jsonPaginated } from '$lib/server/api/response';
 import { isMailboxConfigured, listMailboxMessages } from '$lib/server/mailbox';
 import { MAILBOX_LIST_MESSAGES_QUERY_SCHEMA } from '$lib/shared/mailbox/schemas';
+import { requireMailboxWorkspace } from '$lib/server/mailbox/api-context';
 
 export const GET: RequestHandler = async ({ locals, request, url }) => {
 	const requestId = request.headers.get('x-request-id') ?? undefined;
+	const context = await requireMailboxWorkspace({
+		userId: locals.user?.id,
+		url,
+		requestId
+	});
 
-	if (!locals.user) {
-		return jsonError('UNAUTHORIZED', 'Authentication required', { requestId });
+	if (!context.ok) {
+		return context.response;
 	}
 
-	if (!(await isMailboxConfigured(locals.user.id))) {
+	if (!(await isMailboxConfigured(locals.user!.id))) {
 		return jsonError('SERVICE_UNAVAILABLE', 'Mailbox is not connected for this user', { requestId });
 	}
 
@@ -24,7 +30,7 @@ export const GET: RequestHandler = async ({ locals, request, url }) => {
 
 	try {
 		const { folder, page, limit, q: query } = parsed.data;
-		const { items, total } = await listMailboxMessages(locals.user.id, folder, page, limit, {
+		const { items, total } = await listMailboxMessages(locals.user!.id, folder, page, limit, {
 			query
 		});
 		const hasMore = page * limit < total;

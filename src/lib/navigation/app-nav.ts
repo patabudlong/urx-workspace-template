@@ -10,6 +10,10 @@ import MailIcon from '@lucide/svelte/icons/mail';
 import BanknoteIcon from '@lucide/svelte/icons/banknote';
 import ClipboardClockIcon from '@lucide/svelte/icons/clipboard-clock';
 import { WORKSPACE_MEMBER_ROLES } from '$lib/shared/models/workspace-member';
+import {
+	isWorkspacePackageEnabled,
+	type WorkspacePackageId
+} from '$lib/shared/workspace-packages';
 
 export type AppNavItem = {
 	title: string;
@@ -19,6 +23,8 @@ export type AppNavItem = {
 	match?: 'exact' | 'prefix';
 	/** When set, used instead of `href` for active-state matching. */
 	activeHref?: string;
+	/** Workspace package required to show this item. */
+	packageId?: WorkspacePackageId;
 };
 
 export type AppNavGroup = {
@@ -37,7 +43,8 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
 				href: '/mailbox/INBOX',
 				activeHref: '/mailbox',
 				icon: MailIcon,
-				match: 'prefix'
+				match: 'prefix',
+				packageId: 'urixoft-workspace-mailbox'
 			},
 // urixoft-workspace-mailbox:end
 // urixoft-workspace-payroll:start
@@ -45,7 +52,8 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
 				title: 'Payroll',
 				href: '/payroll',
 				icon: BanknoteIcon,
-				match: 'prefix'
+				match: 'prefix',
+				packageId: 'urixoft-workspace-payroll'
 			},
 // urixoft-workspace-payroll:end
 // urixoft-workspace-dtr:start
@@ -53,7 +61,8 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
 				title: 'DTR',
 				href: '/dtr',
 				icon: ClipboardClockIcon,
-				match: 'prefix'
+				match: 'prefix',
+				packageId: 'urixoft-workspace-dtr'
 			},
 // urixoft-workspace-dtr:end
 			{
@@ -89,6 +98,15 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
 		]
 	}
 ];
+
+export function getAppNavGroups(enabledPackages: readonly string[] = []): AppNavGroup[] {
+	return APP_NAV_GROUPS.map((group) => ({
+		...group,
+		items: group.items.filter(
+			(item) => !item.packageId || isWorkspacePackageEnabled(enabledPackages, item.packageId)
+		)
+	})).filter((group) => group.items.length > 0);
+}
 
 export const USER_PROFILE_NAV_ITEMS: AppNavItem[] = [
 	{

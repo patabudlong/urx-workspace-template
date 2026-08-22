@@ -1,4 +1,5 @@
 import type { ObjectId } from 'mongodb';
+import type { WorkspacePackageId } from '$lib/shared/workspace-packages';
 
 export const WORKSPACE_STATUSES = {
 	PENDING_REVIEW: 'pending_review',
@@ -27,6 +28,7 @@ export type WorkspaceDocument = {
 	website?: string;
 	brandLogoUrl?: string;
 	status: WorkspaceStatus;
+	enabledPackages?: WorkspacePackageId[];
 	requestedByUserId: ObjectId;
 	reviewedAt?: Date;
 	reviewedByUserId?: ObjectId;

@@ -1,6 +1,7 @@
 import type { WorkspaceDocument } from '$lib/shared/models/workspace';
 import { WORKSPACE_STATUSES } from '$lib/shared/models/workspace';
 import { getWorkspacesCollection } from '$lib/server/db/collections';
+import type { WorkspacePackageId } from '$lib/shared/workspace-packages';
 import { ObjectId } from 'mongodb';
 
 let workspaceIndexesPromise: Promise<void> | null = null;
@@ -35,6 +36,7 @@ const workspaceProjection = {
 	website: 1,
 	brandLogoUrl: 1,
 	status: 1,
+	enabledPackages: 1,
 	requestedByUserId: 1,
 	reviewedAt: 1,
 	reviewedByUserId: 1,
@@ -136,6 +138,7 @@ export async function createWorkspaceRequest(input: {
 		address: input.address,
 		website: input.website,
 		brandLogoUrl: input.brandLogoUrl,
+		enabledPackages: [],
 		status: WORKSPACE_STATUSES.PENDING_REVIEW,
 		requestedByUserId: new ObjectId(input.requestedByUserId),
 		createdAt: now,
@@ -150,9 +153,20 @@ export async function createWorkspaceRequest(input: {
 export async function approveWorkspaceRequest(input: {
 	workspaceId: string;
 	reviewedByUserId: string;
+	enabledPackages?: WorkspacePackageId[];
 }): Promise<WorkspaceDocument | null> {
 	const workspaces = await getWorkspacesCollection<WorkspaceDocument>();
 	const now = new Date();
+	const update: Record<string, unknown> = {
+		status: WORKSPACE_STATUSES.ACTIVE,
+		reviewedAt: now,
+		reviewedByUserId: new ObjectId(input.reviewedByUserId),
+		updatedAt: now
+	};
+
+	if (input.enabledPackages !== undefined) {
+		update.enabledPackages = input.enabledPackages;
+	}
 
 	const result = await workspaces.findOneAndUpdate(
 		{
@@ -160,12 +174,7 @@ export async function approveWorkspaceRequest(input: {
 			status: WORKSPACE_STATUSES.PENDING_REVIEW
 		},
 		{
-			$set: {
-				status: WORKSPACE_STATUSES.ACTIVE,
-				reviewedAt: now,
-				reviewedByUserId: new ObjectId(input.reviewedByUserId),
-				updatedAt: now
-			}
+			$set: update
 		},
 		{ returnDocument: 'after', projection: workspaceProjection }
 	);
