@@ -3,6 +3,7 @@ import { listWorkspaceMembersByUserId } from '$lib/server/repositories/workspace
 import { WORKSPACE_STATUSES } from '$lib/shared/models/workspace';
 import { normalizeEnabledPackages } from '$lib/shared/workspace-packages';
 import type { WorkspaceContext } from '$lib/shared/workspace-context';
+import { buildWorkspaceBrandLogoDisplayUrl } from '$lib/shared/workspace-branding';
 import { parseWorkspaceSlugFromHost } from '$lib/shared/workspace-host';
 
 export async function listUserWorkspaceContexts(userId: string): Promise<WorkspaceContext[]> {
@@ -21,7 +22,11 @@ export async function listUserWorkspaceContexts(userId: string): Promise<Workspa
 			workspaceName: workspace.name,
 			workspaceSlug: workspace.slug,
 			role: membership.role,
-			brandLogoUrl: workspace.brandLogoUrl?.trim() || null,
+			brandLogoUrl: buildWorkspaceBrandLogoDisplayUrl({
+				slug: workspace.slug,
+				brandLogoUrl: workspace.brandLogoUrl,
+				updatedAt: workspace.updatedAt
+			}),
 			enabledPackages: normalizeEnabledPackages(workspace.enabledPackages)
 		});
 	}

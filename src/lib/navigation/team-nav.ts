@@ -1,7 +1,8 @@
 import type { AppNavItem } from '$lib/navigation/app-nav';
-import { canViewTeamRoles } from '$lib/shared/team/member-management';
+import { canEditTeamSettings, canViewTeamRoles } from '$lib/shared/team/member-management';
 import KeyRoundIcon from '@lucide/svelte/icons/key-round';
 import MailIcon from '@lucide/svelte/icons/mail';
+import SettingsIcon from '@lucide/svelte/icons/settings';
 import UsersIcon from '@lucide/svelte/icons/users';
 
 export const TEAM_NAV_ITEMS: AppNavItem[] = [
@@ -22,6 +23,12 @@ export const TEAM_NAV_ITEMS: AppNavItem[] = [
 		href: '/team/roles',
 		icon: KeyRoundIcon,
 		match: 'exact'
+	},
+	{
+		title: 'Workspace settings',
+		href: '/team/settings',
+		icon: SettingsIcon,
+		match: 'exact'
 	}
 ];
 
@@ -29,6 +36,10 @@ export function getTeamNavItems(role: string | null | undefined): AppNavItem[] {
 	return TEAM_NAV_ITEMS.filter((item) => {
 		if (item.href === '/team/roles') {
 			return canViewTeamRoles(role);
+		}
+
+		if (item.href === '/team/settings') {
+			return canEditTeamSettings(role);
 		}
 
 		return true;

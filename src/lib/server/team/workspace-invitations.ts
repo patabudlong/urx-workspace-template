@@ -29,6 +29,7 @@ import type { TeamInvitationInput } from '$lib/shared/schemas/team-invitation';
 import { WORKSPACE_STATUSES } from '$lib/shared/models/workspace';
 import type { WorkspaceMemberRole } from '$lib/shared/models/workspace-member';
 import { findTeamInviteRoleOption } from '$lib/shared/team/invite-roles';
+import { buildWorkspaceBrandLogoDisplayUrl } from '$lib/shared/workspace-branding';
 import {
 	TEAM_INVITATION_ALREADY_MEMBER_MESSAGE,
 	TEAM_INVITATION_DUPLICATE_PENDING_MESSAGE,
@@ -284,7 +285,11 @@ export async function getWorkspaceInvitationPreview(
 		workspaceSlug: workspace.slug,
 		invitedEmail: invitation.invitedEmail,
 		roleLabel: findTeamInviteRoleOption(invitation.role)?.label ?? invitation.role,
-		brandLogoUrl: workspace.brandLogoUrl?.trim() || null,
+		brandLogoUrl: buildWorkspaceBrandLogoDisplayUrl({
+			slug: workspace.slug,
+			brandLogoUrl: workspace.brandLogoUrl,
+			updatedAt: workspace.updatedAt
+		}),
 		expiresAt: invitation.expiresAt.toISOString()
 	};
 }

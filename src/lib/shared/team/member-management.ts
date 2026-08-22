@@ -48,3 +48,7 @@ export function canUpdateWorkspaceMemberTarget(input: {
 }): boolean {
 	return canRemoveWorkspaceMember(input);
 }
+
+export function canEditTeamSettings(role: string | null | undefined): boolean {
+	return canRemoveWorkspaceMembers(role);
+}

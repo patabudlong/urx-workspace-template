@@ -182,6 +182,36 @@ export async function approveWorkspaceRequest(input: {
 	return result ?? null;
 }
 
+export async function updateWorkspaceBrandLogoUrl(input: {
+	workspaceId: string;
+	brandLogoUrl: string | null;
+}): Promise<WorkspaceDocument | null> {
+	if (!ObjectId.isValid(input.workspaceId)) {
+		return null;
+	}
+
+	const workspaces = await getWorkspacesCollection<WorkspaceDocument>();
+	const now = new Date();
+
+	const result = await workspaces.findOneAndUpdate(
+		{ _id: new ObjectId(input.workspaceId) },
+		input.brandLogoUrl === null
+			? {
+					$unset: { brandLogoUrl: '' },
+					$set: { updatedAt: now }
+				}
+			: {
+					$set: {
+						brandLogoUrl: input.brandLogoUrl,
+						updatedAt: now
+					}
+				},
+		{ returnDocument: 'after', projection: workspaceProjection }
+	);
+
+	return result ?? null;
+}
+
 export async function rejectWorkspaceRequest(input: {
 	workspaceId: string;
 	reviewedByUserId: string;
