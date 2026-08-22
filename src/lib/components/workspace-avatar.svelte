@@ -28,9 +28,7 @@
 	<img
 		src={brandLogoUrl}
 		alt=""
-		class={cn('ring-border shrink-0 rounded-lg object-cover ring-1', className)}
-		width="32"
-		height="32"
+		class={cn('ring-border shrink-0 rounded-lg object-contain ring-1', className)}
 		referrerpolicy="no-referrer"
 		onerror={() => {
 			imageError = true;

@@ -21,3 +21,17 @@ export function isWorkspaceLogoMimeType(type: string): type is WorkspaceLogoMime
 export function isWorkspaceLogoCropSupported(type: string): boolean {
 	return type === 'image/png' || type === 'image/jpeg' || type === 'image/webp';
 }
+
+export function buildWorkspaceBrandLogoDisplayUrl(input: {
+	slug: string;
+	brandLogoUrl?: string | null;
+	updatedAt?: Date | string | number | null;
+}): string | null {
+	if (!input.brandLogoUrl?.trim()) {
+		return null;
+	}
+
+	const version = input.updatedAt ? new Date(input.updatedAt).getTime() : Date.now();
+
+	return `/api/v1/workspaces/${encodeURIComponent(input.slug)}/brand-logo?v=${version}`;
+}

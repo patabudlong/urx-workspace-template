@@ -5,16 +5,17 @@ import {
 } from '@aws-sdk/client-s3';
 import type { LinodeObjectStorageConfig } from '$lib/server/storage/linode-config';
 
-const EMAIL_ASSETS_POLICY_SID = 'PublicReadEmailAssets';
+export const EMAIL_ASSETS_POLICY_SID = 'PublicReadEmailAssets';
+export const WORKSPACE_BRAND_LOGO_POLICY_SID = 'PublicReadWorkspaceBrandLogos';
 
 type BucketPolicyDocument = {
 	Version: string;
 	Statement: Array<Record<string, unknown>>;
 };
 
-function buildEmailAssetsPolicyStatement(bucket: string, prefix: string) {
+function buildPublicReadPolicyStatement(bucket: string, prefix: string, sid: string) {
 	return {
-		Sid: EMAIL_ASSETS_POLICY_SID,
+		Sid: sid,
 		Effect: 'Allow',
 		Principal: '*',
 		Action: 's3:GetObject',
@@ -39,14 +40,15 @@ function isNoSuchBucketPolicyError(error: unknown): boolean {
 
 /**
  * Linode Object Storage does not support per-object ACLs.
- * Email images must be readable anonymously via a bucket policy on `{prefix}/*`.
+ * Objects must be readable anonymously via a bucket policy on `{prefix}/*`.
  */
-export async function ensurePublicEmailAssetsPolicy(
+export async function ensurePublicObjectPrefixPolicy(
 	client: S3Client,
 	config: LinodeObjectStorageConfig,
-	prefix: string
+	prefix: string,
+	sid: string
 ): Promise<void> {
-	const statement = buildEmailAssetsPolicyStatement(config.bucket, prefix);
+	const statement = buildPublicReadPolicyStatement(config.bucket, prefix, sid);
 	let policy: BucketPolicyDocument;
 
 	try {
@@ -57,7 +59,7 @@ export async function ensurePublicEmailAssetsPolicy(
 			: policy.Statement
 				? [policy.Statement]
 				: [];
-		const index = statements.findIndex((entry) => entry.Sid === EMAIL_ASSETS_POLICY_SID);
+		const index = statements.findIndex((entry) => entry.Sid === sid);
 
 		if (index >= 0) {
 			statements[index] = statement;
@@ -86,4 +88,19 @@ export async function ensurePublicEmailAssetsPolicy(
 			Policy: JSON.stringify(policy)
 		})
 	);
+}
+
+export async function ensurePublicEmailAssetsPolicy(
+	client: S3Client,
+	config: LinodeObjectStorageConfig,
+	prefix: string
+): Promise<void> {
+	return ensurePublicObjectPrefixPolicy(client, config, prefix, EMAIL_ASSETS_POLICY_SID);
+}
+
+export async function ensurePublicWorkspaceBrandLogoPolicy(
+	client: S3Client,
+	config: LinodeObjectStorageConfig
+): Promise<void> {
+	return ensurePublicObjectPrefixPolicy(client, config, 'workspaces', WORKSPACE_BRAND_LOGO_POLICY_SID);
 }

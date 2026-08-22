@@ -1,5 +1,6 @@
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { env } from '$env/dynamic/private';
+import { ensurePublicWorkspaceBrandLogoPolicy } from '$lib/server/storage/linode-bucket-policy';
 import {
 	parseLinodeObjectStorageConfig,
 	type LinodeObjectStorageConfig
@@ -75,6 +76,46 @@ export async function uploadPublicObject(
 	return `${resolved.publicBase}/${input.key}`;
 }
 
+const LOGO_EXTENSIONS = ['png', 'jpg', 'webp', 'svg'] as const;
+
+export async function getWorkspaceBrandLogoObject(input: {
+	slug: string;
+	extension: string;
+}): Promise<{ body: Buffer; contentType: string } | null> {
+	const config = getLinodeObjectStorageConfig();
+
+	if (!config) {
+		return null;
+	}
+
+	const client = getS3Client(config);
+	const key = `workspaces/${input.slug}/logo.${input.extension}`;
+
+	try {
+		const response = await client.send(
+			new GetObjectCommand({
+				Bucket: config.bucket,
+				Key: key
+			})
+		);
+
+		if (!response.Body) {
+			return null;
+		}
+
+		const body = Buffer.from(await response.Body.transformToByteArray());
+
+		return {
+			body,
+			contentType: response.ContentType ?? 'application/octet-stream'
+		};
+	} catch {
+		return null;
+	}
+}
+
+export { LOGO_EXTENSIONS };
+
 export async function uploadWorkspaceBrandLogo(input: {
 	slug: string;
 	body: Buffer;
@@ -88,6 +129,9 @@ export async function uploadWorkspaceBrandLogo(input: {
 	}
 
 	const key = `workspaces/${input.slug}/logo.${input.extension}`;
+
+	const client = getS3Client(config);
+	await ensurePublicWorkspaceBrandLogoPolicy(client, config);
 
 	return uploadPublicObject(
 		{

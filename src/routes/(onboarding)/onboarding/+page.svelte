@@ -1079,8 +1079,10 @@
 								onerror={handleBrandLogoError}
 							/>
 							<p class="text-muted-foreground text-xs">
-								Optional — you can skip this for now and add or change your logo later in workspace
-								settings.
+								Optional — you can skip this for now and add or change your logo later in
+								<a href="/team/settings" class="text-primary font-medium hover:underline">
+									workspace settings
+								</a>.
 							</p>
 						</div>
 					</div>
