@@ -27,6 +27,7 @@ import {
 } from '$lib/shared/payroll/messages';
 import { updatePayrollEmployeeSchema } from '$lib/shared/payroll/schemas';
 import { buildPayrollEmployeePhotoDisplayUrl } from '$lib/shared/payroll/employee-photo';
+import { mapActiveJobTitlesForEmployeeForm } from '$lib/shared/payroll/job-titles';
 
 export const load: PageServerLoad = async ({ parent, params }) => {
 	const { workspace, canManagePayroll: canManage } = await parent();
@@ -59,7 +60,8 @@ export const load: PageServerLoad = async ({ parent, params }) => {
 		}),
 		payrollCurrency: settings.currency,
 		deductionTypes,
-		workSchedules: workSchedules.map(({ id, name }) => ({ id, name }))
+		workSchedules: workSchedules.map(({ id, name }) => ({ id, name })),
+		jobTitles: mapActiveJobTitlesForEmployeeForm(settings.jobTitles, settings.currency)
 	};
 };
 

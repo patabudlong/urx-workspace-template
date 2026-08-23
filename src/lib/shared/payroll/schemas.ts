@@ -15,7 +15,7 @@ import {
 	PAYROLL_DEDUCTION_KINDS,
 	percentToBasisPoints
 } from '$lib/shared/payroll/deductions';
-import { dollarsToCents } from '$lib/shared/payroll/format';
+import { dollarsToCents, centsToMajorUnits } from '$lib/shared/payroll/format';
 import {
 	PAYROLL_TIMEZONE_VALUES,
 	resolvePayrollTimezone,
@@ -211,5 +211,45 @@ export function mapDeductionTypesToFormInput(
 		defaultAmount: type.defaultAmountCents / 100,
 		defaultRatePercent: type.defaultRateBasisPoints / 100,
 		isActive: type.isActive
+	}));
+}
+
+const payrollJobTitleInputSchema = z.object({
+	id: z.string().trim().min(1).max(64),
+	name: z.string().trim().min(1, 'Name is required.').max(120),
+	payType: z.enum(PAYROLL_PAY_TYPES),
+	payRate: z.coerce.number().min(0, 'Pay rate must be zero or greater.'),
+	isActive: z.coerce.boolean()
+});
+
+export const payrollJobTitlesSchema = z.object({
+	titles: z.array(payrollJobTitleInputSchema).max(50, 'Too many job titles.')
+});
+
+export type PayrollJobTitlesInput = z.infer<typeof payrollJobTitlesSchema>;
+
+export function mapJobTitlesInputToDocument(
+	input: PayrollJobTitlesInput['titles'],
+	currency: PayrollCurrency = 'PHP'
+): import('$lib/shared/payroll/job-titles').PayrollJobTitle[] {
+	return input.map((title) => ({
+		id: title.id,
+		name: title.name.trim(),
+		payType: title.payType,
+		payRateCents: dollarsToCents(title.payRate, currency),
+		isActive: title.isActive
+	}));
+}
+
+export function mapJobTitlesToFormInput(
+	titles: import('$lib/shared/payroll/job-titles').PayrollJobTitle[],
+	currency: PayrollCurrency = 'PHP'
+): PayrollJobTitlesInput['titles'] {
+	return titles.map((title) => ({
+		id: title.id,
+		name: title.name,
+		payType: title.payType,
+		payRate: centsToMajorUnits(title.payRateCents, currency),
+		isActive: title.isActive
 	}));
 }

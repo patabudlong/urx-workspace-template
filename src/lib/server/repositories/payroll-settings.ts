@@ -9,13 +9,18 @@ import {
 } from '$lib/server/payroll/config';
 import type { PayrollDeductionType } from '$lib/shared/payroll/deductions';
 import { normalizePayrollDeductionTypes } from '$lib/shared/payroll/deductions';
+import type { PayrollJobTitle } from '$lib/shared/payroll/job-titles';
+import { normalizePayrollJobTitles } from '$lib/shared/payroll/job-titles';
 import type { PayrollSettingsInput } from '$lib/shared/payroll/schemas';
 import {
 	createPayrollSettingsDefaults,
 	mapDeductionTypesToFormInput,
-	type PayrollDeductionTypesInput
+	mapJobTitlesToFormInput,
+	type PayrollDeductionTypesInput,
+	type PayrollJobTitlesInput
 } from '$lib/shared/payroll/schemas';
 import { resolvePayrollCurrency } from '$lib/shared/payroll/currency';
+import type { PayrollCurrency } from '$lib/shared/payroll/currency';
 import { normalizePayrollTimezone, resolvePayrollTimezone } from '$lib/shared/payroll/timezone';
 import { ObjectId } from 'mongodb';
 
@@ -29,6 +34,7 @@ const PAYROLL_SETTINGS_PROJECTION = {
 	weekStartDay: 1,
 	periodAnchorDate: 1,
 	deductionTypes: 1,
+	jobTitles: 1,
 	updatedAt: 1
 } as const;
 
@@ -50,6 +56,7 @@ function toPayrollSettingsDto(
 			weekStartDay: defaults.weekStartDay || null,
 			periodAnchorDate: defaults.periodAnchorDate || null,
 			deductionTypes: [],
+			jobTitles: [],
 			configured: false,
 			updatedAt: null
 		};
@@ -63,6 +70,7 @@ function toPayrollSettingsDto(
 		weekStartDay: doc.weekStartDay,
 		periodAnchorDate: doc.periodAnchorDate,
 		deductionTypes: normalizePayrollDeductionTypes(doc.deductionTypes),
+		jobTitles: normalizePayrollJobTitles(doc.jobTitles),
 		configured: true,
 		updatedAt: doc.updatedAt.toISOString()
 	};
@@ -119,6 +127,7 @@ export async function upsertPayrollSettingsForWorkspace(input: {
 			$setOnInsert: {
 				workspaceId: workspaceObjectId,
 				deductionTypes: [],
+				jobTitles: [],
 				createdAt: now
 			}
 		},
@@ -153,6 +162,7 @@ export async function savePayrollDeductionTypesForWorkspace(input: {
 				currency: getDefaultPayrollCurrency(),
 				weekStartDay: null,
 				periodAnchorDate: null,
+				jobTitles: [],
 				createdAt: now
 			}
 		},
@@ -167,5 +177,49 @@ export function getPayrollDeductionTypesFormDefaults(
 ): PayrollDeductionTypesInput {
 	return {
 		types: mapDeductionTypesToFormInput(types)
+	};
+}
+
+export async function savePayrollJobTitlesForWorkspace(input: {
+	workspaceId: string;
+	titles: PayrollJobTitle[];
+}): Promise<PayrollSettingsDto> {
+	await ensurePayrollSettingsIndexes();
+
+	const collection = await getPayrollSettingsCollection<PayrollSettingsDocument>();
+	const now = new Date();
+	const workspaceObjectId = new ObjectId(input.workspaceId);
+	const jobTitles = normalizePayrollJobTitles(input.titles);
+
+	await collection.updateOne(
+		{ workspaceId: workspaceObjectId },
+		{
+			$set: {
+				jobTitles,
+				updatedAt: now
+			},
+			$setOnInsert: {
+				workspaceId: workspaceObjectId,
+				payFrequency: 'semi-monthly',
+				timezone: getDefaultPayrollTimezone(),
+				currency: getDefaultPayrollCurrency(),
+				weekStartDay: null,
+				periodAnchorDate: null,
+				deductionTypes: [],
+				createdAt: now
+			}
+		},
+		{ upsert: true }
+	);
+
+	return getPayrollSettingsForWorkspace(input.workspaceId);
+}
+
+export function getPayrollJobTitlesFormDefaults(
+	titles: PayrollJobTitle[],
+	currency: PayrollCurrency
+): PayrollJobTitlesInput {
+	return {
+		titles: mapJobTitlesToFormInput(titles, currency)
 	};
 }

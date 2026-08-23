@@ -83,6 +83,7 @@
 				initialForm={data.form}
 				deductionTypes={data.deductionTypes}
 				workSchedules={data.workSchedules}
+				jobTitles={data.jobTitles}
 				payrollCurrency={data.payrollCurrency}
 				currentPhotoUrl={data.employeePhotoUrl}
 				formAction="?/update"

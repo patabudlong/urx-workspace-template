@@ -1323,6 +1323,93 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 					}
 				}
 			},
+			'/payroll/settings/job-titles': {
+				get: {
+					tags: ['Payroll'],
+					summary: 'List payroll job titles',
+					description:
+						'Returns workspace job title catalog with default pay rates for the active workspace.',
+					operationId: 'listPayrollJobTitles',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Job title catalog',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/PayrollJobTitlesSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Payroll access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				put: {
+					tags: ['Payroll'],
+					summary: 'Update payroll job titles',
+					description: 'Creates or replaces the workspace job title catalog.',
+					operationId: 'updatePayrollJobTitles',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/PayrollJobTitlesUpdateRequest' }
+							}
+						}
+					},
+					responses: {
+						'200': {
+							description: 'Updated job title catalog',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/PayrollJobTitlesSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Payroll access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
 			'/payroll/runs': {
 				get: {
 					tags: ['Payroll'],
@@ -2690,6 +2777,57 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 					required: ['data', 'meta'],
 					properties: {
 						data: { $ref: '#/components/schemas/PayrollSettings' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				PayrollJobTitle: {
+					type: 'object',
+					required: ['id', 'name', 'payType', 'payRateCents', 'isActive'],
+					properties: {
+						id: { type: 'string' },
+						name: { type: 'string', maxLength: 120 },
+						payType: { type: 'string', enum: ['hourly', 'monthly'] },
+						payRateCents: { type: 'integer', minimum: 0 },
+						isActive: { type: 'boolean' }
+					}
+				},
+				PayrollJobTitlesUpdateRequest: {
+					type: 'object',
+					required: ['titles'],
+					properties: {
+						titles: {
+							type: 'array',
+							maxItems: 50,
+							items: {
+								type: 'object',
+								required: ['id', 'name', 'payType', 'payRate', 'isActive'],
+								properties: {
+									id: { type: 'string', maxLength: 64 },
+									name: { type: 'string', maxLength: 120 },
+									payType: { type: 'string', enum: ['hourly', 'monthly'] },
+									payRate: { type: 'number', minimum: 0 },
+									isActive: { type: 'boolean' }
+								}
+							}
+						}
+					}
+				},
+				PayrollJobTitlesSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							type: 'object',
+							required: ['workspaceId', 'currency', 'titles'],
+							properties: {
+								workspaceId: { type: 'string' },
+								currency: { type: 'string' },
+								titles: {
+									type: 'array',
+									items: { $ref: '#/components/schemas/PayrollJobTitle' }
+								}
+							}
+						},
 						meta: { $ref: '#/components/schemas/ApiMeta' }
 					}
 				},

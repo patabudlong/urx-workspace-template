@@ -61,6 +61,7 @@
 					initialForm={data.form}
 					deductionTypes={data.deductionTypes}
 					workSchedules={data.workSchedules}
+					jobTitles={data.jobTitles}
 					payrollCurrency={data.payrollCurrency}
 					resetForm={true}
 					successMessage={PAYROLL_EMPLOYEE_CREATED_MESSAGE}

@@ -22,3 +22,5 @@ export const PAYROLL_SETTINGS_SAVE_FAILED_MESSAGE = 'Could not save payroll sett
 export const PAYROLL_DEDUCTION_TYPES_SAVED_MESSAGE = 'Deduction types saved.';
 export const PAYROLL_DEDUCTION_TYPES_SAVE_FAILED_MESSAGE =
 	'Could not save deduction types. Try again.';
+export const PAYROLL_JOB_TITLES_SAVED_MESSAGE = 'Job titles saved.';
+export const PAYROLL_JOB_TITLES_SAVE_FAILED_MESSAGE = 'Could not save job titles. Try again.';

@@ -250,6 +250,20 @@
 
 	<Card.Root>
 		<Card.Header>
+			<Card.Title>Job titles</Card.Title>
+			<Card.Description>
+				Define standard roles and default pay rates used when adding employees to payroll.
+			</Card.Description>
+		</Card.Header>
+		<Card.Content>
+			<Button href="/payroll/settings/job-titles" variant="outline" class="h-10">
+				Manage job titles
+			</Button>
+		</Card.Content>
+	</Card.Root>
+
+	<Card.Root>
+		<Card.Header>
 			<Card.Title>Deductions</Card.Title>
 			<Card.Description>
 				Configure SSS, PhilHealth, loans, and other deduction types used when setting up employees.

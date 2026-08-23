@@ -26,6 +26,7 @@ import {
 	createPayrollEmployeeDefaults
 } from '$lib/shared/payroll/schemas';
 import { buildEmployeeDeductionFormDefaults } from '$lib/shared/payroll/deductions';
+import { mapActiveJobTitlesForEmployeeForm } from '$lib/shared/payroll/job-titles';
 
 function buildEmployeeFormDefaults(
 	deductionTypes: Awaited<ReturnType<typeof getPayrollSettingsForWorkspace>>['deductionTypes']
@@ -46,7 +47,8 @@ export const load: PageServerLoad = async ({ parent }) => {
 			}),
 			payrollCurrency: 'PHP' as const,
 			deductionTypes: [],
-			workSchedules: []
+			workSchedules: [],
+			jobTitles: []
 		};
 	}
 
@@ -60,7 +62,8 @@ export const load: PageServerLoad = async ({ parent }) => {
 		form,
 		payrollCurrency: settings.currency,
 		deductionTypes: settings.deductionTypes.filter((type) => type.isActive),
-		workSchedules
+		workSchedules,
+		jobTitles: mapActiveJobTitlesForEmployeeForm(settings.jobTitles, settings.currency)
 	};
 };
 

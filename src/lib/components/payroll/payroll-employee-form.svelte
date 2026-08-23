@@ -16,11 +16,15 @@
 		createPayrollEmployeeSchema,
 		type CreatePayrollEmployeeInput
 	} from '$lib/shared/payroll/schemas';
+	import type { PayrollJobTitleOption } from '$lib/shared/payroll/job-titles';
+	import { dollarsToCents, formatPayRateCents } from '$lib/shared/payroll/format';
 	import type { Snippet } from 'svelte';
 	import type { SuperValidated } from 'sveltekit-superforms';
 	import { untrack } from 'svelte';
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
+
+	const CUSTOM_JOB_TITLE_VALUE = '__custom__';
 
 	type WorkScheduleOption = {
 		id: string;
@@ -31,6 +35,7 @@
 		initialForm,
 		deductionTypes,
 		workSchedules,
+		jobTitles = [],
 		payrollCurrency,
 		currentPhotoUrl = null,
 		formAction,
@@ -42,6 +47,7 @@
 		initialForm: SuperValidated<CreatePayrollEmployeeInput>;
 		deductionTypes: PayrollDeductionType[];
 		workSchedules: WorkScheduleOption[];
+		jobTitles?: PayrollJobTitleOption[];
 		payrollCurrency: PayrollCurrency;
 		currentPhotoUrl?: string | null;
 		formAction?: string;
@@ -56,6 +62,9 @@
 	let photoPreview = $state<string | null>(null);
 	let removePhoto = $state(false);
 	let photoError = $state<string | null>(null);
+	let selectedJobTitleId = $state(CUSTOM_JOB_TITLE_VALUE);
+
+	const useJobTitleCatalog = $derived(jobTitles.length > 0);
 
 	const displayPhotoUrl = $derived(
 		removePhoto ? null : (photoPreview ?? currentPhotoUrl)
@@ -107,6 +116,32 @@
 
 	const { enhance, form, message: formMessage, posted } = superform;
 
+	const selectedCatalogTitle = $derived(
+		selectedJobTitleId === CUSTOM_JOB_TITLE_VALUE
+			? null
+			: (jobTitles.find((title) => title.id === selectedJobTitleId) ?? null)
+	);
+
+	const payDiffersFromCatalog = $derived(
+		selectedCatalogTitle !== null &&
+			(selectedCatalogTitle.payType !== $form.payType ||
+				selectedCatalogTitle.payRate !== $form.payRate)
+	);
+
+	const showPayFields = $derived(
+		!useJobTitleCatalog ||
+			selectedJobTitleId === CUSTOM_JOB_TITLE_VALUE ||
+			payDiffersFromCatalog
+	);
+
+	const catalogPaySummary = $derived(
+		formatPayRateCents(
+			dollarsToCents($form.payRate, payrollCurrency),
+			$form.payType,
+			payrollCurrency
+		)
+	);
+
 	const currencyLabel = $derived(getPayrollCurrencyLabel(payrollCurrency));
 	const payRateStep = $derived(payrollCurrency === 'JPY' ? '1' : '0.01');
 
@@ -150,6 +185,47 @@
 	function handlePhotoError(message: string) {
 		photoError = message;
 	}
+
+	function applyJobTitleSelection(value: string) {
+		selectedJobTitleId = value;
+
+		if (value === CUSTOM_JOB_TITLE_VALUE) {
+			return;
+		}
+
+		const title = jobTitles.find((item) => item.id === value);
+
+		if (!title) {
+			return;
+		}
+
+		$form.jobTitle = title.name;
+		$form.payType = title.payType;
+		$form.payRate = title.payRate;
+	}
+
+	$effect(() => {
+		if (!useJobTitleCatalog) {
+			return;
+		}
+
+		const match = jobTitles.find(
+			(title) =>
+				title.name.trim().toLowerCase() === ($form.jobTitle ?? '').trim().toLowerCase()
+		);
+
+		if (!match) {
+			selectedJobTitleId = CUSTOM_JOB_TITLE_VALUE;
+			return;
+		}
+
+		if (match.payType !== $form.payType || match.payRate !== $form.payRate) {
+			selectedJobTitleId = CUSTOM_JOB_TITLE_VALUE;
+			return;
+		}
+
+		selectedJobTitleId = match.id;
+	});
 </script>
 
 {#if formError}
@@ -220,15 +296,77 @@
 			<SingleFieldErrors />
 		</Form.Field>
 
-		<Form.Field form={superform} name="jobTitle">
-			<Form.Control>
-				{#snippet children({ props })}
-					<Form.Label>Job title <span class="text-muted-foreground">(optional)</span></Form.Label>
-					<Input {...props} bind:value={$form.jobTitle} autocomplete="organization-title" />
-				{/snippet}
-			</Form.Control>
-			<SingleFieldErrors />
-		</Form.Field>
+		{#if useJobTitleCatalog}
+			<div class="space-y-2">
+				<label class="text-sm font-medium" for="payroll-employee-job-title-select">
+					Job title <span class="text-muted-foreground">(optional)</span>
+				</label>
+				<Select.Root
+					type="single"
+					value={selectedJobTitleId}
+					onValueChange={(value) => {
+						if (value) {
+							applyJobTitleSelection(value);
+						}
+					}}
+				>
+					<Select.Trigger id="payroll-employee-job-title-select" class="h-10 w-full">
+						<span class="truncate">
+							{#if selectedJobTitleId === CUSTOM_JOB_TITLE_VALUE}
+								Custom title
+							{:else}
+								{jobTitles.find((title) => title.id === selectedJobTitleId)?.name ??
+									'Select job title'}
+							{/if}
+						</span>
+					</Select.Trigger>
+					<Select.Content>
+						<Select.Group>
+							<Select.Item value={CUSTOM_JOB_TITLE_VALUE} label="Custom title">
+								Custom title
+							</Select.Item>
+							{#each jobTitles as title (title.id)}
+								<Select.Item value={title.id} label={title.name}>
+									{title.name}
+								</Select.Item>
+							{/each}
+						</Select.Group>
+					</Select.Content>
+				</Select.Root>
+				{#if selectedJobTitleId === CUSTOM_JOB_TITLE_VALUE}
+					<Form.Field form={superform} name="jobTitle">
+						<Form.Control>
+							{#snippet children({ props })}
+								<Form.Label class="sr-only">Custom job title</Form.Label>
+								<Input {...props} bind:value={$form.jobTitle} autocomplete="organization-title" />
+							{/snippet}
+						</Form.Control>
+						<SingleFieldErrors />
+					</Form.Field>
+				{:else if selectedCatalogTitle}
+					<p class="text-muted-foreground text-sm">
+						Pay: {catalogPaySummary}
+					</p>
+				{/if}
+				<p class="text-muted-foreground text-xs">
+					{#if selectedJobTitleId === CUSTOM_JOB_TITLE_VALUE}
+						Set job title and pay rate manually below.
+					{:else}
+						Pay comes from this job title. Choose Custom title to set pay manually.
+					{/if}
+				</p>
+			</div>
+		{:else}
+			<Form.Field form={superform} name="jobTitle">
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label>Job title <span class="text-muted-foreground">(optional)</span></Form.Label>
+						<Input {...props} bind:value={$form.jobTitle} autocomplete="organization-title" />
+					{/snippet}
+				</Form.Control>
+				<SingleFieldErrors />
+			</Form.Field>
+		{/if}
 	</div>
 
 	<Form.Field form={superform} name="employeeCode">
@@ -282,52 +420,54 @@
 	</Form.Field>
 
 	<div class="grid gap-5 sm:grid-cols-2">
-		<Form.Field form={superform} name="payType">
-			<Form.Control>
-				{#snippet children({ props })}
-					<Form.Label>Pay rate type</Form.Label>
-					<Select.Root type="single" bind:value={$form.payType}>
-						<Select.Trigger class="h-10 w-full" id={props.id}>
-							<span class="truncate">
-								{PAYROLL_PAY_TYPE_LABELS[$form.payType] ?? 'Select pay rate type'}
-							</span>
-						</Select.Trigger>
-						<Select.Content>
-							<Select.Group>
-								{#each PAYROLL_PAY_TYPES as payType (payType)}
-									<Select.Item value={payType} label={PAYROLL_PAY_TYPE_LABELS[payType]}>
-										{PAYROLL_PAY_TYPE_LABELS[payType]}
-									</Select.Item>
-								{/each}
-							</Select.Group>
-						</Select.Content>
-					</Select.Root>
-				{/snippet}
-			</Form.Control>
-			<SingleFieldErrors />
-		</Form.Field>
+		{#if showPayFields}
+			<Form.Field form={superform} name="payType">
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label>Pay rate type</Form.Label>
+						<Select.Root type="single" bind:value={$form.payType}>
+							<Select.Trigger class="h-10 w-full" id={props.id}>
+								<span class="truncate">
+									{PAYROLL_PAY_TYPE_LABELS[$form.payType] ?? 'Select pay rate type'}
+								</span>
+							</Select.Trigger>
+							<Select.Content>
+								<Select.Group>
+									{#each PAYROLL_PAY_TYPES as payType (payType)}
+										<Select.Item value={payType} label={PAYROLL_PAY_TYPE_LABELS[payType]}>
+											{PAYROLL_PAY_TYPE_LABELS[payType]}
+										</Select.Item>
+									{/each}
+								</Select.Group>
+							</Select.Content>
+						</Select.Root>
+					{/snippet}
+				</Form.Control>
+				<SingleFieldErrors />
+			</Form.Field>
 
-		<Form.Field form={superform} name="payRate">
-			<Form.Control>
-				{#snippet children({ props })}
-					<Form.Label required>
-						Pay rate ({currencyLabel})
-						<span class="text-muted-foreground font-normal">
-							{$form.payType === 'hourly' ? 'per hour' : 'per month'}
-						</span>
-					</Form.Label>
-					<Input
-						{...props}
-						bind:value={$form.payRate}
-						type="number"
-						min="0"
-						step={payRateStep}
-						inputmode="decimal"
-					/>
-				{/snippet}
-			</Form.Control>
-			<SingleFieldErrors />
-		</Form.Field>
+			<Form.Field form={superform} name="payRate">
+				<Form.Control>
+					{#snippet children({ props })}
+						<Form.Label required>
+							Pay rate ({currencyLabel})
+							<span class="text-muted-foreground font-normal">
+								{$form.payType === 'hourly' ? 'per hour' : 'per month'}
+							</span>
+						</Form.Label>
+						<Input
+							{...props}
+							bind:value={$form.payRate}
+							type="number"
+							min="0"
+							step={payRateStep}
+							inputmode="decimal"
+						/>
+					{/snippet}
+				</Form.Control>
+				<SingleFieldErrors />
+			</Form.Field>
+		{/if}
 	</div>
 
 	{#if deductionTypes.length > 0}
