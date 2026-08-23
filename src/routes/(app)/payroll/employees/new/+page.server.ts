@@ -2,7 +2,15 @@ import { fail } from '@sveltejs/kit';
 import { message, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import type { Actions, PageServerLoad } from './$types';
-import { createPayrollEmployeeForWorkspace } from '$lib/server/repositories/payroll-employees';
+import {
+	PAYROLL_EMPLOYEE_CODE_TAKEN_MESSAGE,
+	PAYROLL_EMPLOYEE_CREATE_FAILED_MESSAGE,
+	PAYROLL_EMPLOYEE_CREATED_MESSAGE
+} from '$lib/shared/payroll/messages';
+import {
+	createPayrollEmployeeForWorkspace,
+	isDuplicatePayrollEmployeeCodeError
+} from '$lib/server/repositories/payroll-employees';
 import { listDtrWorkSchedulesForWorkspace } from '$lib/server/repositories/dtr-work-schedules';
 import { getPayrollSettingsForWorkspace } from '$lib/server/repositories/payroll-settings';
 import {
@@ -11,10 +19,6 @@ import {
 } from '$lib/server/workspace-context';
 import { getWorkspaceHostSuffix } from '$lib/server/workspace-host';
 import { canManagePayroll } from '$lib/shared/payroll/access';
-import {
-	PAYROLL_EMPLOYEE_CREATED_MESSAGE,
-	PAYROLL_EMPLOYEE_CREATE_FAILED_MESSAGE
-} from '$lib/shared/payroll/messages';
 import {
 	createPayrollEmployeeSchema,
 	createPayrollEmployeeDefaults
@@ -90,6 +94,10 @@ export const actions: Actions = {
 				return message(form, 'Selected work schedule is invalid or no longer available.', {
 					status: 400
 				});
+			}
+
+			if (isDuplicatePayrollEmployeeCodeError(error)) {
+				return message(form, PAYROLL_EMPLOYEE_CODE_TAKEN_MESSAGE, { status: 400 });
 			}
 
 			return message(form, PAYROLL_EMPLOYEE_CREATE_FAILED_MESSAGE, { status: 500 });

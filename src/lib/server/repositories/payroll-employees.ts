@@ -9,7 +9,7 @@ import { percentToBasisPoints } from '$lib/shared/payroll/deductions';
 import { dollarsToCents } from '$lib/shared/payroll/format';
 import type { CreatePayrollEmployeeInput } from '$lib/shared/payroll/schemas';
 import { normalizePayrollPayType } from '$lib/shared/payroll/pay-rate';
-import { ObjectId } from 'mongodb';
+import { MongoServerError, ObjectId } from 'mongodb';
 
 let payrollEmployeeIndexesPromise: Promise<void> | null = null;
 
@@ -43,6 +43,32 @@ function mapEmployeeDeductions(
 				deduction.ratePercent > 0 ? percentToBasisPoints(deduction.ratePercent) : null,
 			isActive: true
 		}));
+}
+
+function buildEmployeeWriteFields(
+	data: CreatePayrollEmployeeInput,
+	currency: Parameters<typeof dollarsToCents>[1],
+	workScheduleId: ObjectId | null
+) {
+	const email = data.email?.trim() ? data.email.trim().toLowerCase() : null;
+	const jobTitle = data.jobTitle?.trim() ? data.jobTitle.trim() : null;
+	const employeeCode = data.employeeCode?.trim() ? data.employeeCode.trim() : null;
+
+	return {
+		firstName: data.firstName.trim(),
+		lastName: data.lastName.trim(),
+		email,
+		jobTitle,
+		employeeCode,
+		payType: data.payType,
+		payRateCents: dollarsToCents(data.payRate, currency),
+		deductions: mapEmployeeDeductions(data.deductions, currency),
+		workScheduleId
+	};
+}
+
+export function isDuplicatePayrollEmployeeCodeError(error: unknown): boolean {
+	return error instanceof MongoServerError && error.code === 11000;
 }
 
 function toPayrollEmployeeDto(
@@ -139,26 +165,15 @@ export async function createPayrollEmployeeForWorkspace(input: {
 
 	const collection = await getPayrollEmployeesCollection<PayrollEmployeeDocument>();
 	const now = new Date();
-	const email = input.data.email?.trim() ? input.data.email.trim().toLowerCase() : null;
-	const jobTitle = input.data.jobTitle?.trim() ? input.data.jobTitle.trim() : null;
-	const employeeCode = input.data.employeeCode?.trim() ? input.data.employeeCode.trim() : null;
-	const deductions = mapEmployeeDeductions(input.data.deductions, input.currency);
 	const workScheduleId = await resolveWorkScheduleObjectId(
 		input.workspaceId,
 		input.data.workScheduleId
 	);
+	const fields = buildEmployeeWriteFields(input.data, input.currency, workScheduleId);
 
 	const result = await collection.insertOne({
 		workspaceId: new ObjectId(input.workspaceId),
-		firstName: input.data.firstName.trim(),
-		lastName: input.data.lastName.trim(),
-		email,
-		jobTitle,
-		employeeCode,
-		payType: input.data.payType,
-		payRateCents: dollarsToCents(input.data.payRate, input.currency),
-		deductions,
-		workScheduleId,
+		...fields,
 		isActive: true,
 		createdAt: now,
 		updatedAt: now
@@ -267,4 +282,84 @@ export async function getPayrollEmployeeForWorkspace(input: {
 		: null;
 
 	return toPayrollEmployeeDto(employee, workScheduleName);
+}
+
+export async function updatePayrollEmployeeForWorkspace(input: {
+	workspaceId: string;
+	employeeId: string;
+	data: CreatePayrollEmployeeInput;
+	currency: Parameters<typeof dollarsToCents>[1];
+}): Promise<PayrollEmployeeDto | null> {
+	await ensurePayrollEmployeeIndexes();
+
+	if (!ObjectId.isValid(input.employeeId)) {
+		return null;
+	}
+
+	const collection = await getPayrollEmployeesCollection<PayrollEmployeeDocument>();
+	const workScheduleId = await resolveWorkScheduleObjectId(
+		input.workspaceId,
+		input.data.workScheduleId
+	);
+	const fields = buildEmployeeWriteFields(input.data, input.currency, workScheduleId);
+	const now = new Date();
+
+	const updated = await collection.findOneAndUpdate(
+		{
+			_id: new ObjectId(input.employeeId),
+			workspaceId: new ObjectId(input.workspaceId),
+			isActive: true
+		},
+		{
+			$set: {
+				...fields,
+				updatedAt: now
+			}
+		},
+		{
+			projection: PAYROLL_EMPLOYEE_PROJECTION,
+			returnDocument: 'after'
+		}
+	);
+
+	if (!updated) {
+		return null;
+	}
+
+	const workScheduleName = updated.workScheduleId
+		? ((await getDtrWorkScheduleForWorkspace({
+				workspaceId: input.workspaceId,
+				scheduleId: updated.workScheduleId.toString()
+			}))?.name ?? null)
+		: null;
+
+	return toPayrollEmployeeDto(updated, workScheduleName);
+}
+
+export async function deactivatePayrollEmployeeForWorkspace(input: {
+	workspaceId: string;
+	employeeId: string;
+}): Promise<boolean> {
+	await ensurePayrollEmployeeIndexes();
+
+	if (!ObjectId.isValid(input.employeeId)) {
+		return false;
+	}
+
+	const collection = await getPayrollEmployeesCollection<PayrollEmployeeDocument>();
+	const result = await collection.updateOne(
+		{
+			_id: new ObjectId(input.employeeId),
+			workspaceId: new ObjectId(input.workspaceId),
+			isActive: true
+		},
+		{
+			$set: {
+				isActive: false,
+				updatedAt: new Date()
+			}
+		}
+	);
+
+	return result.matchedCount === 1;
 }

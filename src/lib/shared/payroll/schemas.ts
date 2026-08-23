@@ -75,6 +75,22 @@ export const createPayrollEmployeeSchema = z.object({
 
 export type CreatePayrollEmployeeInput = z.infer<typeof createPayrollEmployeeSchema>;
 
+export const updatePayrollEmployeeSchema = createPayrollEmployeeSchema;
+
+export type UpdatePayrollEmployeeInput = CreatePayrollEmployeeInput;
+
+function isValidObjectIdString(value: string): boolean {
+	return /^[a-f\d]{24}$/i.test(value);
+}
+
+export const payrollEmployeeIdParamSchema = z.object({
+	id: z
+		.string()
+		.trim()
+		.min(1, 'Employee id is required.')
+		.refine(isValidObjectIdString, 'Invalid employee id.')
+});
+
 export const createPayrollEmployeeDefaults: CreatePayrollEmployeeInput = {
 	firstName: '',
 	lastName: '',

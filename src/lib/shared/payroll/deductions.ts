@@ -1,3 +1,6 @@
+import type { PayrollCurrency } from '$lib/shared/payroll/currency';
+import { centsToMajorUnits } from '$lib/shared/payroll/format';
+
 export const PAYROLL_DEDUCTION_KINDS = ['fixed', 'percentage'] as const;
 
 export type PayrollDeductionKind = (typeof PAYROLL_DEDUCTION_KINDS)[number];
@@ -78,4 +81,60 @@ export function buildEmployeeDeductionFormDefaults(
 		amount: type.kind === 'fixed' ? type.defaultAmountCents / 100 : 0,
 		ratePercent: type.kind === 'percentage' ? basisPointsToPercent(type.defaultRateBasisPoints) : 0
 	}));
+}
+
+export function mapPayrollEmployeeDeductionsToFormDefaults(
+	employeeDeductions: PayrollEmployeeDeduction[],
+	types: PayrollDeductionType[],
+	currency: PayrollCurrency
+): Array<{
+	typeId: string;
+	enabled: boolean;
+	amount: number;
+	ratePercent: number;
+}> {
+	const byTypeId = new Map(employeeDeductions.map((deduction) => [deduction.typeId, deduction]));
+
+	return getActivePayrollDeductionTypes(types).map((type) => {
+		const existing = byTypeId.get(type.id);
+
+		return {
+			typeId: type.id,
+			enabled: existing?.isActive ?? false,
+			amount:
+				existing?.amountCents != null
+					? centsToMajorUnits(existing.amountCents, currency)
+					: type.kind === 'fixed'
+						? type.defaultAmountCents / 100
+						: 0,
+			ratePercent:
+				existing?.rateBasisPoints != null
+					? basisPointsToPercent(existing.rateBasisPoints)
+					: type.kind === 'percentage'
+						? basisPointsToPercent(type.defaultRateBasisPoints)
+						: 0
+		};
+	});
+}
+
+export function mapPayrollEmployeeToFormInput(
+	employee: import('$lib/shared/models/payroll-employee').PayrollEmployeeDto,
+	deductionTypes: PayrollDeductionType[],
+	currency: PayrollCurrency
+): import('$lib/shared/payroll/schemas').UpdatePayrollEmployeeInput {
+	return {
+		firstName: employee.firstName,
+		lastName: employee.lastName,
+		email: employee.email ?? '',
+		jobTitle: employee.jobTitle ?? '',
+		employeeCode: employee.employeeCode ?? '',
+		payType: employee.payType,
+		payRate: centsToMajorUnits(employee.payRateCents, currency),
+		workScheduleId: employee.workScheduleId ?? '',
+		deductions: mapPayrollEmployeeDeductionsToFormDefaults(
+			employee.deductions,
+			deductionTypes,
+			currency
+		)
+	};
 }

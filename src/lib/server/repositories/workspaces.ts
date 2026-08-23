@@ -182,6 +182,32 @@ export async function approveWorkspaceRequest(input: {
 	return result ?? null;
 }
 
+export async function updateWorkspaceEnabledPackages(input: {
+	workspaceId: string;
+	enabledPackages: WorkspacePackageId[];
+}): Promise<WorkspaceDocument | null> {
+	if (!ObjectId.isValid(input.workspaceId)) {
+		return null;
+	}
+
+	const workspaces = await getWorkspacesCollection<WorkspaceDocument>();
+	const result = await workspaces.findOneAndUpdate(
+		{
+			_id: new ObjectId(input.workspaceId),
+			status: WORKSPACE_STATUSES.ACTIVE
+		},
+		{
+			$set: {
+				enabledPackages: input.enabledPackages,
+				updatedAt: new Date()
+			}
+		},
+		{ returnDocument: 'after', projection: workspaceProjection }
+	);
+
+	return result ?? null;
+}
+
 export async function updateWorkspaceBrandLogoUrl(input: {
 	workspaceId: string;
 	brandLogoUrl: string | null;

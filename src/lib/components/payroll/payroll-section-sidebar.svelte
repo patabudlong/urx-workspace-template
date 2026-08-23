@@ -20,7 +20,7 @@
 	</div>
 
 	<nav class="flex flex-col gap-2 px-2 pt-0 pb-2">
-		<div>
+		<div data-tour="payroll-nav">
 			<p class="text-muted-foreground px-3 py-1.5 text-xs font-medium">Manage</p>
 			<div class="flex gap-1 overflow-x-auto">
 				{#each items as item (item.href)}
@@ -42,6 +42,8 @@
 			</div>
 		</div>
 
-		<PayrollSettingsSectionMenu />
+		<div data-tour="payroll-settings">
+			<PayrollSettingsSectionMenu />
+		</div>
 	</nav>
 </aside>

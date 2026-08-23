@@ -1054,6 +1054,189 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 					}
 				}
 			},
+			'/payroll/employees/{id}': {
+				get: {
+					tags: ['Payroll'],
+					summary: 'Get payroll employee',
+					description: 'Returns a single active employee for the active workspace.',
+					operationId: 'getPayrollEmployee',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{
+							name: 'id',
+							in: 'path',
+							required: true,
+							schema: { type: 'string' }
+						}
+					],
+					responses: {
+						'200': {
+							description: 'Employee record',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/PayrollEmployeeSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Payroll access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'Employee not found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				patch: {
+					tags: ['Payroll'],
+					summary: 'Update payroll employee',
+					description: 'Updates an active employee record for the active workspace.',
+					operationId: 'updatePayrollEmployee',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{
+							name: 'id',
+							in: 'path',
+							required: true,
+							schema: { type: 'string' }
+						}
+					],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/PayrollEmployeeCreateRequest' }
+							}
+						}
+					},
+					responses: {
+						'200': {
+							description: 'Updated employee',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/PayrollEmployeeSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Payroll access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'Employee not found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				delete: {
+					tags: ['Payroll'],
+					summary: 'Deactivate payroll employee',
+					description:
+						'Soft-deactivates an employee (sets isActive to false). Historical records are preserved.',
+					operationId: 'deactivatePayrollEmployee',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{
+							name: 'id',
+							in: 'path',
+							required: true,
+							schema: { type: 'string' }
+						}
+					],
+					responses: {
+						'200': {
+							description: 'Employee deactivated',
+							content: {
+								'application/json': {
+									schema: {
+										type: 'object',
+										required: ['data', 'meta'],
+										properties: {
+											data: {
+												type: 'object',
+												required: ['id', 'isActive'],
+												properties: {
+													id: { type: 'string' },
+													isActive: { type: 'boolean', enum: [false] }
+												}
+											},
+											meta: { $ref: '#/components/schemas/ApiMeta' }
+										}
+									}
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Payroll access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'Employee not found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
 			'/payroll/settings': {
 				get: {
 					tags: ['Payroll'],

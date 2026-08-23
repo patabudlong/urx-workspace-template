@@ -1,15 +1,24 @@
 <script lang="ts">
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
+	import PayrollModuleTour from '$lib/components/payroll/payroll-module-tour.svelte';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import CalendarRangeIcon from '@lucide/svelte/icons/calendar-range';
+	import CircleHelpIcon from '@lucide/svelte/icons/circle-help';
 	import UsersIcon from '@lucide/svelte/icons/users';
 
 	let { data } = $props();
 
 	let runCount = $state<number | null>(null);
 	let employeeCount = $state<number | null>(null);
+	let tourActive = $state(false);
+	let tourRestartKey = $state(0);
+
+	function showTour() {
+		tourActive = true;
+		tourRestartKey += 1;
+	}
 
 	$effect(() => {
 		const nextRunCount = data.runCount as Promise<number> | number;
@@ -46,18 +55,22 @@
 		description="Track employees and pay runs for your workspace. Add employees first, then create draft pay runs for each period."
 	>
 		{#snippet actions()}
-			<Button href="/payroll/employees" variant="outline" class="h-10">
+			<Button type="button" variant="outline" class="h-10" onclick={showTour}>
+				<CircleHelpIcon class="size-4" aria-hidden="true" />
+				Show tour
+			</Button>
+			<Button href="/payroll/employees" variant="outline" class="h-10" data-tour="payroll-actions">
 				<UsersIcon class="size-4" aria-hidden="true" />
 				Employees
 			</Button>
-			<Button href="/payroll/runs" class="h-10">
+			<Button href="/payroll/runs" class="h-10" data-tour="payroll-actions">
 				<CalendarRangeIcon class="size-4" aria-hidden="true" />
 				Pay runs
 			</Button>
 		{/snippet}
 	</PageHeader>
 
-	<div class="grid gap-6 md:grid-cols-2">
+	<div class="grid gap-6 md:grid-cols-2" data-tour="payroll-stats">
 		<Card.Root>
 			<Card.Header>
 				<Card.Title>Employees</Card.Title>
@@ -87,3 +100,5 @@
 		</Card.Root>
 	</div>
 </div>
+
+<PayrollModuleTour bind:active={tourActive} autoStart restartKey={tourRestartKey} />
