@@ -55,18 +55,13 @@ function createClientPromise(): Promise<MongoClient> {
 		);
 	}
 
-	const client = new MongoClient(uri, getClientOptions(uri));
-
-	if (import.meta.env.DEV) {
-		if (!globalForMongo._mongoClientPromise || globalForMongo._mongoClientUri !== uri) {
-			globalForMongo._mongoClientUri = uri;
-			globalForMongo._mongoClientPromise = client.connect();
-		}
-
-		return globalForMongo._mongoClientPromise;
+	if (!globalForMongo._mongoClientPromise || globalForMongo._mongoClientUri !== uri) {
+		globalForMongo._mongoClientUri = uri;
+		const client = new MongoClient(uri, getClientOptions(uri));
+		globalForMongo._mongoClientPromise = client.connect();
 	}
 
-	return client.connect();
+	return globalForMongo._mongoClientPromise;
 }
 
 export async function getDb(): Promise<Db> {
