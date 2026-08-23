@@ -1,6 +1,7 @@
 <script lang="ts">
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
 	import PayrollDeactivateEmployeeDialog from '$lib/components/payroll/payroll-deactivate-employee-dialog.svelte';
+	import PayrollEmployeeAvatar from '$lib/components/payroll/payroll-employee-avatar.svelte';
 	import PayrollEmployeeForm from '$lib/components/payroll/payroll-employee-form.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -9,6 +10,7 @@
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import type { SubmitFunction } from '@sveltejs/kit';
+	import { invalidateAll } from '$app/navigation';
 
 	let { data } = $props();
 
@@ -49,6 +51,25 @@
 			</Card.Description>
 		</Card.Header>
 		<Card.Content>
+			<div class="bg-muted/30 mb-6 flex items-center gap-4 rounded-xl border p-4">
+				<PayrollEmployeeAvatar
+					firstName={data.employee.firstName}
+					lastName={data.employee.lastName}
+					photoUrl={data.employee.photoUrl}
+					updatedAt={data.employee.updatedAt}
+					class="size-16 text-lg"
+				/>
+				<div class="min-w-0">
+					<p class="truncate text-lg font-semibold tracking-tight">{data.employee.fullName}</p>
+					{#if data.employee.email}
+						<p class="text-muted-foreground truncate text-sm">{data.employee.email}</p>
+					{/if}
+					{#if data.employee.jobTitle}
+						<p class="text-muted-foreground truncate text-sm">{data.employee.jobTitle}</p>
+					{/if}
+				</div>
+			</div>
+
 			{#if showSuccess}
 				<StatusAlert
 					variant="success"
@@ -63,9 +84,12 @@
 				deductionTypes={data.deductionTypes}
 				workSchedules={data.workSchedules}
 				payrollCurrency={data.payrollCurrency}
+				currentPhotoUrl={data.employeePhotoUrl}
+				formAction="?/update"
 				successMessage={PAYROLL_EMPLOYEE_UPDATED_MESSAGE}
-				onSuccess={() => {
+				onSuccess={async () => {
 					showSuccess = true;
+					await invalidateAll();
 				}}
 			>
 				{#snippet actions({ submitting })}

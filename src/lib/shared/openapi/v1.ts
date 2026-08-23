@@ -2733,6 +2733,8 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						fullName: { type: 'string' },
 						email: { type: 'string', format: 'email', nullable: true },
 						jobTitle: { type: 'string', nullable: true },
+						employeeCode: { type: 'string', nullable: true },
+						photoUrl: { type: 'string', format: 'uri', nullable: true },
 						payType: { type: 'string', enum: ['hourly', 'monthly'] },
 						payRateCents: { type: 'integer', minimum: 0 },
 						isActive: { type: 'boolean' },

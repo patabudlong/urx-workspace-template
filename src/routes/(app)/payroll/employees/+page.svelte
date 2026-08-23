@@ -1,6 +1,7 @@
 <script lang="ts">
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
 	import ListSearchInput from '$lib/components/list/list-search-input.svelte';
+	import PayrollEmployeeAvatar from '$lib/components/payroll/payroll-employee-avatar.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -135,12 +136,21 @@
 								{#each filteredEmployees as employee (employee.id)}
 									<Table.Row>
 										<Table.Cell class="font-medium whitespace-nowrap">
-											<a
-												href="/payroll/employees/{employee.id}/edit"
-												class="hover:text-primary hover:underline"
-											>
-												{employee.fullName}
-											</a>
+											<div class="flex min-w-0 items-center gap-3">
+												<PayrollEmployeeAvatar
+													firstName={employee.firstName}
+													lastName={employee.lastName}
+													photoUrl={employee.photoUrl}
+													updatedAt={employee.updatedAt}
+													class="size-8"
+												/>
+												<a
+													href="/payroll/employees/{employee.id}/edit"
+													class="hover:text-primary truncate hover:underline"
+												>
+													{employee.fullName}
+												</a>
+											</div>
 										</Table.Cell>
 										<Table.Cell class="text-muted-foreground whitespace-nowrap">
 											{formatCell(employee.employeeCode)}

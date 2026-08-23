@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
+	import PayrollEmployeePhotoUpload from '$lib/components/payroll/payroll-employee-photo-upload.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import * as Form from '$lib/components/ui/form/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -31,6 +32,8 @@
 		deductionTypes,
 		workSchedules,
 		payrollCurrency,
+		currentPhotoUrl = null,
+		formAction,
 		resetForm = false,
 		successMessage,
 		onSuccess,
@@ -40,6 +43,8 @@
 		deductionTypes: PayrollDeductionType[];
 		workSchedules: WorkScheduleOption[];
 		payrollCurrency: PayrollCurrency;
+		currentPhotoUrl?: string | null;
+		formAction?: string;
 		resetForm?: boolean;
 		successMessage: string;
 		onSuccess?: () => void | Promise<void>;
@@ -47,19 +52,51 @@
 	} = $props();
 
 	let submitting = $state(false);
+	let photoFile = $state<File | null>(null);
+	let photoPreview = $state<string | null>(null);
+	let removePhoto = $state(false);
+	let photoError = $state<string | null>(null);
+
+	const displayPhotoUrl = $derived(
+		removePhoto ? null : (photoPreview ?? currentPhotoUrl)
+	);
 
 	const superform = superForm(untrack(() => initialForm), {
 		validators: zod4Client(createPayrollEmployeeSchema),
 		dataType: 'json',
-		validationMethod: 'onsubmit',
 		resetForm: untrack(() => resetForm),
-		onSubmit: () => {
+		validationMethod: 'onsubmit',
+		onSubmit: ({ formData, validators }) => {
+			validators(false);
 			submitting = true;
+			photoError = null;
+
+			if (photoFile) {
+				formData.set('photo', photoFile);
+			}
+
+			if (removePhoto) {
+				formData.set('removePhoto', 'true');
+
+				if (!photoFile) {
+					formData.set(
+						'photo',
+						new File([], 'remove', { type: 'application/octet-stream' })
+					);
+				}
+			}
 		},
 		onUpdated: async ({ form: updatedForm }) => {
 			submitting = false;
 
 			if (updatedForm.message === successMessage) {
+				if (photoPreview) {
+					URL.revokeObjectURL(photoPreview);
+				}
+
+				photoFile = null;
+				photoPreview = null;
+				removePhoto = false;
 				await onSuccess?.();
 			}
 		},
@@ -79,6 +116,40 @@
 			$formMessage.length > 0 &&
 			$formMessage !== successMessage
 	);
+
+	function setPhoto(file: File | null) {
+		photoError = null;
+		removePhoto = false;
+
+		if (photoPreview) {
+			URL.revokeObjectURL(photoPreview);
+		}
+
+		if (!file) {
+			photoFile = null;
+			photoPreview = null;
+			return;
+		}
+
+		photoFile = file;
+		photoPreview = URL.createObjectURL(file);
+	}
+
+	function clearPhoto() {
+		photoError = null;
+
+		if (photoPreview) {
+			URL.revokeObjectURL(photoPreview);
+		}
+
+		photoFile = null;
+		photoPreview = null;
+		removePhoto = true;
+	}
+
+	function handlePhotoError(message: string) {
+		photoError = message;
+	}
 </script>
 
 {#if formError}
@@ -90,7 +161,32 @@
 	/>
 {/if}
 
-<form method="POST" use:enhance class="space-y-5">
+{#if photoError}
+	<StatusAlert
+		variant="danger"
+		title="Invalid photo"
+		description={photoError}
+		class="mb-6"
+	/>
+{/if}
+
+<form method="POST" action={formAction} enctype="multipart/form-data" use:enhance class="space-y-5">
+	<div class="grid gap-2">
+		<label class="text-sm font-medium" for="payroll-employee-photo">
+			Employee photo <span class="text-muted-foreground">(optional)</span>
+		</label>
+		<PayrollEmployeePhotoUpload
+			previewUrl={displayPhotoUrl}
+			fileName={photoFile?.name ?? null}
+			onchange={setPhoto}
+			onclear={clearPhoto}
+			onerror={handlePhotoError}
+		/>
+		<p class="text-muted-foreground text-xs">
+			PNG, JPG, or WebP · up to 2 MB. Helps identify employees in payroll lists.
+		</p>
+	</div>
+
 	<div class="grid gap-5 sm:grid-cols-2">
 		<Form.Field form={superform} name="firstName">
 			<Form.Control>

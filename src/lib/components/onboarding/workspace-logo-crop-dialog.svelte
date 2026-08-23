@@ -15,11 +15,19 @@
 	let {
 		open = $bindable(false),
 		file = null,
+		title = 'Crop your logo',
+		description = 'Drag to reposition and zoom so your logo fits the square frame.',
+		cropFileName = 'workspace-logo.png',
+		previewAlt = 'Logo crop preview',
 		onconfirm,
 		oncancel
 	}: {
 		open?: boolean;
 		file?: File | null;
+		title?: string;
+		description?: string;
+		cropFileName?: string;
+		previewAlt?: string;
 		onconfirm?: (file: File) => void;
 		oncancel?: () => void;
 	} = $props();
@@ -144,7 +152,7 @@
 
 		try {
 			const cropped = await cropImageToSquareFile(image, transform, {
-				fileName: file.name.replace(/\.[^.]+$/, '.png') || 'workspace-logo.png'
+				fileName: file.name.replace(/\.[^.]+$/, '.png') || cropFileName
 			});
 			onconfirm?.(cropped);
 			open = false;
@@ -160,9 +168,9 @@
 	<Dialog.Content class="gap-0 overflow-hidden p-0 sm:max-w-md" showCloseButton={false}>
 		<div class="space-y-5 p-6">
 			<Dialog.Header class="space-y-1 text-left">
-				<Dialog.Title>Crop your logo</Dialog.Title>
+				<Dialog.Title>{title}</Dialog.Title>
 				<Dialog.Description>
-					Drag to reposition and zoom so your logo fits the square frame.
+					{description}
 				</Dialog.Description>
 			</Dialog.Header>
 
@@ -175,7 +183,7 @@
 					<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 					<img
 						src={image.src}
-						alt="Logo crop preview"
+						alt={previewAlt}
 						class={cn(
 							'absolute max-w-none touch-none select-none',
 							isDragging ? 'cursor-grabbing' : 'cursor-grab'

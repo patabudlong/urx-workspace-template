@@ -10,6 +10,7 @@ export type PayrollEmployeeDocument = {
 	email: string | null;
 	jobTitle: string | null;
 	employeeCode: string | null;
+	photoUrl: string | null;
 	payType: PayrollPayType;
 	payRateCents: number;
 	deductions: PayrollEmployeeDeduction[];
@@ -28,6 +29,7 @@ export type PayrollEmployeeDto = {
 	email: string | null;
 	jobTitle: string | null;
 	employeeCode: string | null;
+	photoUrl: string | null;
 	payType: PayrollPayType;
 	payRateCents: number;
 	deductions: PayrollEmployeeDeduction[];

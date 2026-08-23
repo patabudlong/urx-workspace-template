@@ -13,6 +13,8 @@ import {
 } from '$lib/server/repositories/payroll-employees';
 import { listDtrWorkSchedulesForWorkspace } from '$lib/server/repositories/dtr-work-schedules';
 import { getPayrollSettingsForWorkspace } from '$lib/server/repositories/payroll-settings';
+import { applyPayrollEmployeePhotoChanges } from '$lib/server/payroll/employee-photo-actions';
+import { parsePayrollEmployeeFormSubmission } from '$lib/server/payroll/employee-form-submission';
 import {
 	listUserWorkspaceContexts,
 	resolveActiveWorkspaceContext
@@ -64,7 +66,7 @@ export const load: PageServerLoad = async ({ parent }) => {
 
 export const actions: Actions = {
 	default: async ({ request, url, locals }) => {
-		const form = await superValidate(request, zod4(createPayrollEmployeeSchema));
+		const { form, photo } = await parsePayrollEmployeeFormSubmission(request);
 
 		if (!locals.user) {
 			return fail(401, { form });
@@ -84,11 +86,23 @@ export const actions: Actions = {
 		const settings = await getPayrollSettingsForWorkspace(workspace.workspaceId);
 
 		try {
-			await createPayrollEmployeeForWorkspace({
+			const employee = await createPayrollEmployeeForWorkspace({
 				workspaceId: workspace.workspaceId,
 				data: form.data,
 				currency: settings.currency
 			});
+
+			if (photo) {
+				const photoResult = await applyPayrollEmployeePhotoChanges({
+					workspaceId: workspace.workspaceId,
+					employeeId: employee.id,
+					photo
+				});
+
+				if (!photoResult.ok) {
+					return message(form, photoResult.message, { status: 400 });
+				}
+			}
 		} catch (error) {
 			if (error instanceof Error && error.message === 'Invalid work schedule') {
 				return message(form, 'Selected work schedule is invalid or no longer available.', {

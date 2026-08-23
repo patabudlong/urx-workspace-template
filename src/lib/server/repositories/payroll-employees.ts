@@ -20,6 +20,7 @@ const PAYROLL_EMPLOYEE_PROJECTION = {
 	email: 1,
 	jobTitle: 1,
 	employeeCode: 1,
+	photoUrl: 1,
 	payType: 1,
 	payRateCents: 1,
 	deductions: 1,
@@ -84,6 +85,7 @@ function toPayrollEmployeeDto(
 		email: doc.email,
 		jobTitle: doc.jobTitle,
 		employeeCode: doc.employeeCode ?? null,
+		photoUrl: doc.photoUrl ?? null,
 		payType: normalizePayrollPayType(doc.payType),
 		payRateCents: doc.payRateCents,
 		deductions: doc.deductions ?? [],
@@ -313,6 +315,52 @@ export async function updatePayrollEmployeeForWorkspace(input: {
 		{
 			$set: {
 				...fields,
+				updatedAt: now
+			}
+		},
+		{
+			projection: PAYROLL_EMPLOYEE_PROJECTION,
+			returnDocument: 'after'
+		}
+	);
+
+	if (!updated) {
+		return null;
+	}
+
+	const workScheduleName = updated.workScheduleId
+		? ((await getDtrWorkScheduleForWorkspace({
+				workspaceId: input.workspaceId,
+				scheduleId: updated.workScheduleId.toString()
+			}))?.name ?? null)
+		: null;
+
+	return toPayrollEmployeeDto(updated, workScheduleName);
+}
+
+export async function updatePayrollEmployeePhotoUrl(input: {
+	workspaceId: string;
+	employeeId: string;
+	photoUrl: string | null;
+}): Promise<PayrollEmployeeDto | null> {
+	await ensurePayrollEmployeeIndexes();
+
+	if (!ObjectId.isValid(input.employeeId)) {
+		return null;
+	}
+
+	const collection = await getPayrollEmployeesCollection<PayrollEmployeeDocument>();
+	const now = new Date();
+
+	const updated = await collection.findOneAndUpdate(
+		{
+			_id: new ObjectId(input.employeeId),
+			workspaceId: new ObjectId(input.workspaceId),
+			isActive: true
+		},
+		{
+			$set: {
+				photoUrl: input.photoUrl,
 				updatedAt: now
 			}
 		},

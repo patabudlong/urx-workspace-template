@@ -10,6 +10,8 @@ import {
 } from '$lib/server/repositories/payroll-employees';
 import { listDtrWorkSchedulesForWorkspace } from '$lib/server/repositories/dtr-work-schedules';
 import { getPayrollSettingsForWorkspace } from '$lib/server/repositories/payroll-settings';
+import { applyPayrollEmployeePhotoChanges } from '$lib/server/payroll/employee-photo-actions';
+import { parsePayrollEmployeeUpdateFormSubmission } from '$lib/server/payroll/employee-form-submission';
 import {
 	listUserWorkspaceContexts,
 	resolveActiveWorkspaceContext
@@ -24,6 +26,7 @@ import {
 	PAYROLL_EMPLOYEE_UPDATED_MESSAGE
 } from '$lib/shared/payroll/messages';
 import { updatePayrollEmployeeSchema } from '$lib/shared/payroll/schemas';
+import { buildPayrollEmployeePhotoDisplayUrl } from '$lib/shared/payroll/employee-photo';
 
 export const load: PageServerLoad = async ({ parent, params }) => {
 	const { workspace, canManagePayroll: canManage } = await parent();
@@ -50,6 +53,10 @@ export const load: PageServerLoad = async ({ parent, params }) => {
 	return {
 		form,
 		employee,
+		employeePhotoUrl: buildPayrollEmployeePhotoDisplayUrl({
+			photoUrl: employee.photoUrl,
+			updatedAt: employee.updatedAt
+		}),
 		payrollCurrency: settings.currency,
 		deductionTypes,
 		workSchedules: workSchedules.map(({ id, name }) => ({ id, name }))
@@ -57,8 +64,8 @@ export const load: PageServerLoad = async ({ parent, params }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request, url, locals, params }) => {
-		const form = await superValidate(request, zod4(updatePayrollEmployeeSchema));
+	update: async ({ request, url, locals, params }) => {
+		const { form, photo, removePhoto } = await parsePayrollEmployeeUpdateFormSubmission(request);
 
 		if (!locals.user) {
 			return fail(401, { form });
@@ -87,6 +94,19 @@ export const actions: Actions = {
 
 			if (!updated) {
 				return message(form, PAYROLL_EMPLOYEE_NOT_FOUND_MESSAGE, { status: 404 });
+			}
+
+			if (photo || removePhoto) {
+				const photoResult = await applyPayrollEmployeePhotoChanges({
+					workspaceId: workspace.workspaceId,
+					employeeId: params.id,
+					photo,
+					removePhoto
+				});
+
+				if (!photoResult.ok) {
+					return message(form, photoResult.message, { status: 400 });
+				}
 			}
 		} catch (error) {
 			if (error instanceof Error && error.message === 'Invalid work schedule') {
