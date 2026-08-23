@@ -1,9 +1,29 @@
 import { updateWorkspaceEnabledPackages } from '$lib/server/repositories/workspaces';
 import { isWorkspaceOwner } from '$lib/navigation/app-nav';
+import { listDeployedWorkspacePackageIds } from '$lib/server/workspace-packages/installed';
 import {
+	WORKSPACE_PACKAGE_IDS,
 	normalizeEnabledPackages,
 	type WorkspacePackageId
 } from '$lib/shared/workspace-packages';
+
+export function applyWorkspaceModuleDependencies(
+	enabledPackages: readonly WorkspacePackageId[],
+	deployedPackageIds: readonly WorkspacePackageId[]
+): WorkspacePackageId[] {
+	const deployed = new Set(deployedPackageIds);
+	const selected = new Set(normalizeEnabledPackages(enabledPackages));
+
+	if (
+		selected.has(WORKSPACE_PACKAGE_IDS.DTR) &&
+		deployed.has(WORKSPACE_PACKAGE_IDS.PAYROLL) &&
+		!selected.has(WORKSPACE_PACKAGE_IDS.PAYROLL)
+	) {
+		selected.add(WORKSPACE_PACKAGE_IDS.PAYROLL);
+	}
+
+	return normalizeEnabledPackages([...selected]);
+}
 
 export type UpdateWorkspaceModulesForWebResult =
 	| { ok: true; enabledPackages: WorkspacePackageId[] }
@@ -20,7 +40,10 @@ export async function updateWorkspaceModulesForWeb(input: {
 
 	const updated = await updateWorkspaceEnabledPackages({
 		workspaceId: input.workspaceId,
-		enabledPackages: input.enabledPackages
+		enabledPackages: applyWorkspaceModuleDependencies(
+			input.enabledPackages,
+			await listDeployedWorkspacePackageIds()
+		)
 	});
 
 	if (!updated) {

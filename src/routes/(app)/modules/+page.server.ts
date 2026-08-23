@@ -10,6 +10,7 @@ import {
 	filterEnabledPackagesForDeployment,
 	listDeployableWorkspacePackages
 } from '$lib/server/workspace-packages/installed';
+import { applyWorkspaceModuleDependencies } from '$lib/server/team/workspace-modules';
 import { isWorkspaceOwner } from '$lib/navigation/app-nav';
 import {
 	WORKSPACE_MODULES_INVALID_SELECTION_MESSAGE,
@@ -69,7 +70,7 @@ export const actions: Actions = {
 		}
 
 		const deployablePackages = await listDeployableWorkspacePackages();
-		const enabledPackages = filterEnabledPackagesForDeployment(
+		const enabledPackages = applyWorkspaceModuleDependencies(
 			parsedPackages.data,
 			deployablePackages.map((entry) => entry.id)
 		);

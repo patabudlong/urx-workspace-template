@@ -69,6 +69,13 @@
 
 		if (enabled) {
 			next.add(packageId);
+
+			if (
+				packageId === WORKSPACE_PACKAGE_IDS.DTR &&
+				data.deployablePackages.some((entry) => entry.id === WORKSPACE_PACKAGE_IDS.PAYROLL)
+			) {
+				next.add(WORKSPACE_PACKAGE_IDS.PAYROLL);
+			}
 		} else {
 			next.delete(packageId);
 		}
@@ -162,6 +169,11 @@
 						iconClass={packageIconClasses[workspacePackage.id]}
 						settingsHref={packageSettingsHrefs[workspacePackage.id]}
 						moduleHref={packageModuleHrefs[workspacePackage.id]}
+						helperText={
+							workspacePackage.id === WORKSPACE_PACKAGE_IDS.DTR
+								? 'Requires Payroll to be enabled for employee time records.'
+								: undefined
+						}
 						enabled={isPackageSelected(workspacePackage.id)}
 						onToggle={(enabled) => togglePackage(workspacePackage.id, enabled)}
 					/>

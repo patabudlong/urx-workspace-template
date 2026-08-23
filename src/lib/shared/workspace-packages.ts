@@ -40,7 +40,7 @@ export const WORKSPACE_PACKAGE_CATALOG: WorkspacePackageMeta[] = [
 		id: WORKSPACE_PACKAGE_IDS.DTR,
 		label: 'DTR',
 		description:
-			'Enable DTR to track daily time records, schedules, and attendance across your workspace.'
+			'Track daily time records, work schedules, and attendance linked to payroll employees.'
 	}
 ];
 

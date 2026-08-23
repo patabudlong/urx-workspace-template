@@ -24,6 +24,7 @@
 		enabled,
 		settingsHref,
 		moduleHref,
+		helperText,
 		onToggle
 	}: {
 		workspacePackage: WorkspacePackageMeta;
@@ -32,6 +33,7 @@
 		enabled: boolean;
 		settingsHref: string;
 		moduleHref: string;
+		helperText?: string;
 		onToggle: (enabled: boolean) => void;
 	} = $props();
 
@@ -79,6 +81,9 @@
 			<p class="text-muted-foreground text-sm leading-relaxed">
 				{workspacePackage.description}
 			</p>
+			{#if helperText}
+				<p class="text-muted-foreground text-xs leading-relaxed">{helperText}</p>
+			{/if}
 		</div>
 	</Card.Content>
 
