@@ -2,6 +2,8 @@ import { isRestDay, type DtrWeekDay } from '$lib/shared/dtr/weekdays';
 import { isWorkScheduleRestDay } from '$lib/shared/dtr/work-schedule';
 import type { DtrDayStatus } from '$lib/shared/dtr/status';
 import type { DtrDayDto } from '$lib/shared/models/dtr-day';
+import type { DtrHolidayEntry, DtrHolidayCalendarRates } from '$lib/shared/dtr/holidays';
+import { getHolidayRatesForCategory } from '$lib/shared/dtr/holidays';
 import type { DtrWorkScheduleDto } from '$lib/shared/models/dtr-work-schedule';
 
 export type DtrCalendarCell = {
@@ -11,6 +13,8 @@ export type DtrCalendarCell = {
 	isRestDay: boolean;
 	status: DtrDayStatus;
 	recordId: string | null;
+	holidayName: string | null;
+	holidayPayPercent: number | null;
 };
 
 export function getMonthDateRange(month: string): { start: string; end: string; days: string[] } {
@@ -74,18 +78,28 @@ export function buildEmployeeMonthCalendar(input: {
 	restDays: DtrWeekDay[];
 	workSchedule?: DtrWorkScheduleDto | null;
 	records: DtrDayDto[];
+	holidays?: DtrHolidayEntry[];
+	holidayRates?: DtrHolidayCalendarRates | null;
 }): DtrCalendarCell[] {
 	const { days } = getMonthDateRange(input.month);
 	const recordByDate = new Map(input.records.map((record) => [record.date, record]));
+	const holidayByDate = new Map((input.holidays ?? []).map((holiday) => [holiday.date, holiday]));
 
 	return days.map((date) => {
 		const record = recordByDate.get(date) ?? null;
+		const holiday = holidayByDate.get(date) ?? null;
 		const status = resolveDtrDayStatus({
 			date,
 			restDays: input.restDays,
 			workSchedule: input.workSchedule,
 			record
 		});
+		let holidayPayPercent = record?.holidayPayPercent ?? null;
+
+		if (holidayPayPercent === null && holiday && input.holidayRates) {
+			const categoryRates = getHolidayRatesForCategory(input.holidayRates, holiday.category);
+			holidayPayPercent = categoryRates.unworkedPercent;
+		}
 
 		return {
 			date,
@@ -97,7 +111,9 @@ export function buildEmployeeMonthCalendar(input: {
 				workSchedule: input.workSchedule
 			}),
 			status,
-			recordId: record?.id ?? null
+			recordId: record?.id ?? null,
+			holidayName: record?.holidayName ?? holiday?.name ?? null,
+			holidayPayPercent
 		};
 	});
 }

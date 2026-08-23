@@ -1,5 +1,6 @@
 import type { ObjectId } from 'mongodb';
 import type { DtrApprovalStatus, DtrDaySource, DtrDayStatus } from '$lib/shared/dtr/status';
+import type { DtrHolidayCategory } from '$lib/shared/dtr/holidays';
 
 export type DtrPunch = {
 	type: 'in' | 'out';
@@ -19,6 +20,10 @@ export type DtrDayDocument = {
 	source: DtrDaySource;
 	approvalStatus: DtrApprovalStatus;
 	notes: string | null;
+	holidayCategory: DtrHolidayCategory | null;
+	holidayName: string | null;
+	holidayWorked: boolean | null;
+	holidayPayPercent: number | null;
 	createdAt: Date;
 	updatedAt: Date;
 };
@@ -35,6 +40,10 @@ export type DtrDayDto = {
 	source: DtrDaySource;
 	approvalStatus: DtrApprovalStatus;
 	notes: string | null;
+	holidayCategory: DtrHolidayCategory | null;
+	holidayName: string | null;
+	holidayWorked: boolean | null;
+	holidayPayPercent: number | null;
 	createdAt: string;
 	updatedAt: string;
 };

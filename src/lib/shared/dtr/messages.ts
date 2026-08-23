@@ -14,3 +14,5 @@ export const DTR_NG_IMPORT_PREVIEW_EXPIRED_MESSAGE =
 export const DTR_NG_IMPORT_SUCCESS_MESSAGE = 'Timecard imported into daily time records.';
 export const DTR_NG_IMPORT_FAILED_MESSAGE = 'Could not import the timecard.';
 export const DTR_NG_IMPORT_EMPTY_MESSAGE = 'No timecard rows were found to import.';
+export const DTR_HOLIDAY_CALENDAR_SAVED_MESSAGE = 'Holiday calendar saved.';
+export const DTR_HOLIDAY_CALENDAR_SAVE_FAILED_MESSAGE = 'Could not save holiday calendar.';

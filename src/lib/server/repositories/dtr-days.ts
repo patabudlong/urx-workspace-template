@@ -1,7 +1,13 @@
 import type { DtrDayDocument, DtrDayDto } from '$lib/shared/models/dtr-day';
 import { getDtrDaysCollection } from '$lib/server/db/collections';
+import {
+	loadDtrHolidayContextForWorkspace,
+	resolveHolidayFieldsForDay,
+	type DtrHolidayContext
+} from '$lib/server/dtr/holidays';
 import { resolveLunchBreakForEmployeeDay } from '$lib/server/dtr/lunch-break';
 import { computeWorkedMinutes } from '$lib/shared/dtr/calendar';
+import { enrichDtrDayWithHolidayCredit } from '$lib/shared/dtr/holidays';
 import type { UpsertDtrDayInput } from '$lib/shared/dtr/schemas';
 import { ObjectId } from 'mongodb';
 
@@ -18,6 +24,10 @@ const DTR_DAY_PROJECTION = {
 	source: 1,
 	approvalStatus: 1,
 	notes: 1,
+	holidayCategory: 1,
+	holidayName: 1,
+	holidayWorked: 1,
+	holidayPayPercent: 1,
 	createdAt: 1,
 	updatedAt: 1
 } as const;
@@ -35,9 +45,55 @@ function toDtrDayDto(doc: DtrDayDocument): DtrDayDto {
 		source: doc.source,
 		approvalStatus: doc.approvalStatus,
 		notes: doc.notes,
+		holidayCategory: doc.holidayCategory ?? null,
+		holidayName: doc.holidayName ?? null,
+		holidayWorked: doc.holidayWorked ?? null,
+		holidayPayPercent: doc.holidayPayPercent ?? null,
 		createdAt: doc.createdAt.toISOString(),
 		updatedAt: doc.updatedAt.toISOString()
 	};
+}
+
+function enrichDtrDayDto(day: DtrDayDto, context: DtrHolidayContext | null): DtrDayDto {
+	if (!context) {
+		return day;
+	}
+
+	const holiday = context.byDate.get(day.date);
+
+	if (!holiday) {
+		return {
+			...day,
+			holidayCategory: null,
+			holidayName: null,
+			holidayWorked: null,
+			holidayPayPercent: null
+		};
+	}
+
+	return enrichDtrDayWithHolidayCredit(day, holiday, context.rates);
+}
+
+async function loadHolidayContextsForDateRange(input: {
+	workspaceId: string;
+	startDate: string;
+	endDate: string;
+}): Promise<Map<number, DtrHolidayContext | null>> {
+	const startYear = Number(input.startDate.slice(0, 4));
+	const endYear = Number(input.endDate.slice(0, 4));
+	const contexts = new Map<number, DtrHolidayContext | null>();
+
+	for (let year = startYear; year <= endYear; year += 1) {
+		contexts.set(
+			year,
+			await loadDtrHolidayContextForWorkspace({
+				workspaceId: input.workspaceId,
+				year
+			})
+		);
+	}
+
+	return contexts;
 }
 
 export async function ensureDtrDayIndexes(): Promise<void> {
@@ -78,7 +134,17 @@ export async function listDtrDaysForWorkspace(input: {
 		.sort({ date: 1 })
 		.toArray();
 
-	return items.map(toDtrDayDto);
+	const holidayContexts = await loadHolidayContextsForDateRange({
+		workspaceId: input.workspaceId,
+		startDate: input.startDate,
+		endDate: input.endDate
+	});
+
+	return items.map((doc) => {
+		const dto = toDtrDayDto(doc);
+		const year = Number(dto.date.slice(0, 4));
+		return enrichDtrDayDto(dto, holidayContexts.get(year) ?? null);
+	});
 }
 
 export async function upsertDtrDayForWorkspace(input: {
@@ -100,6 +166,19 @@ export async function upsertDtrDayForWorkspace(input: {
 		date: input.data.date
 	});
 	const workedMinutes = computeWorkedMinutes(timeIn, timeOut, lunchBreak);
+	const year = Number(input.data.date.slice(0, 4));
+	const holidayContext = await loadDtrHolidayContextForWorkspace({
+		workspaceId: input.workspaceId,
+		year
+	});
+	const holidayFields = resolveHolidayFieldsForDay({
+		context: holidayContext,
+		date: input.data.date,
+		status: input.data.status,
+		timeIn,
+		timeOut,
+		workedMinutes
+	});
 
 	await collection.updateOne(
 		{
@@ -116,6 +195,10 @@ export async function upsertDtrDayForWorkspace(input: {
 				source: input.data.source,
 				approvalStatus: 'draft',
 				notes,
+				holidayCategory: holidayFields.holidayCategory,
+				holidayName: holidayFields.holidayName,
+				holidayWorked: holidayFields.holidayWorked,
+				holidayPayPercent: holidayFields.holidayPayPercent,
 				updatedAt: now
 			},
 			$setOnInsert: {
@@ -141,5 +224,5 @@ export async function upsertDtrDayForWorkspace(input: {
 		throw new Error('Failed to load saved DTR day');
 	}
 
-	return toDtrDayDto(saved);
+	return enrichDtrDayDto(toDtrDayDto(saved), holidayContext);
 }
