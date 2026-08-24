@@ -23,6 +23,9 @@
 
 	const shortcutLabel = $derived(isMac ? '⌘K' : 'Ctrl+K');
 
+	const searchFieldClass =
+		'border-input/60 bg-muted/30 text-muted-foreground hover:bg-muted/50 rounded-lg border transition-colors';
+
 	function handleKeydown(event: KeyboardEvent) {
 		if (event.key.toLowerCase() !== 'k') {
 			return;
@@ -49,9 +52,7 @@
 
 <button
 	type="button"
-	class={cn(
-		'bg-muted/40 text-muted-foreground hover:bg-muted/60 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-transparent transition-colors md:hidden'
-	)}
+	class={cn(searchFieldClass, 'inline-flex h-10 w-10 shrink-0 items-center justify-center md:hidden')}
 	onclick={() => {
 		open = true;
 	}}
@@ -63,14 +64,15 @@
 <button
 	type="button"
 	class={cn(
-		'bg-muted/40 text-muted-foreground hover:bg-muted/60 hidden h-8 w-44 items-center gap-2 rounded-lg border border-transparent px-2 text-left text-sm transition-colors sm:w-52 md:flex lg:w-60'
+		searchFieldClass,
+		'relative hidden h-10 w-44 items-center pr-2 pl-9 text-left text-sm sm:w-52 md:flex lg:w-72'
 	)}
 	onclick={() => {
 		open = true;
 	}}
 	aria-label="Open search"
 >
-	<SearchIcon class="size-4 shrink-0 opacity-60" />
+	<SearchIcon class="absolute top-1/2 left-3 size-4 shrink-0 -translate-y-1/2 opacity-60" />
 	<span class="flex-1 truncate">Search...</span>
 	<kbd
 		class="bg-background text-muted-foreground pointer-events-none hidden h-5 shrink-0 items-center gap-0.5 rounded border px-1.5 font-mono text-[10px] font-medium lg:inline-flex"

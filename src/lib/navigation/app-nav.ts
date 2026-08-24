@@ -32,10 +32,35 @@ export type AppNavGroup = {
 	items: AppNavItem[];
 };
 
+const WORKSPACE_NAV_PRIORITY: Record<string, number> = {
+	'/': 0,
+	'/team': 1
+};
+
+function sortWorkspaceNavItems(items: AppNavItem[]): AppNavItem[] {
+	return [...items].sort((a, b) => {
+		const priorityA = WORKSPACE_NAV_PRIORITY[a.href] ?? 2;
+		const priorityB = WORKSPACE_NAV_PRIORITY[b.href] ?? 2;
+		return priorityA - priorityB;
+	});
+}
+
 export const APP_NAV_GROUPS: AppNavGroup[] = [
 	{
 		label: 'Workspace',
 		items: [
+			{
+				title: 'Overview',
+				href: '/',
+				icon: LayoutDashboardIcon,
+				match: 'exact'
+			},
+			{
+				title: 'Team',
+				href: '/team',
+				icon: UsersIcon,
+				match: 'prefix'
+			},
 // urixoft-workspace-mailbox:start
 			{
 				title: 'Mailbox',
@@ -63,20 +88,8 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
 				icon: ClipboardClockIcon,
 				match: 'prefix',
 				packageId: 'urixoft-workspace-dtr'
-			},
-// urixoft-workspace-dtr:end
-			{
-				title: 'Overview',
-				href: '/',
-				icon: LayoutDashboardIcon,
-				match: 'exact'
-			},
-			{
-				title: 'Team',
-				href: '/team',
-				icon: UsersIcon,
-				match: 'prefix'
 			}
+// urixoft-workspace-dtr:end
 		]
 	},
 	{
@@ -100,12 +113,16 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
 ];
 
 export function getAppNavGroups(enabledPackages: readonly string[] = []): AppNavGroup[] {
-	return APP_NAV_GROUPS.map((group) => ({
-		...group,
-		items: group.items.filter(
+	return APP_NAV_GROUPS.map((group) => {
+		const items = group.items.filter(
 			(item) => !item.packageId || isWorkspacePackageEnabled(enabledPackages, item.packageId)
-		)
-	})).filter((group) => group.items.length > 0);
+		);
+
+		return {
+			...group,
+			items: group.label === 'Workspace' ? sortWorkspaceNavItems(items) : items
+		};
+	}).filter((group) => group.items.length > 0);
 }
 
 export const USER_PROFILE_NAV_ITEMS: AppNavItem[] = [
