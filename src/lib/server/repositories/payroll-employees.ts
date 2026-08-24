@@ -3,6 +3,7 @@ import type {
 	PayrollEmployeeDto
 } from '$lib/shared/models/payroll-employee';
 import { getPayrollEmployeesCollection } from '$lib/server/db/collections';
+import { resolvePayrollEmployeeUserId } from '$lib/server/payroll/employee-link';
 import { getDtrWorkScheduleForWorkspace } from '$lib/server/repositories/dtr-work-schedules';
 import type { PayrollEmployeeDeduction } from '$lib/shared/payroll/deductions';
 import { percentToBasisPoints } from '$lib/shared/payroll/deductions';
@@ -18,6 +19,7 @@ const PAYROLL_EMPLOYEE_PROJECTION = {
 	lastName: 1,
 	workspaceId: 1,
 	email: 1,
+	userId: 1,
 	jobTitle: 1,
 	employeeCode: 1,
 	photoUrl: 1,
@@ -83,6 +85,7 @@ function toPayrollEmployeeDto(
 		lastName: doc.lastName,
 		fullName: `${doc.firstName} ${doc.lastName}`.trim(),
 		email: doc.email,
+		userId: doc.userId?.toString() ?? null,
 		jobTitle: doc.jobTitle,
 		employeeCode: doc.employeeCode ?? null,
 		photoUrl: doc.photoUrl ?? null,
@@ -108,6 +111,13 @@ export async function ensurePayrollEmployeeIndexes(): Promise<void> {
 				{
 					unique: true,
 					partialFilterExpression: { employeeCode: { $type: 'string' } }
+				}
+			);
+			await collection.createIndex(
+				{ workspaceId: 1, userId: 1 },
+				{
+					unique: true,
+					partialFilterExpression: { userId: { $type: 'objectId' } }
 				}
 			);
 		})();
@@ -172,10 +182,15 @@ export async function createPayrollEmployeeForWorkspace(input: {
 		input.data.workScheduleId
 	);
 	const fields = buildEmployeeWriteFields(input.data, input.currency, workScheduleId);
+	const userId = await resolvePayrollEmployeeUserId({
+		workspaceId: input.workspaceId,
+		email: fields.email
+	});
 
 	const result = await collection.insertOne({
 		workspaceId: new ObjectId(input.workspaceId),
 		...fields,
+		userId,
 		isActive: true,
 		createdAt: now,
 		updatedAt: now
@@ -286,6 +301,141 @@ export async function getPayrollEmployeeForWorkspace(input: {
 	return toPayrollEmployeeDto(employee, workScheduleName);
 }
 
+export async function findPayrollEmployeeForWorkspaceUser(input: {
+	workspaceId: string;
+	userId: string;
+	email?: string | null;
+}): Promise<PayrollEmployeeDto | null> {
+	await ensurePayrollEmployeeIndexes();
+
+	if (!ObjectId.isValid(input.userId)) {
+		return null;
+	}
+
+	const collection = await getPayrollEmployeesCollection<PayrollEmployeeDocument>();
+	const workspaceObjectId = new ObjectId(input.workspaceId);
+	const userObjectId = new ObjectId(input.userId);
+
+	const byUserId = await collection.findOne(
+		{
+			workspaceId: workspaceObjectId,
+			userId: userObjectId,
+			isActive: true
+		},
+		{ projection: PAYROLL_EMPLOYEE_PROJECTION }
+	);
+
+	if (byUserId) {
+		const workScheduleName = byUserId.workScheduleId
+			? ((await getDtrWorkScheduleForWorkspace({
+					workspaceId: input.workspaceId,
+					scheduleId: byUserId.workScheduleId.toString()
+				}))?.name ?? null)
+			: null;
+
+		return toPayrollEmployeeDto(byUserId, workScheduleName);
+	}
+
+	if (input.email) {
+		return findPayrollEmployeeByEmailForWorkspace({
+			workspaceId: input.workspaceId,
+			email: input.email
+		});
+	}
+
+	return null;
+}
+
+export async function syncPayrollEmployeeUserLinksForWorkspace(workspaceId: string): Promise<void> {
+	await ensurePayrollEmployeeIndexes();
+
+	const collection = await getPayrollEmployeesCollection<PayrollEmployeeDocument>();
+	const employees = await collection
+		.find(
+			{
+				workspaceId: new ObjectId(workspaceId),
+				isActive: true,
+				email: { $type: 'string' }
+			},
+			{ projection: { email: 1 } }
+		)
+		.toArray();
+
+	const now = new Date();
+
+	for (const employee of employees) {
+		if (!employee.email) {
+			continue;
+		}
+
+		const userId = await resolvePayrollEmployeeUserId({
+			workspaceId,
+			email: employee.email
+		});
+
+		await collection.updateOne(
+			{ _id: employee._id },
+			{
+				$set: {
+					userId,
+					updatedAt: now
+				}
+			}
+		);
+	}
+}
+
+export async function findPayrollEmployeeByEmailForWorkspace(input: {
+	workspaceId: string;
+	email: string;
+}): Promise<PayrollEmployeeDto | null> {
+	await ensurePayrollEmployeeIndexes();
+
+	const email = input.email.trim().toLowerCase();
+
+	if (!email) {
+		return null;
+	}
+
+	const collection = await getPayrollEmployeesCollection<PayrollEmployeeDocument>();
+	const employee = await collection.findOne(
+		{
+			workspaceId: new ObjectId(input.workspaceId),
+			email,
+			isActive: true
+		},
+		{ projection: PAYROLL_EMPLOYEE_PROJECTION }
+	);
+
+	if (!employee) {
+		return null;
+	}
+
+	const workScheduleName = employee.workScheduleId
+		? ((await getDtrWorkScheduleForWorkspace({
+				workspaceId: input.workspaceId,
+				scheduleId: employee.workScheduleId.toString()
+			}))?.name ?? null)
+		: null;
+
+	return toPayrollEmployeeDto(employee, workScheduleName);
+}
+
+export async function listActivePayrollEmployeeDocumentsForWorkspace(
+	workspaceId: string
+): Promise<PayrollEmployeeDocument[]> {
+	await ensurePayrollEmployeeIndexes();
+
+	const collection = await getPayrollEmployeesCollection<PayrollEmployeeDocument>();
+	return collection
+		.find(
+			{ workspaceId: new ObjectId(workspaceId), isActive: true },
+			{ projection: PAYROLL_EMPLOYEE_PROJECTION }
+		)
+		.sort({ lastName: 1, firstName: 1 })
+		.toArray();
+}
+
 export async function updatePayrollEmployeeForWorkspace(input: {
 	workspaceId: string;
 	employeeId: string;
@@ -304,6 +454,10 @@ export async function updatePayrollEmployeeForWorkspace(input: {
 		input.data.workScheduleId
 	);
 	const fields = buildEmployeeWriteFields(input.data, input.currency, workScheduleId);
+	const userId = await resolvePayrollEmployeeUserId({
+		workspaceId: input.workspaceId,
+		email: fields.email
+	});
 	const now = new Date();
 
 	const updated = await collection.findOneAndUpdate(
@@ -315,6 +469,7 @@ export async function updatePayrollEmployeeForWorkspace(input: {
 		{
 			$set: {
 				...fields,
+				userId,
 				updatedAt: now
 			}
 		},

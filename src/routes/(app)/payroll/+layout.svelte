@@ -8,8 +8,10 @@
 
 	let { children } = $props();
 
-	const payrollNavItems = $derived(getPayrollNavItems(page.data.workspace?.role));
-	const canManage = $derived(payrollNavItems.length > 0);
+	const payrollNavItems = $derived(
+		getPayrollNavItems(page.data.workspace?.role, page.data.hasLinkedPayrollEmployee)
+	);
+	const canAccess = $derived(payrollNavItems.length > 0);
 </script>
 
 <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-auto overflow-y-auto lg:flex-row">
@@ -26,11 +28,11 @@
 			<PayrollSectionSidebar items={payrollNavItems} />
 		</div>
 
-		{#if !canManage}
+		{#if !canAccess}
 			<StatusAlert
 				variant="warning"
 				title="Payroll access required"
-				description="Only workspace owners and admins can view or manage payroll."
+				description="Only workspace owners and admins can manage payroll. Employees can view payslips when their login email matches the email on their payroll employee record."
 			/>
 		{:else}
 			{@render children()}

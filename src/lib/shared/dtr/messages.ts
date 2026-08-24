@@ -4,6 +4,8 @@ export const DTR_WORK_SCHEDULES_SAVED_MESSAGE = 'Named work schedules saved.';
 export const DTR_WORK_SCHEDULES_SAVE_FAILED_MESSAGE = 'Could not save named work schedules.';
 export const DTR_DAY_SAVED_MESSAGE = 'Time record saved.';
 export const DTR_DAY_SAVE_FAILED_MESSAGE = 'Could not save time record.';
+export const DTR_DAY_LOCKED_MESSAGE =
+	'This day is locked because payroll was processed for this period. Contact an admin if a correction is needed.';
 export const DTR_NG_IMPORT_PREVIEW_READY_MESSAGE = 'Timecard preview ready. Review the rows below, then import.';
 export const DTR_NG_IMPORT_PREVIEW_FAILED_MESSAGE = 'Could not read the timecard file.';
 export const DTR_NG_IMPORT_FILE_REQUIRED_MESSAGE = 'Choose a timecard file to upload.';

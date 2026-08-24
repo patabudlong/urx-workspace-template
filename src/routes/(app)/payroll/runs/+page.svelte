@@ -11,12 +11,14 @@
 	import type { PayrollRunDto } from '$lib/shared/models/payroll-run';
 	import {
 		PAYROLL_RUN_CREATED_MESSAGE,
-		PAYROLL_RUN_CREATE_FAILED_MESSAGE
+		PAYROLL_RUN_CREATE_FAILED_MESSAGE,
+		PAYROLL_RUN_DELETED_MESSAGE
 	} from '$lib/shared/payroll/messages';
 	import { createPayrollRunSchema } from '$lib/shared/payroll/schemas';
 	import CalendarPlusIcon from '@lucide/svelte/icons/calendar-plus';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
-	import { invalidateAll } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
+	import { page } from '$app/state';
 	import { untrack } from 'svelte';
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
@@ -26,6 +28,8 @@
 	let submitting = $state(false);
 	let showSuccess = $state(false);
 	let runs = $state<PayrollRunDto[] | null>(null);
+
+	const showDeletedAlert = $derived(page.url.searchParams.get('deleted') === '1');
 
 	const superform = superForm(untrack(() => data.form), {
 		validators: zod4Client(createPayrollRunSchema),
@@ -114,6 +118,14 @@
 		title="Pay runs"
 		description="Payroll runs for the active workspace. Each run covers a pay period and tracks processing status."
 	/>
+
+	{#if showDeletedAlert}
+		<StatusAlert
+			variant="success"
+			title="Pay run removed"
+			description={PAYROLL_RUN_DELETED_MESSAGE}
+		/>
+	{/if}
 
 	{#if data.payFrequencyLabel}
 		<StatusAlert
@@ -216,14 +228,24 @@
 					{#each runs as run (run.id)}
 						<li class="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between">
 							<div class="min-w-0 space-y-1">
-								<p class="truncate font-medium">{run.title}</p>
+								<a
+									href="/payroll/runs/{run.id}"
+									class="truncate font-medium hover:underline"
+								>
+									{run.title}
+								</a>
 								<p class="text-muted-foreground text-sm">
 									{formatDate(run.periodStart)} – {formatDate(run.periodEnd)}
 								</p>
 							</div>
-							<Badge variant={statusVariant(run.status)} class="w-fit capitalize">
-								{run.status}
-							</Badge>
+							<div class="flex flex-wrap items-center gap-3">
+								<Badge variant={statusVariant(run.status)} class="w-fit capitalize">
+									{run.status}
+								</Badge>
+								<Button variant="outline" size="sm" href="/payroll/runs/{run.id}">
+									Open
+								</Button>
+							</div>
 						</li>
 					{/each}
 				</ul>

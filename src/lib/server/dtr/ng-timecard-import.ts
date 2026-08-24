@@ -5,6 +5,7 @@ import { getPayrollEmployeesCollection } from '$lib/server/db/collections';
 import { getDtrSettingsForWorkspace } from '$lib/server/repositories/dtr-settings';
 import { getDtrWorkScheduleForWorkspace } from '$lib/server/repositories/dtr-work-schedules';
 import { upsertDtrDayForWorkspace } from '$lib/server/repositories/dtr-days';
+import { isDtrDayLockedError } from '$lib/server/dtr/errors';
 import type { PayrollEmployeeDocument } from '$lib/shared/models/payroll-employee';
 import type { DtrWorkScheduleDto } from '$lib/shared/models/dtr-work-schedule';
 import {
@@ -251,19 +252,27 @@ export async function importDtrNgPreviewRows(input: {
 	let imported = 0;
 
 	for (const row of input.rows) {
-		await upsertDtrDayForWorkspace({
-			workspaceId: input.workspaceId,
-			data: {
-				employeeId: row.employeeId,
-				date: row.date,
-				status: row.status,
-				timeIn: row.timeIn ?? '',
-				timeOut: row.timeOut ?? '',
-				source: 'biometric',
-				notes: row.notes ?? ''
+		try {
+			await upsertDtrDayForWorkspace({
+				workspaceId: input.workspaceId,
+				data: {
+					employeeId: row.employeeId,
+					date: row.date,
+					status: row.status,
+					timeIn: row.timeIn ?? '',
+					timeOut: row.timeOut ?? '',
+					source: 'biometric',
+					notes: row.notes ?? ''
+				}
+			});
+			imported += 1;
+		} catch (error) {
+			if (isDtrDayLockedError(error)) {
+				continue;
 			}
-		});
-		imported += 1;
+
+			throw error;
+		}
 	}
 
 	return imported;

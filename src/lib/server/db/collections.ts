@@ -18,6 +18,7 @@ export const CollectionNames = {
 // urixoft-workspace-payroll:collections:start
 	payrollRuns: 'payroll_runs',
 	payrollEmployees: 'payroll_employees',
+	payrollPayslips: 'payroll_payslips',
 	payrollSettings: 'payroll_settings',
 // urixoft-workspace-payroll:collections:end
 // urixoft-workspace-dtr:collections:start
@@ -98,6 +99,10 @@ export async function getPayrollRunsCollection<T extends Document = Document>():
 
 export async function getPayrollEmployeesCollection<T extends Document = Document>(): Promise<Collection<T>> {
 	return getCollection<T>('payrollEmployees');
+}
+
+export async function getPayrollPayslipsCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('payrollPayslips');
 }
 
 export async function getPayrollSettingsCollection<T extends Document = Document>(): Promise<Collection<T>> {

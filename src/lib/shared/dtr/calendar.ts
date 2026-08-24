@@ -15,6 +15,7 @@ export type DtrCalendarCell = {
 	recordId: string | null;
 	holidayName: string | null;
 	holidayPayPercent: number | null;
+	isLocked: boolean;
 };
 
 export function getMonthDateRange(month: string): { start: string; end: string; days: string[] } {
@@ -80,6 +81,7 @@ export function buildEmployeeMonthCalendar(input: {
 	records: DtrDayDto[];
 	holidays?: DtrHolidayEntry[];
 	holidayRates?: DtrHolidayCalendarRates | null;
+	lockedDates?: Set<string>;
 }): DtrCalendarCell[] {
 	const { days } = getMonthDateRange(input.month);
 	const recordByDate = new Map(input.records.map((record) => [record.date, record]));
@@ -113,7 +115,8 @@ export function buildEmployeeMonthCalendar(input: {
 			status,
 			recordId: record?.id ?? null,
 			holidayName: record?.holidayName ?? holiday?.name ?? null,
-			holidayPayPercent
+			holidayPayPercent,
+			isLocked: Boolean(record?.lockedByRunId) || Boolean(input.lockedDates?.has(date))
 		};
 	});
 }

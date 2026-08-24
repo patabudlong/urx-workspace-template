@@ -17,6 +17,22 @@ export const PAYROLL_EMPLOYEE_PHOTO_UPLOAD_FAILED_MESSAGE =
 	'Unable to upload employee photo. Try again in a moment.';
 export const PAYROLL_RUN_CREATED_MESSAGE = 'Pay run created.';
 export const PAYROLL_RUN_CREATE_FAILED_MESSAGE = 'Could not create pay run. Try again.';
+export const PAYROLL_RUN_PROCESSED_MESSAGE = 'Pay run processed. Payslips are ready to review.';
+export const PAYROLL_RUN_PROCESS_FAILED_MESSAGE = 'Could not process pay run. Try again.';
+export const PAYROLL_RUN_NOT_FOUND_MESSAGE = 'Pay run not found.';
+export const PAYROLL_RUN_ALREADY_PROCESSED_MESSAGE =
+	'This pay run has already been processed or is in progress.';
+export const PAYROLL_RUN_DELETED_MESSAGE = 'Pay run removed.';
+export const PAYROLL_RUN_DELETE_FAILED_MESSAGE = 'Could not remove pay run. Try again.';
+export const PAYROLL_RUN_DELETE_PROCESSING_MESSAGE =
+	'This pay run is processing. Wait for it to finish before removing it.';
+export const PAYROLL_PAYSLIP_NOT_FOUND_MESSAGE = 'Payslip not found.';
+export const PAYROLL_EMPLOYEE_LINK_REQUIRED_MESSAGE =
+	'Your account is not linked to a payroll employee record. Ask an admin to add your email on the employee profile.';
+export const PAYROLL_PAYSLIP_EMAIL_SENT_MESSAGE = 'Payslip emailed.';
+export const PAYROLL_PAYSLIP_EMAIL_FAILED_MESSAGE = 'Could not email payslip. Try again.';
+export const PAYROLL_PAYSLIP_EMAIL_NOT_CONFIGURED_MESSAGE =
+	'Email is not configured on this workspace. Download the PDF instead.';
 export const PAYROLL_SETTINGS_SAVED_MESSAGE = 'Payroll settings saved.';
 export const PAYROLL_SETTINGS_SAVE_FAILED_MESSAGE = 'Could not save payroll settings. Try again.';
 export const PAYROLL_DEDUCTION_TYPES_SAVED_MESSAGE = 'Deduction types saved.';

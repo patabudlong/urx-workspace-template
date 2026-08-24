@@ -11,6 +11,7 @@
 	import * as Select from '$lib/components/ui/select/index.js';
 	import { DTR_DAY_STATUS_LABELS, DTR_DAY_STATUSES } from '$lib/shared/dtr/status';
 	import {
+		DTR_DAY_LOCKED_MESSAGE,
 		DTR_DAY_SAVED_MESSAGE,
 		DTR_DAY_SAVE_FAILED_MESSAGE
 	} from '$lib/shared/dtr/messages';
@@ -78,7 +79,7 @@
 	<PageHeader
 		eyebrow="DTR"
 		title="Time records"
-		description="Review daily time records by employee. Click a day to add or edit a record."
+		description="Review daily time records by employee. Click a day to add or edit a record. These records feed payroll when a pay run is processed."
 	/>
 
 	{#if !data.settingsConfigured}
@@ -164,6 +165,7 @@
 							status={day.status}
 							dayOfMonth={day.dayOfMonth}
 							holidayName={day.holidayName}
+							locked={day.isLocked}
 							selected={data.selectedDate === day.date}
 							interactive={true}
 							onclick={() => updateQuery({ date: day.date })}
@@ -185,7 +187,13 @@
 				</Card.Description>
 			</Card.Header>
 			<Card.Content>
-				{#if showSuccess}
+				{#if data.selectedDateLocked}
+					<StatusAlert
+						variant="warning"
+						title="Payroll period locked"
+						description="This day falls in a completed pay run. Time records for this date cannot be changed."
+					/>
+				{:else if showSuccess}
 					<StatusAlert
 						variant="success"
 						title="Time record saved"
@@ -198,11 +206,14 @@
 						title="Could not save time record"
 						description={$formMessage === DTR_DAY_SAVE_FAILED_MESSAGE
 							? DTR_DAY_SAVE_FAILED_MESSAGE
-							: String($formMessage)}
+							: $formMessage === DTR_DAY_LOCKED_MESSAGE
+								? DTR_DAY_LOCKED_MESSAGE
+								: String($formMessage)}
 						class="mb-6"
 					/>
 				{/if}
 
+				{#if !data.selectedDateLocked}
 				<form method="POST" use:enhance class="space-y-5">
 					<input type="hidden" name="employeeId" value={data.employeeId} />
 					<input type="hidden" name="date" value={data.selectedDate} />
@@ -291,6 +302,7 @@
 						{/if}
 					</Button>
 				</form>
+				{/if}
 			</Card.Content>
 		</Card.Root>
 	{/if}

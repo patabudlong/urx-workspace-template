@@ -91,6 +91,26 @@ export const payrollEmployeeIdParamSchema = z.object({
 		.refine(isValidObjectIdString, 'Invalid employee id.')
 });
 
+export const payrollRunIdParamSchema = z.object({
+	id: z
+		.string()
+		.trim()
+		.min(1, 'Pay run id is required.')
+		.refine(isValidObjectIdString, 'Invalid pay run id.')
+});
+
+export const payrollPayslipIdParamSchema = z.object({
+	id: z
+		.string()
+		.trim()
+		.min(1, 'Payslip id is required.')
+		.refine(isValidObjectIdString, 'Invalid payslip id.')
+});
+
+export const payrollPayslipsQuerySchema = payrollRunsQuerySchema;
+
+export type PayrollPayslipsQuery = z.infer<typeof payrollPayslipsQuerySchema>;
+
 export const createPayrollEmployeeDefaults: CreatePayrollEmployeeInput = {
 	firstName: '',
 	lastName: '',

@@ -25,8 +25,9 @@ export function createSmtpTransport(config: {
 					filename: attachment.filename,
 					content: attachment.content,
 					contentType: attachment.contentType,
-					cid: attachment.cid,
-					contentDisposition: 'inline' as const
+					...(attachment.cid
+						? { cid: attachment.cid, contentDisposition: 'inline' as const }
+						: { contentDisposition: 'attachment' as const })
 				}))
 			});
 		}

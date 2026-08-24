@@ -1,9 +1,14 @@
+import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { countPayrollEmployeesForWorkspace } from '$lib/server/repositories/payroll-employees';
 import { countPayrollRunsForWorkspace } from '$lib/server/repositories/payroll-runs';
 
 export const load: PageServerLoad = async ({ parent, isDataRequest }) => {
-	const { workspace, canManagePayroll } = await parent();
+	const { workspace, canManagePayroll, hasLinkedPayrollEmployee } = await parent();
+
+	if (!canManagePayroll && hasLinkedPayrollEmployee) {
+		redirect(302, '/payroll/payslips');
+	}
 
 	if (!workspace || !canManagePayroll) {
 		return {

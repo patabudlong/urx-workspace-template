@@ -27,7 +27,7 @@ export function createPostmarkTransport(config: {
 						Name: attachment.filename,
 						Content: attachment.content.toString('base64'),
 						ContentType: attachment.contentType,
-						ContentID: `cid:${attachment.cid}`
+						...(attachment.cid ? { ContentID: `cid:${attachment.cid}` } : {})
 					}))
 				})
 			});

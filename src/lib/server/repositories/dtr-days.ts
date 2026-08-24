@@ -1,11 +1,13 @@
 import type { DtrDayDocument, DtrDayDto } from '$lib/shared/models/dtr-day';
-import { getDtrDaysCollection } from '$lib/server/db/collections';
+import type { PayrollRunDocument } from '$lib/shared/models/payroll-run';
+import { getDtrDaysCollection, getPayrollRunsCollection } from '$lib/server/db/collections';
 import {
 	loadDtrHolidayContextForWorkspace,
 	resolveHolidayFieldsForDay,
 	type DtrHolidayContext
 } from '$lib/server/dtr/holidays';
 import { resolveLunchBreakForEmployeeDay } from '$lib/server/dtr/lunch-break';
+import { DtrDayLockedError } from '$lib/server/dtr/errors';
 import { computeWorkedMinutes } from '$lib/shared/dtr/calendar';
 import { enrichDtrDayWithHolidayCredit } from '$lib/shared/dtr/holidays';
 import type { UpsertDtrDayInput } from '$lib/shared/dtr/schemas';
@@ -28,6 +30,7 @@ const DTR_DAY_PROJECTION = {
 	holidayName: 1,
 	holidayWorked: 1,
 	holidayPayPercent: 1,
+	lockedByRunId: 1,
 	createdAt: 1,
 	updatedAt: 1
 } as const;
@@ -49,6 +52,7 @@ function toDtrDayDto(doc: DtrDayDocument): DtrDayDto {
 		holidayName: doc.holidayName ?? null,
 		holidayWorked: doc.holidayWorked ?? null,
 		holidayPayPercent: doc.holidayPayPercent ?? null,
+		lockedByRunId: doc.lockedByRunId?.toString() ?? null,
 		createdAt: doc.createdAt.toISOString(),
 		updatedAt: doc.updatedAt.toISOString()
 	};
@@ -147,6 +151,31 @@ export async function listDtrDaysForWorkspace(input: {
 	});
 }
 
+function parseDtrCalendarDate(value: string): Date {
+	const [year, month, day] = value.split('-').map(Number);
+	return new Date(Date.UTC(year, month - 1, day));
+}
+
+export async function isDtrDateInCompletedPayPeriod(input: {
+	workspaceId: string;
+	date: string;
+}): Promise<boolean> {
+	const collection = await getPayrollRunsCollection<PayrollRunDocument>();
+	const dateValue = parseDtrCalendarDate(input.date);
+
+	const run = await collection.findOne(
+		{
+			workspaceId: new ObjectId(input.workspaceId),
+			status: 'completed',
+			periodStart: { $lte: dateValue },
+			periodEnd: { $gte: dateValue }
+		},
+		{ projection: { _id: 1 } }
+	);
+
+	return Boolean(run);
+}
+
 export async function upsertDtrDayForWorkspace(input: {
 	workspaceId: string;
 	data: UpsertDtrDayInput;
@@ -157,6 +186,27 @@ export async function upsertDtrDayForWorkspace(input: {
 	const now = new Date();
 	const workspaceObjectId = new ObjectId(input.workspaceId);
 	const employeeObjectId = new ObjectId(input.data.employeeId);
+
+	const existing = await collection.findOne(
+		{
+			workspaceId: workspaceObjectId,
+			employeeId: employeeObjectId,
+			date: input.data.date
+		},
+		{ projection: { lockedByRunId: 1 } }
+	);
+
+	if (existing?.lockedByRunId) {
+		throw new DtrDayLockedError();
+	}
+
+	if (await isDtrDateInCompletedPayPeriod({
+		workspaceId: input.workspaceId,
+		date: input.data.date
+	})) {
+		throw new DtrDayLockedError();
+	}
+
 	const timeIn = input.data.timeIn?.trim() ? input.data.timeIn.trim() : null;
 	const timeOut = input.data.timeOut?.trim() ? input.data.timeOut.trim() : null;
 	const notes = input.data.notes?.trim() ? input.data.notes.trim() : null;
@@ -225,4 +275,68 @@ export async function upsertDtrDayForWorkspace(input: {
 	}
 
 	return enrichDtrDayDto(toDtrDayDto(saved), holidayContext);
+}
+
+export async function lockDtrDaysForPayPeriod(input: {
+	workspaceId: string;
+	startDate: string;
+	endDate: string;
+	runId: string;
+}): Promise<number> {
+	await ensureDtrDayIndexes();
+
+	if (!ObjectId.isValid(input.runId)) {
+		return 0;
+	}
+
+	const collection = await getDtrDaysCollection<DtrDayDocument>();
+	const now = new Date();
+	const runObjectId = new ObjectId(input.runId);
+
+	const result = await collection.updateMany(
+		{
+			workspaceId: new ObjectId(input.workspaceId),
+			date: { $gte: input.startDate, $lte: input.endDate },
+			$or: [{ lockedByRunId: null }, { lockedByRunId: { $exists: false } }]
+		},
+		{
+			$set: {
+				approvalStatus: 'approved',
+				lockedByRunId: runObjectId,
+				updatedAt: now
+			}
+		}
+	);
+
+	return result.modifiedCount;
+}
+
+export async function unlockDtrDaysForPayRun(input: {
+	workspaceId: string;
+	runId: string;
+}): Promise<number> {
+	await ensureDtrDayIndexes();
+
+	if (!ObjectId.isValid(input.runId)) {
+		return 0;
+	}
+
+	const collection = await getDtrDaysCollection<DtrDayDocument>();
+	const now = new Date();
+
+	const result = await collection.updateMany(
+		{
+			workspaceId: new ObjectId(input.workspaceId),
+			lockedByRunId: new ObjectId(input.runId)
+		},
+		{
+			$set: {
+				approvalStatus: 'draft',
+				lockedByRunId: null,
+				updatedAt: now
+			}
+		}
+	);
+
+	return result.modifiedCount;
 }

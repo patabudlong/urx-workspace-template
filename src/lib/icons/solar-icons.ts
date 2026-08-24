@@ -16,6 +16,7 @@ export const SOLAR = {
 	settings: 'solar:settings-linear',
 	employees: 'solar:user-id-linear',
 	payRuns: 'solar:calendar-linear',
+	payslips: 'solar:document-text-linear',
 	timeRecords: 'solar:history-linear',
 	upload: 'solar:upload-linear',
 	paySchedule: 'solar:calendar-linear',

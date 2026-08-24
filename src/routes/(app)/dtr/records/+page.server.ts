@@ -8,6 +8,7 @@ import { getDtrWorkScheduleForWorkspace } from '$lib/server/repositories/dtr-wor
 import {
 	getDtrHolidayCalendarForWorkspace
 } from '$lib/server/repositories/dtr-holiday-calendars';
+import { listCompletedPayPeriodDatesForWorkspace } from '$lib/server/repositories/payroll-runs';
 import {
 	getPayrollEmployeeForWorkspace,
 	listPayrollEmployeesForWorkspace
@@ -19,7 +20,8 @@ import {
 import { getWorkspaceHostSuffix } from '$lib/server/workspace-host';
 import { buildEmployeeMonthCalendar, getMonthDateRange } from '$lib/shared/dtr/calendar';
 import { canManageDtr } from '$lib/shared/dtr/access';
-import { DTR_DAY_SAVED_MESSAGE, DTR_DAY_SAVE_FAILED_MESSAGE } from '$lib/shared/dtr/messages';
+import { DTR_DAY_LOCKED_MESSAGE, DTR_DAY_SAVED_MESSAGE, DTR_DAY_SAVE_FAILED_MESSAGE } from '$lib/shared/dtr/messages';
+import { isDtrDayLockedError } from '$lib/server/dtr/errors';
 import { upsertDtrDaySchema } from '$lib/shared/dtr/schemas';
 
 function currentMonthValue(): string {
@@ -95,6 +97,12 @@ export const load: PageServerLoad = async ({ parent, url }) => {
 			})
 		: [];
 
+	const lockedDates = await listCompletedPayPeriodDatesForWorkspace({
+		workspaceId: workspace.workspaceId,
+		startDate: start,
+		endDate: end
+	});
+
 	const calendar = selectedEmployeeId
 		? buildEmployeeMonthCalendar({
 				month,
@@ -102,12 +110,14 @@ export const load: PageServerLoad = async ({ parent, url }) => {
 				workSchedule,
 				records,
 				holidays: holidayCalendar?.holidays ?? [],
-				holidayRates: holidayCalendar?.rates ?? null
+				holidayRates: holidayCalendar?.rates ?? null,
+				lockedDates
 			})
 		: [];
 
 	const selectedDate = url.searchParams.get('date') ?? '';
 	const selectedRecord = records.find((record) => record.date === selectedDate) ?? null;
+	const selectedDateLocked = selectedDate ? lockedDates.has(selectedDate) : false;
 	const form = await superValidate(
 		{
 			employeeId: selectedEmployeeId,
@@ -129,6 +139,7 @@ export const load: PageServerLoad = async ({ parent, url }) => {
 		calendar,
 		selectedDate,
 		selectedRecord,
+		selectedDateLocked,
 		settingsConfigured: settings.configured,
 		workScheduleName: selectedEmployee?.workScheduleName ?? null,
 		holidayCalendarTitle: holidayCalendar?.title ?? null
@@ -159,7 +170,11 @@ export const actions: Actions = {
 				workspaceId: workspace.workspaceId,
 				data: form.data
 			});
-		} catch {
+		} catch (error) {
+			if (isDtrDayLockedError(error)) {
+				return message(form, DTR_DAY_LOCKED_MESSAGE, { status: 409 });
+			}
+
 			return message(form, DTR_DAY_SAVE_FAILED_MESSAGE, { status: 500 });
 		}
 

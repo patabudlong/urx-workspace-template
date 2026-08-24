@@ -2,7 +2,7 @@ export type MailAttachment = {
 	filename: string;
 	content: Buffer;
 	contentType: string;
-	cid: string;
+	cid?: string;
 };
 
 export type MailMessage = {

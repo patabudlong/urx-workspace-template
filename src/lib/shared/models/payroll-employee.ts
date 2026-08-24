@@ -8,6 +8,7 @@ export type PayrollEmployeeDocument = {
 	firstName: string;
 	lastName: string;
 	email: string | null;
+	userId: ObjectId | null;
 	jobTitle: string | null;
 	employeeCode: string | null;
 	photoUrl: string | null;
@@ -27,6 +28,7 @@ export type PayrollEmployeeDto = {
 	lastName: string;
 	fullName: string;
 	email: string | null;
+	userId: string | null;
 	jobTitle: string | null;
 	employeeCode: string | null;
 	photoUrl: string | null;

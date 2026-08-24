@@ -24,6 +24,7 @@ export type DtrDayDocument = {
 	holidayName: string | null;
 	holidayWorked: boolean | null;
 	holidayPayPercent: number | null;
+	lockedByRunId: ObjectId | null;
 	createdAt: Date;
 	updatedAt: Date;
 };
@@ -44,6 +45,7 @@ export type DtrDayDto = {
 	holidayName: string | null;
 	holidayWorked: boolean | null;
 	holidayPayPercent: number | null;
+	lockedByRunId: string | null;
 	createdAt: string;
 	updatedAt: string;
 };
