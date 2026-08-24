@@ -18,6 +18,7 @@ import {
 } from '$lib/server/workspace-context';
 import { getWorkspaceHostSuffix } from '$lib/server/workspace-host';
 import { canManagePayroll } from '$lib/shared/payroll/access';
+import { buildPhDeductionIconUrlMap } from '$lib/server/payroll/deduction-icons';
 import { mapPayrollEmployeeToFormInput } from '$lib/shared/payroll/deductions';
 import {
 	PAYROLL_EMPLOYEE_CODE_TAKEN_MESSAGE,
@@ -29,7 +30,7 @@ import { updatePayrollEmployeeSchema } from '$lib/shared/payroll/schemas';
 import { buildPayrollEmployeePhotoDisplayUrl } from '$lib/shared/payroll/employee-photo';
 import { mapActiveJobTitlesForEmployeeForm } from '$lib/shared/payroll/job-titles';
 
-export const load: PageServerLoad = async ({ parent, params }) => {
+export const load: PageServerLoad = async ({ parent, params, url }) => {
 	const { workspace, canManagePayroll: canManage } = await parent();
 
 	if (!workspace || !canManage) {
@@ -51,6 +52,9 @@ export const load: PageServerLoad = async ({ parent, params }) => {
 	const defaults = mapPayrollEmployeeToFormInput(employee, deductionTypes, settings.currency);
 	const form = await superValidate(zod4(updatePayrollEmployeeSchema), { defaults });
 
+	const phDeductionIconUrls =
+		settings.currency === 'PHP' ? buildPhDeductionIconUrlMap(url.origin) : {};
+
 	return {
 		form,
 		employee,
@@ -61,7 +65,8 @@ export const load: PageServerLoad = async ({ parent, params }) => {
 		payrollCurrency: settings.currency,
 		deductionTypes,
 		workSchedules: workSchedules.map(({ id, name }) => ({ id, name })),
-		jobTitles: mapActiveJobTitlesForEmployeeForm(settings.jobTitles, settings.currency)
+		jobTitles: mapActiveJobTitlesForEmployeeForm(settings.jobTitles, settings.currency),
+		phDeductionIconUrls
 	};
 };
 

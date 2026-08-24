@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
+	import PayrollDeductionTypeIcon from '$lib/components/payroll/payroll-deduction-type-icon.svelte';
 	import PayrollEmployeePhotoUpload from '$lib/components/payroll/payroll-employee-photo-upload.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import * as Form from '$lib/components/ui/form/index.js';
@@ -16,6 +17,7 @@
 		createPayrollEmployeeSchema,
 		type CreatePayrollEmployeeInput
 	} from '$lib/shared/payroll/schemas';
+	import type { PhDeductionIconKey } from '$lib/shared/payroll/deduction-icon-names';
 	import type { PayrollJobTitleOption } from '$lib/shared/payroll/job-titles';
 	import { dollarsToCents, formatPayRateCents } from '$lib/shared/payroll/format';
 	import type { Snippet } from 'svelte';
@@ -37,6 +39,7 @@
 		workSchedules,
 		jobTitles = [],
 		payrollCurrency,
+		phDeductionIconUrls = {},
 		currentPhotoUrl = null,
 		formAction,
 		resetForm = false,
@@ -49,6 +52,7 @@
 		workSchedules: WorkScheduleOption[];
 		jobTitles?: PayrollJobTitleOption[];
 		payrollCurrency: PayrollCurrency;
+		phDeductionIconUrls?: Partial<Record<PhDeductionIconKey, string>>;
 		currentPhotoUrl?: string | null;
 		formAction?: string;
 		resetForm?: boolean;
@@ -144,6 +148,10 @@
 
 	const currencyLabel = $derived(getPayrollCurrencyLabel(payrollCurrency));
 	const payRateStep = $derived(payrollCurrency === 'JPY' ? '1' : '0.01');
+
+	const showPhDeductionIcons = $derived(
+		payrollCurrency === 'PHP' && Object.keys(phDeductionIconUrls).length > 0
+	);
 
 	const formError = $derived(
 		$posted &&
@@ -492,6 +500,13 @@
 							<div class="flex flex-col gap-4 sm:flex-row sm:items-end">
 								<label class="flex flex-1 items-center gap-3 text-sm">
 									<input type="checkbox" bind:checked={$form.deductions[index].enabled} />
+									{#if showPhDeductionIcons}
+										<PayrollDeductionTypeIcon
+											name={deductionType.name}
+											iconUrls={phDeductionIconUrls}
+											class="size-7 shrink-0 rounded-md object-contain bg-muted/40 p-0.5"
+										/>
+									{/if}
 									<span class="font-medium">{deductionType.name}</span>
 									<span class="text-muted-foreground">
 										({deductionType.kind === 'fixed' ? 'fixed' : 'percentage'})

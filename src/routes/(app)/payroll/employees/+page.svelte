@@ -123,7 +123,6 @@
 							<Table.Header>
 								<Table.Row>
 									<Table.Head class="min-w-40">Name</Table.Head>
-									<Table.Head class="min-w-28">Code</Table.Head>
 									<Table.Head class="min-w-36">Job title</Table.Head>
 									<Table.Head class="min-w-44">Email</Table.Head>
 									<Table.Head class="min-w-32">Pay rate</Table.Head>
@@ -135,68 +134,84 @@
 							<Table.Body>
 								{#each filteredEmployees as employee (employee.id)}
 									<Table.Row>
-										<Table.Cell class="font-medium whitespace-nowrap">
-											<div class="flex min-w-0 items-center gap-3">
+										<Table.Cell class="h-px align-middle">
+											<div class="flex h-full min-w-0 items-center gap-3">
 												<PayrollEmployeeAvatar
 													firstName={employee.firstName}
 													lastName={employee.lastName}
 													photoUrl={employee.photoUrl}
 													updatedAt={employee.updatedAt}
-													class="size-8"
+													class="size-8 shrink-0"
 												/>
-												<a
+												<div class="min-w-0 space-y-0.5">
+													<a
+														href="/payroll/employees/{employee.id}/edit"
+														class="hover:text-primary block truncate font-medium hover:underline"
+													>
+														{employee.fullName}
+													</a>
+													{#if employee.employeeCode?.trim()}
+														<p class="text-muted-foreground truncate text-xs">
+															{employee.employeeCode.trim()}
+														</p>
+													{/if}
+												</div>
+											</div>
+										</Table.Cell>
+										<Table.Cell class="text-muted-foreground h-px align-middle">
+											<div class="flex h-full items-center">
+												{formatCell(employee.jobTitle)}
+											</div>
+										</Table.Cell>
+										<Table.Cell class="text-muted-foreground h-px align-middle">
+											<div class="flex h-full items-center">
+												<span class="block max-w-56 truncate">
+													{formatCell(employee.email)}
+												</span>
+											</div>
+										</Table.Cell>
+										<Table.Cell class="h-px align-middle whitespace-nowrap">
+											<div class="flex h-full items-center">
+												<div class="space-y-0.5">
+													<p class="font-medium">
+														{formatPayRateCents(
+															employee.payRateCents,
+															employee.payType,
+															data.payrollCurrency
+														)}
+													</p>
+													<p class="text-muted-foreground text-xs">
+														{PAYROLL_PAY_TYPE_LABELS[employee.payType]}
+													</p>
+												</div>
+											</div>
+										</Table.Cell>
+										<Table.Cell class="text-muted-foreground h-px align-middle whitespace-nowrap">
+											<div class="flex h-full items-center">
+												{employee.workScheduleName ?? 'Workspace default'}
+											</div>
+										</Table.Cell>
+										<Table.Cell class="h-px align-middle whitespace-nowrap text-right">
+											<div class="flex h-full items-center justify-end">
+												{#if (employee.deductions?.length ?? 0) > 0}
+													{employee.deductions.length}
+												{:else}
+													<span class="text-muted-foreground">None</span>
+												{/if}
+											</div>
+										</Table.Cell>
+										<Table.Cell class="h-px align-middle whitespace-nowrap text-right">
+											<div class="flex h-full items-center justify-end">
+												<Button
 													href="/payroll/employees/{employee.id}/edit"
-													class="hover:text-primary truncate hover:underline"
+													variant="outline"
+													size="sm"
+													class="h-8"
+													aria-label="Edit {employee.fullName}"
 												>
-													{employee.fullName}
-												</a>
+													<PencilIcon class="size-4" aria-hidden="true" />
+												</Button>
 											</div>
-										</Table.Cell>
-										<Table.Cell class="text-muted-foreground whitespace-nowrap">
-											{formatCell(employee.employeeCode)}
-										</Table.Cell>
-										<Table.Cell class="text-muted-foreground">
-											{formatCell(employee.jobTitle)}
-										</Table.Cell>
-										<Table.Cell class="text-muted-foreground">
-											<span class="block max-w-56 truncate">
-												{formatCell(employee.email)}
-											</span>
-										</Table.Cell>
-										<Table.Cell class="whitespace-nowrap">
-											<div class="space-y-0.5">
-												<p class="font-medium">
-													{formatPayRateCents(
-														employee.payRateCents,
-														employee.payType,
-														data.payrollCurrency
-													)}
-												</p>
-												<p class="text-muted-foreground text-xs">
-													{PAYROLL_PAY_TYPE_LABELS[employee.payType]}
-												</p>
-											</div>
-										</Table.Cell>
-										<Table.Cell class="text-muted-foreground whitespace-nowrap">
-											{employee.workScheduleName ?? 'Workspace default'}
-										</Table.Cell>
-										<Table.Cell class="text-right whitespace-nowrap">
-											{#if (employee.deductions?.length ?? 0) > 0}
-												{employee.deductions.length}
-											{:else}
-												<span class="text-muted-foreground">None</span>
-											{/if}
-										</Table.Cell>
-										<Table.Cell class="text-right whitespace-nowrap">
-											<Button
-												href="/payroll/employees/{employee.id}/edit"
-												variant="outline"
-												size="sm"
-												class="h-8"
-												aria-label="Edit {employee.fullName}"
-											>
-												<PencilIcon class="size-4" aria-hidden="true" />
-											</Button>
 										</Table.Cell>
 									</Table.Row>
 								{/each}

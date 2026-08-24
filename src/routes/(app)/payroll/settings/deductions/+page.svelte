@@ -1,5 +1,6 @@
 <script lang="ts">
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
+	import PayrollDeductionTypeIcon from '$lib/components/payroll/payroll-deduction-type-icon.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -63,6 +64,10 @@
 	);
 
 	const isSemiMonthly = $derived(data.payFrequency === 'semi-monthly');
+
+	const showPhDeductionIcons = $derived(
+		data.payrollCurrency === 'PHP' && Object.keys(data.phDeductionIconUrls).length > 0
+	);
 
 	function formatMoney(amount: number, currency: PayrollCurrency): string {
 		return new Intl.NumberFormat(undefined, {
@@ -223,7 +228,15 @@
 								{#each $form.types as type, index (type.id)}
 									<Table.Row data-state={activeTypeIndex === index ? 'selected' : undefined}>
 										<Table.Cell class="align-top font-medium">
-											{type.name.trim() || `Deduction ${index + 1}`}
+											<div class="flex items-center gap-3">
+												{#if showPhDeductionIcons}
+													<PayrollDeductionTypeIcon
+														name={type.name}
+														iconUrls={data.phDeductionIconUrls}
+													/>
+												{/if}
+												<span>{type.name.trim() || `Deduction ${index + 1}`}</span>
+											</div>
 										</Table.Cell>
 										<Table.Cell class="text-muted-foreground align-top text-sm">
 											{PAYROLL_DEDUCTION_KIND_LABELS[type.kind]}
@@ -273,11 +286,20 @@
 					{@const typeIndex = activeTypeIndex}
 					<div class="border-input space-y-5 rounded-lg border p-4">
 						<div class="flex items-center justify-between gap-3">
-							<p class="text-sm font-medium">
-								{$form.types[typeIndex].name.trim()
-									? `Edit ${$form.types[typeIndex].name}`
-									: 'New deduction type'}
-							</p>
+							<div class="flex items-center gap-3">
+								{#if showPhDeductionIcons}
+									<PayrollDeductionTypeIcon
+										name={$form.types[typeIndex].name}
+										iconUrls={data.phDeductionIconUrls}
+										class="size-10 shrink-0 rounded-md object-contain bg-muted/40 p-1"
+									/>
+								{/if}
+								<p class="text-sm font-medium">
+									{$form.types[typeIndex].name.trim()
+										? `Edit ${$form.types[typeIndex].name}`
+										: 'New deduction type'}
+								</p>
+							</div>
 							<Button
 								type="button"
 								variant="ghost"
