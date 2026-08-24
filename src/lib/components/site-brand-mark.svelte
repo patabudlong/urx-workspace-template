@@ -1,12 +1,14 @@
 <script lang="ts">
 	import UrixoftLogo from '$lib/components/urixoft-logo.svelte';
-	import { BRAND_NAME, PRODUCT_NAME } from '$lib/shared/site-meta';
+	import { APP_NAME, BRAND_NAME, PRODUCT_NAME } from '$lib/shared/site-meta';
 	import { cn } from '$lib/utils.js';
 
 	let {
 		href,
 		adaptiveLogo = false,
 		iconOnly = false,
+		/** `stacked` shows brand + product on two lines; `combined` shows full app name. */
+		nameFormat = 'stacked',
 		logoClass = 'size-8 shrink-0 rounded-sm',
 		class: className,
 		...rest
@@ -14,6 +16,7 @@
 		href?: string;
 		adaptiveLogo?: boolean;
 		iconOnly?: boolean;
+		nameFormat?: 'stacked' | 'combined';
 		logoClass?: string;
 		class?: string;
 	} & Record<string, unknown> = $props();
@@ -30,8 +33,12 @@
 	{/if}
 	{#if !iconOnly}
 		<div class="min-w-0 text-sm leading-tight">
-			<p class="truncate font-semibold">{BRAND_NAME}</p>
-			<p class="text-muted-foreground truncate text-xs">{PRODUCT_NAME}</p>
+			{#if nameFormat === 'combined'}
+				<p class="truncate font-semibold">{APP_NAME}</p>
+			{:else}
+				<p class="truncate font-semibold">{BRAND_NAME}</p>
+				<p class="text-muted-foreground truncate text-xs">{PRODUCT_NAME}</p>
+			{/if}
 		</div>
 	{/if}
 {/snippet}

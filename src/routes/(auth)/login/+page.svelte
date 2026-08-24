@@ -15,6 +15,7 @@
 	import { loginClientSchema, type LoginInput } from '$lib/shared/schemas/auth';
 	import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 	import { CONSENT_CONTEXTS } from '$lib/shared/models/consent-event';
+	import { APP_NAME } from '$lib/shared/site-meta';
 	import { warmRecaptcha } from '$lib/recaptcha/client';
 	import { AUTH_ACTION_BUTTON_CLASS, AUTH_INLINE_LINK_CLASS } from '$lib/auth/ui';
 	import { cn } from '$lib/utils.js';
@@ -96,15 +97,50 @@
 
 		return query ? `/signup?${query}` : '/signup';
 	});
+
+	const pageTitle = $derived(
+		data.lockedEmail ? 'Sign in to accept' : `Welcome to ${APP_NAME}`
+	);
+	const pageDescription = $derived(
+		data.lockedEmail
+			? 'Use the invited email address to sign in and join the workspace.'
+			: 'Your workspace dashboard'
+	);
 </script>
 
-<AuthFormPanel
-	title={data.lockedEmail ? 'Sign in to accept' : 'Sign in'}
-	description={data.lockedEmail
-		? 'Use the invited email address to sign in and join the workspace.'
-		: 'Use your workspace account to access the dashboard and tools.'}
->
+<AuthFormPanel title={pageTitle} description={pageDescription}>
 	<div class="space-y-6">
+		{#if recaptchaError}
+			<AuthFormMessageAlert message={recaptchaError} />
+		{:else if $formMessage}
+			<AuthFormMessageAlert message={$formMessage} bind:limited={formRateLimited} />
+		{:else if data.googleAuthError}
+			<AuthFormMessageAlert
+				message={data.googleAuthError}
+				retryAfterSeconds={data.rateLimitRetryAfter}
+				bind:limited={redirectRateLimited}
+			/>
+		{:else if data.passwordResetSuccess}
+			<StatusAlert
+				variant="success"
+				title="Password updated"
+				description="Sign in with your new password."
+			/>
+		{/if}
+
+		<GoogleSignInButton
+			variant="compact"
+			context={CONSENT_CONTEXTS.LOGIN}
+			redirectTo={data.redirectTo}
+			disabled={submitDisabled}
+		/>
+
+		<div class="flex items-center gap-3">
+			<Separator class="flex-1" />
+			<span class="text-muted-foreground text-sm font-medium">or sign in with</span>
+			<Separator class="flex-1" />
+		</div>
+
 		<form
 			method="POST"
 			action={`?redirectTo=${encodeURIComponent(data.redirectTo)}`}
@@ -112,104 +148,69 @@
 			class="space-y-5"
 			novalidate
 		>
-			<div class="space-y-5">
-				{#if recaptchaError}
-					<AuthFormMessageAlert message={recaptchaError} />
-				{:else if $formMessage}
-					<AuthFormMessageAlert message={$formMessage} bind:limited={formRateLimited} />
-				{:else if data.googleAuthError}
-					<AuthFormMessageAlert
-						message={data.googleAuthError}
-						retryAfterSeconds={data.rateLimitRetryAfter}
-						bind:limited={redirectRateLimited}
-					/>
-				{:else if data.passwordResetSuccess}
-					<StatusAlert
-						variant="success"
-						title="Password updated"
-						description="Sign in with your new password."
-					/>
-				{/if}
+			<div class="space-y-4">
+				<Form.Field form={superform} name="email">
+					<Form.Control>
+						{#snippet children({ props })}
+							<Form.Label required>Email</Form.Label>
+							<Input
+								{...props}
+								type="email"
+								autocomplete="email"
+								disabled={submitDisabled}
+								readonly={Boolean(data.lockedEmail)}
+								class={cn(data.lockedEmail && 'bg-muted/40')}
+								bind:value={$form.email}
+							/>
+						{/snippet}
+					</Form.Control>
+					<SingleFieldErrors />
+				</Form.Field>
 
-				<div class="space-y-4">
-					<Form.Field form={superform} name="email">
-						<Form.Control>
-							{#snippet children({ props })}
-								<Form.Label required>Email</Form.Label>
-								<Input
-									{...props}
-									type="email"
-									autocomplete="email"
-									disabled={submitDisabled}
-									readonly={Boolean(data.lockedEmail)}
-									class={cn(data.lockedEmail && 'bg-muted/40')}
-									bind:value={$form.email}
-								/>
-							{/snippet}
-						</Form.Control>
-						<SingleFieldErrors />
-					</Form.Field>
-
-					<Form.Field form={superform} name="password">
-						<Form.Control>
-							{#snippet children({ props })}
-								<div class="flex items-center justify-between gap-2">
-									<Form.Label required>Password</Form.Label>
-									<a
-										href="/forgot-password"
-										tabindex="-1"
-										class="text-primary text-sm hover:underline"
-									>
-										Forgot password?
-									</a>
-								</div>
-								<PasswordInput
-									{...props}
-									disabled={submitDisabled}
-									bind:value={$form.password}
-									autocomplete="current-password"
-								/>
-							{/snippet}
-						</Form.Control>
-						<SingleFieldErrors />
-					</Form.Field>
-				</div>
-
-				<Button
-					type="submit"
-					class={cn(
-						AUTH_ACTION_BUTTON_CLASS,
-						submitDisabled && 'pointer-events-none cursor-wait'
-					)}
-					disabled={submitDisabled}
-					aria-busy={authLoading.authBusy}
-				>
-					{#if authLoading.isAuthLoading}
-						<Loader2Icon class="size-4 animate-spin" aria-hidden="true" />
-						Signing in...
-					{:else}
-						Sign in
-					{/if}
-				</Button>
-				<RecaptchaNotice />
+				<Form.Field form={superform} name="password">
+					<Form.Control>
+						{#snippet children({ props })}
+							<Form.Label required>Password</Form.Label>
+							<PasswordInput
+								{...props}
+								disabled={submitDisabled}
+								bind:value={$form.password}
+								autocomplete="current-password"
+							/>
+						{/snippet}
+					</Form.Control>
+					<SingleFieldErrors />
+				</Form.Field>
 			</div>
+
+			<div class="flex items-center justify-end">
+				<a href="/forgot-password" class="text-primary text-sm font-medium hover:underline">
+					Forgot password?
+				</a>
+			</div>
+
+			<Button
+				type="submit"
+				class={cn(
+					AUTH_ACTION_BUTTON_CLASS,
+					submitDisabled && 'pointer-events-none cursor-wait'
+				)}
+				disabled={submitDisabled}
+				aria-busy={authLoading.authBusy}
+			>
+				{#if authLoading.isAuthLoading}
+					<Loader2Icon class="size-4 animate-spin" aria-hidden="true" />
+					Signing in...
+				{:else}
+					Sign in
+				{/if}
+			</Button>
+			<RecaptchaNotice />
 		</form>
 
-		<div class="flex items-center gap-3">
-			<Separator class="flex-1" />
-			<span class="text-muted-foreground text-xs font-medium tracking-wide uppercase">or</span>
-			<Separator class="flex-1" />
-		</div>
-
-		<GoogleSignInButton
-			context={CONSENT_CONTEXTS.LOGIN}
-			redirectTo={data.redirectTo}
-			disabled={submitDisabled}
-		/>
-
-		<p class="text-muted-foreground text-center text-sm">
-			Don't have an account?
-			<a href={signupHref} class={AUTH_INLINE_LINK_CLASS}>Sign up</a>
+		<p class="text-muted-foreground flex flex-wrap items-center gap-x-1.5 text-sm font-medium">
+			New to {APP_NAME}?
+			<a href={signupHref} class={AUTH_INLINE_LINK_CLASS}>Create an account</a>
 		</p>
 	</div>
 
