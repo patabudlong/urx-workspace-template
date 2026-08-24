@@ -1,5 +1,3 @@
-// See https://svelte.dev/docs/kit/types#app.d.ts
-// for information about these interfaces
 declare global {
 	namespace App {
 		interface Locals {
@@ -16,6 +14,18 @@ declare global {
 		}
 		namespace Superforms {
 			type Message = import('$lib/shared/auth-messages').AuthFormMessage;
+		}
+	}
+
+	namespace svelteHTML {
+		interface IntrinsicElements {
+			'iconify-icon': {
+				icon?: string;
+				class?: string;
+				width?: string | number;
+				height?: string | number;
+				'aria-hidden'?: boolean | 'true' | 'false';
+			};
 		}
 	}
 }

@@ -5,6 +5,7 @@
 	import { formatPageTitle } from '$lib/shared/site-meta';
 	import { ModeWatcher } from 'mode-watcher';
 	import '../routes/layout.css';
+	import '$lib/icons/register-solar-icons';
 
 	let { children } = $props();
 

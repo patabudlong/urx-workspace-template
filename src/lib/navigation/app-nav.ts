@@ -1,14 +1,4 @@
-import type { Component } from 'svelte';
-import ActivityIcon from '@lucide/svelte/icons/activity';
-import BookOpenIcon from '@lucide/svelte/icons/book-open';
-import CreditCardIcon from '@lucide/svelte/icons/credit-card';
-import LayoutDashboardIcon from '@lucide/svelte/icons/layout-dashboard';
-import ShieldIcon from '@lucide/svelte/icons/shield';
-import UsersIcon from '@lucide/svelte/icons/users';
-import UserCircleIcon from '@lucide/svelte/icons/user-circle';
-import MailIcon from '@lucide/svelte/icons/mail';
-import BanknoteIcon from '@lucide/svelte/icons/banknote';
-import ClipboardClockIcon from '@lucide/svelte/icons/clipboard-clock';
+import { SOLAR } from '$lib/icons/solar-icons';
 import { WORKSPACE_MEMBER_ROLES } from '$lib/shared/models/workspace-member';
 import {
 	isWorkspacePackageEnabled,
@@ -18,7 +8,7 @@ import {
 export type AppNavItem = {
 	title: string;
 	href: string;
-	icon: Component;
+	icon: string;
 	external?: boolean;
 	match?: 'exact' | 'prefix';
 	/** When set, used instead of `href` for active-state matching. */
@@ -32,17 +22,42 @@ export type AppNavGroup = {
 	items: AppNavItem[];
 };
 
+const WORKSPACE_NAV_PRIORITY: Record<string, number> = {
+	'/': 0,
+	'/team': 1
+};
+
+function sortWorkspaceNavItems(items: AppNavItem[]): AppNavItem[] {
+	return [...items].sort((a, b) => {
+		const priorityA = WORKSPACE_NAV_PRIORITY[a.href] ?? 2;
+		const priorityB = WORKSPACE_NAV_PRIORITY[b.href] ?? 2;
+		return priorityA - priorityB;
+	});
+}
+
 export const APP_NAV_GROUPS: AppNavGroup[] = [
 	{
 		label: 'Workspace',
 		items: [
+			{
+				title: 'Overview',
+				href: '/',
+				icon: SOLAR.overview,
+				match: 'exact'
+			},
+			{
+				title: 'Team',
+				href: '/team',
+				icon: SOLAR.team,
+				match: 'prefix'
+			},
 // urixoft-workspace-mailbox:start
 			{
 				title: 'Mailbox',
 				// Link straight to INBOX — avoid /mailbox → redirect (double IMAP load).
 				href: '/mailbox/INBOX',
 				activeHref: '/mailbox',
-				icon: MailIcon,
+				icon: SOLAR.mailbox,
 				match: 'prefix',
 				packageId: 'urixoft-workspace-mailbox'
 			},
@@ -51,7 +66,7 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
 			{
 				title: 'Payroll',
 				href: '/payroll',
-				icon: BanknoteIcon,
+				icon: SOLAR.payroll,
 				match: 'prefix',
 				packageId: 'urixoft-workspace-payroll'
 			},
@@ -60,23 +75,11 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
 			{
 				title: 'DTR',
 				href: '/dtr',
-				icon: ClipboardClockIcon,
+				icon: SOLAR.dtr,
 				match: 'prefix',
 				packageId: 'urixoft-workspace-dtr'
-			},
-// urixoft-workspace-dtr:end
-			{
-				title: 'Overview',
-				href: '/',
-				icon: LayoutDashboardIcon,
-				match: 'exact'
-			},
-			{
-				title: 'Team',
-				href: '/team',
-				icon: UsersIcon,
-				match: 'prefix'
 			}
+// urixoft-workspace-dtr:end
 		]
 	},
 	{
@@ -85,13 +88,13 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
 			{
 				title: 'API Docs',
 				href: '/docs',
-				icon: BookOpenIcon,
+				icon: SOLAR.apiDocs,
 				match: 'exact'
 			},
 			{
 				title: 'Health Check',
 				href: '/api/v1/health',
-				icon: ActivityIcon,
+				icon: SOLAR.health,
 				external: true,
 				match: 'exact'
 			}
@@ -100,25 +103,29 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
 ];
 
 export function getAppNavGroups(enabledPackages: readonly string[] = []): AppNavGroup[] {
-	return APP_NAV_GROUPS.map((group) => ({
-		...group,
-		items: group.items.filter(
+	return APP_NAV_GROUPS.map((group) => {
+		const items = group.items.filter(
 			(item) => !item.packageId || isWorkspacePackageEnabled(enabledPackages, item.packageId)
-		)
-	})).filter((group) => group.items.length > 0);
+		);
+
+		return {
+			...group,
+			items: group.label === 'Workspace' ? sortWorkspaceNavItems(items) : items
+		};
+	}).filter((group) => group.items.length > 0);
 }
 
 export const USER_PROFILE_NAV_ITEMS: AppNavItem[] = [
 	{
 		title: 'Account',
 		href: '/account',
-		icon: UserCircleIcon,
+		icon: SOLAR.account,
 		match: 'exact'
 	},
 	{
 		title: 'Security',
 		href: '/security',
-		icon: ShieldIcon,
+		icon: SOLAR.security,
 		match: 'exact'
 	}
 ];
@@ -129,7 +136,7 @@ export const OWNER_PROFILE_NAV_ITEMS: AppNavItem[] = [
 	{
 		title: 'Billing',
 		href: '/billing',
-		icon: CreditCardIcon,
+		icon: SOLAR.billing,
 		match: 'exact'
 	}
 ];
@@ -138,7 +145,7 @@ export const WORKSPACE_OWNER_PROFILE_NAV_ITEMS: AppNavItem[] = [
 	{
 		title: 'Billing',
 		href: '/billing',
-		icon: CreditCardIcon,
+		icon: SOLAR.billing,
 		match: 'exact'
 	}
 ];

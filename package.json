@@ -68,8 +68,12 @@
 	},
 	"dependencies": {
 		"@aws-sdk/client-s3": "^3.1101.0",
+		"@fontsource/geist-sans": "^5.3.0",
+		"@iconify-icon/react": "^3.0.3",
+		"@iconify-icons/solar": "^2.0.1",
 		"@scalar/sveltekit": "^0.3.11",
 		"bcryptjs": "^3.0.3",
+		"iconify-icon": "^3.0.2",
 		"jose": "^6.2.5",
 		"mongodb": "^7.5.0",
 		"nodemailer": "^9.0.3",

@@ -40,14 +40,12 @@
 
 <Sidebar.Provider
 	bind:open={sidebarOpen}
-	class="h-svh overflow-hidden"
+	class="h-svh gap-1 overflow-hidden"
 	style="--sidebar-width: {SIDEBAR_WIDTH}; --team-secondary-sidebar-width: {SIDEBAR_WIDTH_TEAM_SECONDARY};"
 >
 	<AppSidebarViewport />
 	<AppSidebar />
-	<Sidebar.Inset
-		class="h-full min-h-0 min-w-0 overflow-hidden md:peer-data-[variant=inset]:m-0 md:peer-data-[variant=inset]:rounded-none md:peer-data-[variant=inset]:shadow-none"
-	>
+	<Sidebar.Inset class="h-full min-h-0 min-w-0 overflow-hidden">
 		<SiteHeader
 			userDisplay={data.userDisplay}
 			workspace={data.workspace}

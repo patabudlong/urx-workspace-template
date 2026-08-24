@@ -1,4 +1,5 @@
 <script lang="ts">
+	import AppIcon from '$lib/components/app-icon.svelte';
 	import DtrSettingsSectionMenu from '$lib/components/dtr/dtr-settings-section-menu.svelte';
 	import { isAppNavActive, type AppNavItem } from '$lib/navigation/app-nav';
 	import { cn } from '$lib/utils.js';
@@ -35,7 +36,7 @@
 						)}
 						aria-current={active ? 'page' : undefined}
 					>
-						<item.icon class="size-4 shrink-0" />
+						<AppIcon icon={item.icon} class="shrink-0" />
 						<span>{item.title}</span>
 					</a>
 				{/each}

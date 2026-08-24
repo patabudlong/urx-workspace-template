@@ -1,4 +1,5 @@
 <script lang="ts">
+	import AppIcon from '$lib/components/app-icon.svelte';
 	import PayrollSettingsSidebarMenu from '$lib/components/payroll/payroll-settings-sidebar-menu.svelte';
 	import { page } from '$app/state';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
@@ -23,7 +24,7 @@
 					<Sidebar.MenuButton isActive={isAppNavActive(page.url.pathname, item)} tooltipContent={item.title}>
 						{#snippet child({ props })}
 							<a href={item.href} {...props}>
-								<item.icon />
+								<AppIcon icon={item.icon} />
 								<span>{item.title}</span>
 							</a>
 						{/snippet}

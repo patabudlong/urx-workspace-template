@@ -1,25 +1,23 @@
 import type { AppNavItem } from '$lib/navigation/app-nav';
-import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
-import CalendarDaysIcon from '@lucide/svelte/icons/calendar-days';
-import CalendarHeartIcon from '@lucide/svelte/icons/calendar-heart';
+import { SOLAR } from '$lib/icons/solar-icons';
 
 export const DTR_SETTINGS_NAV_ITEMS: AppNavItem[] = [
 	{
 		title: 'Workspace default',
 		href: '/dtr/settings',
-		icon: CalendarClockIcon,
+		icon: SOLAR.dtrDefault,
 		match: 'exact'
 	},
 	{
 		title: 'Named schedules',
 		href: '/dtr/settings/schedules',
-		icon: CalendarDaysIcon,
+		icon: SOLAR.dtrSchedules,
 		match: 'exact'
 	},
 	{
 		title: 'Holiday calendar',
 		href: '/dtr/settings/holidays',
-		icon: CalendarHeartIcon,
+		icon: SOLAR.dtrHolidays,
 		match: 'exact'
 	}
 ];

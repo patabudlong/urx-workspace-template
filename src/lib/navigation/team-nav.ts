@@ -1,33 +1,30 @@
 import type { AppNavItem } from '$lib/navigation/app-nav';
+import { SOLAR } from '$lib/icons/solar-icons';
 import { canEditTeamSettings, canViewTeamRoles } from '$lib/shared/team/member-management';
-import KeyRoundIcon from '@lucide/svelte/icons/key-round';
-import MailIcon from '@lucide/svelte/icons/mail';
-import SettingsIcon from '@lucide/svelte/icons/settings';
-import UsersIcon from '@lucide/svelte/icons/users';
 
 export const TEAM_NAV_ITEMS: AppNavItem[] = [
 	{
 		title: 'Members',
 		href: '/team',
-		icon: UsersIcon,
+		icon: SOLAR.team,
 		match: 'exact'
 	},
 	{
 		title: 'Invitations',
 		href: '/team/invitations',
-		icon: MailIcon,
+		icon: SOLAR.invitations,
 		match: 'exact'
 	},
 	{
 		title: 'Roles & permissions',
 		href: '/team/roles',
-		icon: KeyRoundIcon,
+		icon: SOLAR.roles,
 		match: 'exact'
 	},
 	{
 		title: 'Workspace settings',
 		href: '/team/settings',
-		icon: SettingsIcon,
+		icon: SOLAR.settings,
 		match: 'exact'
 	}
 ];

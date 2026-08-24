@@ -1,9 +1,21 @@
 <script lang="ts">
+	import AppIcon from '$lib/components/app-icon.svelte';
 	import { page } from '$app/state';
 	import SidebarModulesCta from '$lib/components/sidebar-modules-cta.svelte';
 	import SiteBrandMark from '$lib/components/site-brand-mark.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { getAppNavGroups, isAppNavActive, isWorkspaceOwner, type AppNavItem } from '$lib/navigation/app-nav';
+	import { cn } from '$lib/utils.js';
+
+	const navItemClass = cn(
+		'my-0.5 h-10 px-3 transition-all duration-200 ease-in-out',
+		'hover:translate-x-0.5 hover:bg-primary/5 hover:text-primary',
+		'data-[active=true]:bg-primary data-[active=true]:font-medium data-[active=true]:text-primary-foreground',
+		'data-[active=true]:hover:bg-primary data-[active=true]:hover:text-primary-foreground'
+	);
+
+	const navGroupLabelClass =
+		'text-muted-foreground mt-4 mb-2 px-3 text-xs font-semibold uppercase tracking-wide';
 
 	const navGroups = $derived(getAppNavGroups(page.data.workspace?.enabledPackages ?? []));
 	const showModulesCta = $derived(isWorkspaceOwner(page.data.workspace?.role));
@@ -17,7 +29,7 @@
 	}
 </script>
 
-<Sidebar.Root collapsible="icon">
+<Sidebar.Root variant="inset" collapsible="icon">
 	<Sidebar.Header>
 		<Sidebar.Menu>
 			<Sidebar.MenuItem>
@@ -33,17 +45,18 @@
 	<Sidebar.Content class="py-1 pe-1">
 		{#each navGroups as group (group.label)}
 			<Sidebar.Group>
-				<Sidebar.GroupLabel>{group.label}</Sidebar.GroupLabel>
+				<Sidebar.GroupLabel class={navGroupLabelClass}>{group.label}</Sidebar.GroupLabel>
 				<Sidebar.Menu>
 					{#each group.items as item (item.href)}
 						<Sidebar.MenuItem>
 							<Sidebar.MenuButton
+								class={navItemClass}
 								isActive={isAppNavActive(page.url.pathname, item)}
 								tooltipContent={item.title}
 							>
 								{#snippet child({ props })}
 									<a href={item.href} target={navTarget(item)} rel={navRel(item)} {...props}>
-										<item.icon />
+										<AppIcon icon={item.icon} />
 										<span>{item.title}</span>
 									</a>
 								{/snippet}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import AppIcon from '$lib/components/app-icon.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { isAppNavActive } from '$lib/navigation/app-nav';
 	import { PAYROLL_SETTINGS_NAV_ITEM } from '$lib/navigation/payroll-nav';
@@ -28,7 +29,7 @@
 	>
 		{#snippet child({ props })}
 			<button type="button" {...props}>
-				<PAYROLL_SETTINGS_NAV_ITEM.icon class="size-4" aria-hidden="true" />
+				<AppIcon icon={PAYROLL_SETTINGS_NAV_ITEM.icon} aria-hidden="true" />
 				<span>Settings</span>
 				<ChevronDownIcon
 					class={cn('ms-auto size-4 shrink-0 transition-transform', settingsOpen && 'rotate-180')}
@@ -45,7 +46,7 @@
 					<Sidebar.MenuSubButton isActive={isAppNavActive(page.url.pathname, item)}>
 						{#snippet child({ props })}
 							<a href={item.href} {...props}>
-								<item.icon class="size-4" aria-hidden="true" />
+								<AppIcon icon={item.icon} aria-hidden="true" />
 								<span>{item.title}</span>
 							</a>
 						{/snippet}
