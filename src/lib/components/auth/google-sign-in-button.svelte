@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { AUTH_ACTION_BUTTON_CLASS } from '$lib/auth/ui';
+	import { AUTH_ACTION_BUTTON_CLASS, AUTH_OAUTH_COMPACT_CLASS } from '$lib/auth/ui';
 	import { getPlatformAuthOriginFromWindow } from '$lib/auth/platform-origin';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { cn } from '$lib/utils.js';
@@ -9,9 +9,11 @@
 		context: ConsentContext;
 		redirectTo?: string;
 		disabled?: boolean;
+		/** `compact` matches ShadcnSpace auth1 side-by-side OAuth buttons. */
+		variant?: 'default' | 'compact';
 	};
 
-	let { context, redirectTo = '/', disabled = false }: Props = $props();
+	let { context, redirectTo = '/', disabled = false, variant = 'default' }: Props = $props();
 
 	function handleClick() {
 		const params = new URLSearchParams({
@@ -27,11 +29,17 @@
 <Button
 	type="button"
 	variant="outline"
-	class={cn(AUTH_ACTION_BUTTON_CLASS, 'gap-2')}
+	class={cn(
+		variant === 'compact' ? AUTH_OAUTH_COMPACT_CLASS : cn(AUTH_ACTION_BUTTON_CLASS, 'gap-2')
+	)}
 	{disabled}
 	onclick={handleClick}
 >
-	<svg class="size-5 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+	<svg
+		class={cn('shrink-0', variant === 'compact' ? 'size-4' : 'size-5')}
+		viewBox="0 0 24 24"
+		aria-hidden="true"
+	>
 		<path
 			d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
 			fill="#4285F4"
@@ -49,5 +57,5 @@
 			fill="#EA4335"
 		/>
 	</svg>
-	Continue with Google
+	{variant === 'compact' ? 'Google' : 'Continue with Google'}
 </Button>

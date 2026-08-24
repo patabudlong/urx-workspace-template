@@ -18,21 +18,22 @@
 
 <div class="relative flex min-h-full flex-col">
 	<header
-		class="relative flex shrink-0 items-center justify-between gap-4 border-b px-4 py-4 sm:px-6 lg:border-b-0 lg:px-10 lg:pt-8"
+		class="relative flex shrink-0 items-center justify-end gap-4 border-b px-6 py-4 lg:border-b-0 lg:px-10 lg:pt-10 lg:pb-0"
 	>
-		<div class="flex items-center gap-3 lg:hidden">
-			<SiteBrandMark />
-		</div>
-		<ThemeToggle class="ml-auto" iconClass="size-5" />
+		<ThemeToggle iconClass="size-5" />
 	</header>
 
 	<main class="flex min-h-0 flex-1 flex-col">
-		<div class="flex flex-1 flex-col justify-center px-4 py-8 sm:px-6 lg:px-10 lg:py-10 xl:px-16">
-			<div class="mx-auto w-full max-w-md space-y-8">
-				<div class="space-y-2">
-					<h2 class="text-2xl font-semibold tracking-tight">{title}</h2>
+		<div class="flex flex-1 flex-col justify-center px-6 py-8 lg:px-10 lg:py-10">
+			<div class="w-full space-y-6">
+				<div class="mb-2">
+					<SiteBrandMark href="/" nameFormat="combined" />
+				</div>
+
+				<div class="space-y-1">
+					<h2 class="text-xl font-bold tracking-tight">{title}</h2>
 					{#if description}
-						<p class="text-muted-foreground text-sm leading-relaxed">{description}</p>
+						<p class="text-muted-foreground text-sm font-medium">{description}</p>
 					{/if}
 				</div>
 
@@ -43,8 +44,8 @@
 		</div>
 
 		{#if footer}
-			<footer class="text-muted-foreground shrink-0 border-t px-4 py-6 sm:px-6 lg:px-10 xl:px-16">
-				<div class="mx-auto w-full max-w-md">
+			<footer class="text-muted-foreground shrink-0 border-t px-6 py-6 lg:px-10">
+				<div class="w-full">
 					{@render footer()}
 				</div>
 			</footer>

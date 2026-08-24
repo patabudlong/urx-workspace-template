@@ -90,7 +90,7 @@
 </script>
 
 <h1
-	class="text-primary-foreground flex w-full max-w-none flex-col text-left text-4xl font-semibold tracking-tight xl:text-5xl"
+	class="text-primary-foreground flex w-full max-w-none flex-col text-left text-3xl font-semibold tracking-tight"
 >
 	<span class="block leading-[1.15]">
 		Your
