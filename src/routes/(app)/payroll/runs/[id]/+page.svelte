@@ -1,7 +1,6 @@
 <script lang="ts">
 	import PayrollDeleteRunDialog from '$lib/components/payroll/payroll-delete-run-dialog.svelte';
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
-	import PayrollPayslipDetail from '$lib/components/payroll/payroll-payslip-detail.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -10,6 +9,7 @@
 	import * as Table from '$lib/components/ui/table/index.js';
 	import type { PayrollPayslipDto } from '$lib/shared/models/payroll-payslip';
 	import type { PayrollRunDto } from '$lib/shared/models/payroll-run';
+	import type { PayrollRunStatus } from '$lib/shared/payroll/schemas';
 	import {
 		PAYROLL_RUN_ALREADY_PROCESSED_MESSAGE,
 		PAYROLL_RUN_DELETE_FAILED_MESSAGE,
@@ -18,11 +18,16 @@
 		PAYROLL_RUN_PROCESSED_MESSAGE
 	} from '$lib/shared/payroll/messages';
 	import { formatPayslipMoney } from '$lib/shared/payroll/payslip-format';
-	import { goto } from '$app/navigation';
+	import { cn } from '$lib/utils.js';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
+	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
+	import CircleCheckIcon from '@lucide/svelte/icons/circle-check';
+	import CircleDashedIcon from '@lucide/svelte/icons/circle-dashed';
+	import CircleXIcon from '@lucide/svelte/icons/circle-x';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import PlayIcon from '@lucide/svelte/icons/play';
-	import { invalidateAll } from '$app/navigation';
+	import UsersIcon from '@lucide/svelte/icons/users';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { untrack } from 'svelte';
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
@@ -87,6 +92,20 @@
 			$processMessage !== PAYROLL_RUN_PROCESSED_MESSAGE
 	);
 
+	const totals = $derived.by(() => {
+		if (!payslips || payslips.length === 0) {
+			return null;
+		}
+
+		return payslips.reduce(
+			(acc, payslip) => ({
+				grossCents: acc.grossCents + payslip.grossCents,
+				netCents: acc.netCents + payslip.netCents
+			}),
+			{ grossCents: 0, netCents: 0 }
+		);
+	});
+
 	function formatDate(value: string): string {
 		return new Intl.DateTimeFormat(undefined, {
 			year: 'numeric',
@@ -95,7 +114,9 @@
 		}).format(new Date(value));
 	}
 
-	function statusVariant(status: PayrollRunDto['status']): 'default' | 'secondary' | 'destructive' | 'outline' {
+	function statusVariant(
+		status: PayrollRunStatus
+	): 'default' | 'secondary' | 'destructive' | 'outline' {
 		if (status === 'completed') {
 			return 'default';
 		}
@@ -104,7 +125,15 @@
 			return 'destructive';
 		}
 
+		if (status === 'draft') {
+			return 'outline';
+		}
+
 		return 'secondary';
+	}
+
+	function statusLabel(status: PayrollRunStatus): string {
+		return status.charAt(0).toUpperCase() + status.slice(1);
 	}
 
 	const canProcess = $derived(run.status === 'draft' || run.status === 'failed');
@@ -161,9 +190,26 @@
 	</PageHeader>
 
 	<div class="flex flex-wrap items-center gap-3">
-		<Badge variant={statusVariant(run.status)} class="capitalize">{run.status}</Badge>
+		<Badge
+			variant={statusVariant(run.status)}
+			class={cn('capitalize', run.status === 'processing' && 'animate-pulse')}
+		>
+			{#if run.status === 'completed'}
+				<CircleCheckIcon aria-hidden="true" />
+			{:else if run.status === 'failed'}
+				<CircleXIcon aria-hidden="true" />
+			{:else if run.status === 'processing'}
+				<Loader2Icon class="animate-spin" aria-hidden="true" />
+			{:else}
+				<CircleDashedIcon aria-hidden="true" />
+			{/if}
+			{statusLabel(run.status)}
+		</Badge>
 		{#if payslips}
-			<span class="text-muted-foreground text-sm">{payslips.length} payslip(s)</span>
+			<span class="text-muted-foreground inline-flex items-center gap-1.5 text-sm">
+				<UsersIcon class="size-3.5" aria-hidden="true" />
+				{payslips.length} payslip{payslips.length === 1 ? '' : 's'}
+			</span>
 		{/if}
 	</div>
 
@@ -171,8 +217,29 @@
 		<StatusAlert variant="danger" title="Could not remove pay run" description={deleteError} />
 	{/if}
 
+	{#if totals}
+		<div class="grid gap-4 sm:grid-cols-2">
+			<Card.Root>
+				<Card.Header class="pb-2">
+					<Card.Description>Total gross</Card.Description>
+					<Card.Title class="text-2xl font-semibold tracking-tight">
+						{formatPayslipMoney(totals.grossCents, currency)}
+					</Card.Title>
+				</Card.Header>
+			</Card.Root>
+			<Card.Root>
+				<Card.Header class="pb-2">
+					<Card.Description>Total net pay</Card.Description>
+					<Card.Title class="text-2xl font-semibold tracking-tight">
+						{formatPayslipMoney(totals.netCents, currency)}
+					</Card.Title>
+				</Card.Header>
+			</Card.Root>
+		</div>
+	{/if}
+
 	{#if canProcess}
-		<Card.Root>
+		<Card.Root class="border-primary/20 bg-primary/[0.02]">
 			<Card.Header>
 				<Card.Title>Process pay run</Card.Title>
 				<Card.Description>
@@ -215,7 +282,13 @@
 	<Card.Root>
 		<Card.Header>
 			<Card.Title>Payslips</Card.Title>
-			<Card.Description>Per-employee earnings after this pay run is processed.</Card.Description>
+			<Card.Description>
+				{#if payslips && payslips.length > 0}
+					Per-employee earnings for this pay period.
+				{:else}
+					Per-employee earnings after this pay run is processed.
+				{/if}
+			</Card.Description>
 		</Card.Header>
 		<Card.Content>
 			{#if payslips === null}
@@ -225,47 +298,82 @@
 					{/each}
 				</div>
 			{:else if payslips.length === 0}
-				<StatusAlert
-					variant="info"
-					title="No payslips yet"
-					description="Process this pay run to generate payslips from DTR time records and employee pay settings."
-				/>
+				<div class="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed px-6 py-12 text-center">
+					<div
+						class="bg-muted text-muted-foreground flex size-12 items-center justify-center rounded-full"
+					>
+						<PlayIcon class="size-5" aria-hidden="true" />
+					</div>
+					<div class="max-w-sm space-y-1">
+						<p class="font-medium">No payslips yet</p>
+						<p class="text-muted-foreground text-sm">
+							Process this pay run to generate payslips from DTR time records and employee pay
+							settings.
+						</p>
+					</div>
+				</div>
 			{:else}
-				<Table.Root>
-					<Table.Header>
-						<Table.Row>
-							<Table.Head>Employee</Table.Head>
-							<Table.Head class="text-right">Gross</Table.Head>
-							<Table.Head class="text-right">Net</Table.Head>
-							<Table.Head class="w-[100px]" />
-						</Table.Row>
-					</Table.Header>
-					<Table.Body>
-						{#each payslips as payslip (payslip.id)}
+				<div class="overflow-x-auto rounded-lg border">
+					<Table.Root>
+						<Table.Header>
 							<Table.Row>
-								<Table.Cell>
-									<div class="min-w-0">
-										<p class="truncate font-medium">{payslip.employeeFullName}</p>
-										{#if payslip.employeeCode}
-											<p class="text-muted-foreground text-sm">{payslip.employeeCode}</p>
-										{/if}
-									</div>
-								</Table.Cell>
-								<Table.Cell class="text-right">
-									{formatPayslipMoney(payslip.grossCents, currency)}
-								</Table.Cell>
-								<Table.Cell class="text-right font-medium">
-									{formatPayslipMoney(payslip.netCents, currency)}
-								</Table.Cell>
-								<Table.Cell class="text-right">
-									<Button variant="outline" size="sm" href="/payroll/payslips/{payslip.id}">
-										View
-									</Button>
-								</Table.Cell>
+								<Table.Head class="min-w-44">Employee</Table.Head>
+								<Table.Head class="min-w-28 text-right">Gross</Table.Head>
+								<Table.Head class="min-w-28 text-right">Net</Table.Head>
+								<Table.Head class="w-12" />
 							</Table.Row>
-						{/each}
-					</Table.Body>
-				</Table.Root>
+						</Table.Header>
+						<Table.Body>
+							{#each payslips as payslip (payslip.id)}
+								<Table.Row
+									class="group cursor-pointer"
+									onclick={() => goto(`/payroll/payslips/${payslip.id}`)}
+								>
+									<Table.Cell class="h-px align-middle">
+										<div class="flex h-full min-w-0 items-center">
+											<div class="min-w-0 space-y-0.5">
+												<p
+													class="group-hover:text-primary truncate font-medium transition-colors"
+												>
+													{payslip.employeeFullName}
+												</p>
+												{#if payslip.employeeCode}
+													<p class="text-muted-foreground truncate text-xs">
+														{payslip.employeeCode}
+													</p>
+												{/if}
+											</div>
+										</div>
+									</Table.Cell>
+									<Table.Cell class="h-px align-middle text-right whitespace-nowrap">
+										<div class="flex h-full items-center justify-end text-sm">
+											{formatPayslipMoney(payslip.grossCents, currency)}
+										</div>
+									</Table.Cell>
+									<Table.Cell class="h-px align-middle text-right font-medium whitespace-nowrap">
+										<div class="flex h-full items-center justify-end">
+											{formatPayslipMoney(payslip.netCents, currency)}
+										</div>
+									</Table.Cell>
+									<Table.Cell class="h-px align-middle text-right">
+										<div class="flex h-full items-center justify-end">
+											<Button
+												variant="ghost"
+												size="icon-sm"
+												class="text-muted-foreground group-hover:text-foreground h-8 w-8"
+												href="/payroll/payslips/{payslip.id}"
+												aria-label="View payslip for {payslip.employeeFullName}"
+												onclick={(event) => event.stopPropagation()}
+											>
+												<ChevronRightIcon class="size-4" aria-hidden="true" />
+											</Button>
+										</div>
+									</Table.Cell>
+								</Table.Row>
+							{/each}
+						</Table.Body>
+					</Table.Root>
+				</div>
 			{/if}
 		</Card.Content>
 	</Card.Root>
