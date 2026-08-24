@@ -35,7 +35,7 @@ export type DtrHolidayCalendarRates = {
 export const DTR_HOLIDAY_DEFAULT_RATES: DtrHolidayCalendarRates = {
 	regularHoliday: { workedPercent: 200, unworkedPercent: 100 },
 	specialNonWorkingDay: { workedPercent: 130, unworkedPercent: 0 },
-	specialWorkingDay: { workedPercent: 130, unworkedPercent: 30 }
+	specialWorkingDay: { workedPercent: 130, unworkedPercent: 0 }
 };
 
 export type DtrHolidayDayCredit = {
