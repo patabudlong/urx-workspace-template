@@ -1,4 +1,5 @@
 <script lang="ts">
+	import AppIcon from '$lib/components/app-icon.svelte';
 	import { page } from '$app/state';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { isAppNavActive, type AppNavItem } from '$lib/navigation/app-nav';
@@ -25,7 +26,7 @@
 					>
 						{#snippet child({ props })}
 							<a href={item.href} {...props}>
-								<item.icon />
+								<AppIcon icon={item.icon} />
 								<span>{item.title}</span>
 							</a>
 						{/snippet}

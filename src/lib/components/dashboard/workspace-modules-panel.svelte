@@ -1,20 +1,18 @@
 <script lang="ts">
+	import AppIcon from '$lib/components/app-icon.svelte';
 	import DashboardCard from '$lib/components/dashboard/dashboard-card.svelte';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
+	import { SOLAR } from '$lib/icons/solar-icons';
 	import type { WorkspaceOverviewModule } from '$lib/shared/dashboard/overview';
 	import { WORKSPACE_PACKAGE_IDS } from '$lib/shared/workspace-packages';
-	import BanknoteIcon from '@lucide/svelte/icons/banknote';
-	import ClipboardClockIcon from '@lucide/svelte/icons/clipboard-clock';
-	import MailIcon from '@lucide/svelte/icons/mail';
-	import type { Component } from 'svelte';
 
 	let { modules }: { modules: WorkspaceOverviewModule[] } = $props();
 
-	const moduleIcons: Record<string, Component> = {
-		[WORKSPACE_PACKAGE_IDS.MAILBOX]: MailIcon,
-		[WORKSPACE_PACKAGE_IDS.PAYROLL]: BanknoteIcon,
-		[WORKSPACE_PACKAGE_IDS.DTR]: ClipboardClockIcon
+	const moduleIcons: Record<string, string> = {
+		[WORKSPACE_PACKAGE_IDS.MAILBOX]: SOLAR.mailbox,
+		[WORKSPACE_PACKAGE_IDS.PAYROLL]: SOLAR.payroll,
+		[WORKSPACE_PACKAGE_IDS.DTR]: SOLAR.dtr
 	};
 
 	const moduleIconClasses: Record<string, string> = {
@@ -31,7 +29,6 @@
 	</Card.Header>
 	<Card.Content class="space-y-3">
 		{#each modules as module (module.id)}
-			{@const Icon = moduleIcons[module.id]}
 			<a
 				href={module.href}
 				class="hover:bg-muted/50 flex items-center gap-3 rounded-lg border border-transparent px-2 py-2 transition-colors"
@@ -39,9 +36,7 @@
 				<div
 					class="{moduleIconClasses[module.id]} flex size-10 shrink-0 items-center justify-center rounded-lg"
 				>
-					{#if Icon}
-						<Icon class="size-4" />
-					{/if}
+					<AppIcon icon={moduleIcons[module.id]} />
 				</div>
 				<div class="min-w-0 flex-1">
 					<p class="text-sm font-medium">{module.label}</p>

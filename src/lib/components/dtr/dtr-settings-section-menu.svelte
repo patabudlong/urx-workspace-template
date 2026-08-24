@@ -1,4 +1,5 @@
 <script lang="ts">
+	import AppIcon from '$lib/components/app-icon.svelte';
 	import { isAppNavActive } from '$lib/navigation/app-nav';
 	import { DTR_SETTINGS_NAV_ITEM } from '$lib/navigation/dtr-nav';
 	import { DTR_SETTINGS_NAV_ITEMS } from '$lib/navigation/dtr-settings-nav';
@@ -33,7 +34,7 @@
 				settingsOpen = !settingsOpen;
 			}}
 		>
-			<DTR_SETTINGS_NAV_ITEM.icon class="size-4 shrink-0" aria-hidden="true" />
+			<AppIcon icon={DTR_SETTINGS_NAV_ITEM.icon} class="shrink-0" aria-hidden="true" />
 			<span class="min-w-0 flex-1 truncate text-left">Settings</span>
 			<ChevronDownIcon
 				class={cn('size-4 shrink-0 transition-transform', settingsOpen && 'rotate-180')}
@@ -55,7 +56,7 @@
 						)}
 						aria-current={active ? 'page' : undefined}
 					>
-						<item.icon class="size-4 shrink-0" aria-hidden="true" />
+						<AppIcon icon={item.icon} class="shrink-0" aria-hidden="true" />
 						<span>{item.title}</span>
 					</a>
 				{/each}

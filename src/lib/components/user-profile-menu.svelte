@@ -1,4 +1,5 @@
 <script lang="ts">
+	import AppIcon from '$lib/components/app-icon.svelte';
 	import LogoutDialog from '$lib/components/logout-dialog.svelte';
 	import PresenceStatusIndicator from '$lib/components/presence-status-indicator.svelte';
 	import UserAvatar from '$lib/components/user-avatar.svelte';
@@ -8,6 +9,7 @@
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import { getProfileNavItems } from '$lib/navigation/app-nav';
+	import { SOLAR } from '$lib/icons/solar-icons';
 	import { updatePresenceStatus } from '$lib/presence/client-presence';
 	import {
 		PRESENCE_STATUS_LABELS,
@@ -18,10 +20,8 @@
 	import type { WorkspaceContext } from '$lib/shared/workspace-context';
 	import { cn } from '$lib/utils.js';
 	import CheckIcon from '@lucide/svelte/icons/check';
-	import HouseIcon from '@lucide/svelte/icons/house';
 	import IdCardIcon from '@lucide/svelte/icons/id-card';
 	import XIcon from '@lucide/svelte/icons/x';
-	import type { Component } from 'svelte';
 
 	let {
 		userDisplay,
@@ -36,13 +36,7 @@
 	const workspaceName = $derived(workspace?.workspaceName ?? 'your workspace');
 
 	const profileNavItems = $derived(getProfileNavItems(workspaceRole));
-	const menuNavItems = $derived<
-		{
-			title: string;
-			href: string;
-			icon: Component;
-		}[]
-	>([{ title: 'Home', href: '/', icon: HouseIcon }, ...profileNavItems]);
+	const menuNavItems = $derived([{ title: 'Home', href: '/', icon: SOLAR.home }, ...profileNavItems]);
 
 	let open = $state(false);
 	let logoutOpen = $state(false);
@@ -169,7 +163,7 @@
 					class="h-10 w-full justify-start gap-3 px-3 font-medium"
 					onclick={closeMenu}
 				>
-					<item.icon class="text-muted-foreground size-4" />
+					<AppIcon icon={item.icon} class="text-muted-foreground" />
 					{item.title}
 				</Button>
 			{/each}

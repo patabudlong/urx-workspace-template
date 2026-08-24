@@ -1,4 +1,5 @@
 <script lang="ts">
+	import AppIcon from '$lib/components/app-icon.svelte';
 	import { page } from '$app/state';
 	import SidebarModulesCta from '$lib/components/sidebar-modules-cta.svelte';
 	import SiteBrandMark from '$lib/components/site-brand-mark.svelte';
@@ -7,7 +8,7 @@
 	import { cn } from '$lib/utils.js';
 
 	const navItemClass = cn(
-		'my-0.5 h-9 px-3 transition-all duration-200 ease-in-out',
+		'my-0.5 h-10 px-3 transition-all duration-200 ease-in-out',
 		'hover:translate-x-0.5 hover:bg-primary/5 hover:text-primary',
 		'data-[active=true]:bg-primary data-[active=true]:font-medium data-[active=true]:text-primary-foreground',
 		'data-[active=true]:hover:bg-primary data-[active=true]:hover:text-primary-foreground'
@@ -55,7 +56,7 @@
 							>
 								{#snippet child({ props })}
 									<a href={item.href} target={navTarget(item)} rel={navRel(item)} {...props}>
-										<item.icon />
+										<AppIcon icon={item.icon} />
 										<span>{item.title}</span>
 									</a>
 								{/snippet}

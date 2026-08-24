@@ -1,7 +1,7 @@
 <script lang="ts">
+	import AppIcon from '$lib/components/app-icon.svelte';
 	import DashboardCard from '$lib/components/dashboard/dashboard-card.svelte';
 	import * as Card from '$lib/components/ui/card/index.js';
-	import type { Component } from 'svelte';
 	import { cn } from '$lib/utils.js';
 
 	type TrendDirection = 'up' | 'down' | 'neutral';
@@ -12,7 +12,7 @@
 		hint,
 		period,
 		trend,
-		icon: Icon,
+		icon,
 		iconClass,
 		class: className
 	}: {
@@ -21,7 +21,7 @@
 		hint?: string;
 		period?: string;
 		trend?: { label: string; direction?: TrendDirection };
-		icon?: Component;
+		icon?: string;
 		iconClass?: string;
 		class?: string;
 	} = $props();
@@ -41,14 +41,14 @@
 	<Card.Header class="pb-2">
 		<div class="flex items-start justify-between gap-3">
 			<Card.Description class="text-xs font-medium tracking-wide uppercase">{label}</Card.Description>
-			{#if Icon}
+			{#if icon}
 				<div
 					class={cn(
 						'bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded-lg',
 						iconClass
 					)}
 				>
-					<Icon class="size-4" />
+					<AppIcon {icon} size="md" />
 				</div>
 			{/if}
 		</div>

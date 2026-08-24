@@ -1,14 +1,11 @@
 import type { AppNavItem } from '$lib/navigation/app-nav';
+import { SOLAR } from '$lib/icons/solar-icons';
 import { canManagePayroll } from '$lib/shared/payroll/access';
-import BanknoteIcon from '@lucide/svelte/icons/banknote';
-import CalendarRangeIcon from '@lucide/svelte/icons/calendar-range';
-import SettingsIcon from '@lucide/svelte/icons/settings';
-import UsersIcon from '@lucide/svelte/icons/users';
 
 export const PAYROLL_SETTINGS_NAV_ITEM: AppNavItem = {
 	title: 'Settings',
 	href: '/payroll/settings',
-	icon: SettingsIcon,
+	icon: SOLAR.settings,
 	match: 'prefix'
 };
 
@@ -16,19 +13,19 @@ export const PAYROLL_NAV_ITEMS: AppNavItem[] = [
 	{
 		title: 'Overview',
 		href: '/payroll',
-		icon: BanknoteIcon,
+		icon: SOLAR.payroll,
 		match: 'exact'
 	},
 	{
 		title: 'Employees',
 		href: '/payroll/employees',
-		icon: UsersIcon,
+		icon: SOLAR.employees,
 		match: 'prefix'
 	},
 	{
 		title: 'Pay runs',
 		href: '/payroll/runs',
-		icon: CalendarRangeIcon,
+		icon: SOLAR.payRuns,
 		match: 'exact'
 	}
 ];

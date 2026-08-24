@@ -1,9 +1,10 @@
 <script lang="ts">
+	import AppIcon from '$lib/components/app-icon.svelte';
 	import { page } from '$app/state';
 	import * as Command from '$lib/components/ui/command/index.js';
 	import { getAppNavGroups, getProfileNavItems } from '$lib/navigation/app-nav';
+	import { SOLAR } from '$lib/icons/solar-icons';
 	import { cn } from '$lib/utils.js';
-	import SearchIcon from '@lucide/svelte/icons/search';
 	import { onMount } from 'svelte';
 
 	let {
@@ -58,7 +59,7 @@
 	}}
 	aria-label="Open search"
 >
-	<SearchIcon class="size-4 opacity-60" />
+	<AppIcon icon={SOLAR.search} class="opacity-60" />
 </button>
 
 <button
@@ -72,7 +73,7 @@
 	}}
 	aria-label="Open search"
 >
-	<SearchIcon class="absolute top-1/2 left-3 size-4 shrink-0 -translate-y-1/2 opacity-60" />
+	<AppIcon icon={SOLAR.search} class="absolute top-1/2 left-3 -translate-y-1/2 opacity-60" />
 	<span class="flex-1 truncate">Search...</span>
 	<kbd
 		class="bg-background text-muted-foreground pointer-events-none hidden h-5 shrink-0 items-center gap-0.5 rounded border px-1.5 font-mono text-[10px] font-medium lg:inline-flex"
@@ -96,7 +97,7 @@
 							open = false;
 						}}
 					>
-						<item.icon />
+						<AppIcon icon={item.icon} />
 						<span>{item.title}</span>
 					</Command.LinkItem>
 				{/each}
@@ -111,7 +112,7 @@
 							open = false;
 						}}
 					>
-						<item.icon />
+						<AppIcon icon={item.icon} />
 						<span>{item.title}</span>
 					</Command.LinkItem>
 				{/each}

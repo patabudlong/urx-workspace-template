@@ -1,4 +1,5 @@
 <script lang="ts">
+	import AppIcon from '$lib/components/app-icon.svelte';
 	import DashboardCard from '$lib/components/dashboard/dashboard-card.svelte';
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
 	import StatCard from '$lib/components/dashboard/stat-card.svelte';
@@ -8,13 +9,7 @@
 	import WorkspaceTeamPreview from '$lib/components/dashboard/workspace-team-preview.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
-	import ActivityIcon from '@lucide/svelte/icons/activity';
-	import ArrowRightIcon from '@lucide/svelte/icons/arrow-right';
-	import BookOpenIcon from '@lucide/svelte/icons/book-open';
-	import LayersIcon from '@lucide/svelte/icons/layers';
-	import MailPlusIcon from '@lucide/svelte/icons/mail-plus';
-	import RadioIcon from '@lucide/svelte/icons/radio';
-	import UsersIcon from '@lucide/svelte/icons/users';
+	import { SOLAR } from '$lib/icons/solar-icons';
 
 	let { data } = $props();
 
@@ -48,11 +43,11 @@
 	>
 		{#snippet actions()}
 			<Button href="/team/invitations" variant="outline" size="sm">
-				<MailPlusIcon class="size-4" />
+				<AppIcon icon={SOLAR.inviteUser} />
 				Invite teammate
 			</Button>
 			<Button href="/docs" variant="outline" size="sm">
-				<BookOpenIcon class="size-4" />
+				<AppIcon icon={SOLAR.apiDocs} />
 				API docs
 			</Button>
 		{/snippet}
@@ -65,14 +60,14 @@
 				value={String(overview.memberCount)}
 				period="Active workspace"
 				trend={memberTrend ?? undefined}
-				icon={UsersIcon}
+				icon={SOLAR.team}
 			/>
 			<StatCard
 				label="Online now"
 				value={String(overview.onlineCount)}
 				period="Team presence"
 				trend={{ label: 'Live', direction: 'neutral' }}
-				icon={RadioIcon}
+				icon={SOLAR.online}
 			/>
 			<StatCard
 				label="Active modules"
@@ -82,7 +77,7 @@
 					label: overview.enabledModuleCount === overview.totalModuleCount ? 'All enabled' : 'Partial',
 					direction: overview.enabledModuleCount > 0 ? 'up' : 'neutral'
 				}}
-				icon={LayersIcon}
+				icon={SOLAR.modules}
 			/>
 			<StatCard
 				label="Pending invites"
@@ -92,7 +87,7 @@
 					label: overview.pendingInvitationCount === 0 ? 'Clear' : 'Open',
 					direction: overview.pendingInvitationCount === 0 ? 'up' : 'neutral'
 				}}
-				icon={MailPlusIcon}
+				icon={SOLAR.invitations}
 			/>
 		</div>
 
@@ -125,7 +120,7 @@
 			<Button href="/team" variant="outline" class="h-auto justify-start px-4 py-3">
 				<div class="flex w-full items-center gap-3">
 					<div class="bg-primary/10 text-primary flex size-9 items-center justify-center rounded-lg">
-						<UsersIcon class="size-4" />
+						<AppIcon icon={SOLAR.team} />
 					</div>
 					<div class="min-w-0 text-left">
 						<p class="text-sm font-medium">Manage team</p>
@@ -137,7 +132,7 @@
 			<Button href="/modules" variant="outline" class="h-auto justify-start px-4 py-3">
 				<div class="flex w-full items-center gap-3">
 					<div class="bg-primary/10 text-primary flex size-9 items-center justify-center rounded-lg">
-						<LayersIcon class="size-4" />
+						<AppIcon icon={SOLAR.modules} />
 					</div>
 					<div class="min-w-0 text-left">
 						<p class="text-sm font-medium">Workspace modules</p>
@@ -149,7 +144,7 @@
 			<Button href="/docs" variant="outline" class="h-auto justify-start px-4 py-3">
 				<div class="flex w-full items-center gap-3">
 					<div class="bg-primary/10 text-primary flex size-9 items-center justify-center rounded-lg">
-						<BookOpenIcon class="size-4" />
+						<AppIcon icon={SOLAR.apiDocs} />
 					</div>
 					<div class="min-w-0 text-left">
 						<p class="text-sm font-medium">Browse API docs</p>
@@ -161,7 +156,7 @@
 			<Button href="/api/v1/health" variant="outline" class="h-auto justify-start px-4 py-3" target="_blank">
 				<div class="flex w-full items-center gap-3">
 					<div class="bg-primary/10 text-primary flex size-9 items-center justify-center rounded-lg">
-						<ActivityIcon class="size-4" />
+						<AppIcon icon={SOLAR.activity} />
 					</div>
 					<div class="min-w-0 text-left">
 						<p class="text-sm font-medium">Check API health</p>
@@ -172,7 +167,7 @@
 
 			<Button href="/docs" size="sm" class="h-auto justify-start px-4 py-3 sm:col-span-2 xl:col-span-1">
 				Explore the API
-				<ArrowRightIcon class="size-4" />
+				<AppIcon icon={SOLAR.arrowRight} />
 			</Button>
 		</Card.Content>
 	</DashboardCard>

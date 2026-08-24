@@ -1,0 +1,38 @@
+/** Solar icon IDs used across app navigation and dashboard (Iconify). */
+export const SOLAR = {
+	overview: 'solar:widget-2-linear',
+	team: 'solar:users-group-rounded-linear',
+	mailbox: 'solar:letter-linear',
+	payroll: 'solar:wallet-money-linear',
+	dtr: 'solar:clock-circle-linear',
+	apiDocs: 'solar:book-bookmark-linear',
+	health: 'solar:pulse-2-linear',
+	account: 'solar:user-circle-linear',
+	security: 'solar:shield-check-linear',
+	billing: 'solar:card-linear',
+	home: 'solar:home-smile-linear',
+	invitations: 'solar:mailbox-linear',
+	roles: 'solar:key-linear',
+	settings: 'solar:settings-linear',
+	employees: 'solar:user-id-linear',
+	payRuns: 'solar:calendar-linear',
+	timeRecords: 'solar:history-linear',
+	upload: 'solar:upload-linear',
+	paySchedule: 'solar:calendar-linear',
+	jobTitles: 'solar:case-linear',
+	deductions: 'solar:minus-circle-linear',
+	dtrDefault: 'solar:calendar-mark-linear',
+	dtrSchedules: 'solar:calendar-linear',
+	dtrHolidays: 'solar:calendar-date-linear',
+	mailConnection: 'solar:letter-linear',
+	signature: 'solar:pen-linear',
+	modules: 'solar:widget-5-linear',
+	online: 'solar:record-circle-linear',
+	layers: 'solar:layers-linear',
+	inviteUser: 'solar:user-plus-linear',
+	activity: 'solar:pulse-2-linear',
+	arrowRight: 'solar:arrow-right-linear',
+	search: 'solar:magnifer-linear'
+} as const;
+
+export type SolarIconId = (typeof SOLAR)[keyof typeof SOLAR];
