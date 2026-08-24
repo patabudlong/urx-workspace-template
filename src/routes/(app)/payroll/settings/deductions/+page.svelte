@@ -62,6 +62,24 @@
 			$formMessage !== PAYROLL_DEDUCTION_TYPES_SAVED_MESSAGE
 	);
 
+	const isSemiMonthly = $derived(data.payFrequency === 'semi-monthly');
+
+	function formatMoney(amount: number, currency: PayrollCurrency): string {
+		return new Intl.NumberFormat(undefined, {
+			style: 'currency',
+			currency,
+			maximumFractionDigits: currency === 'JPY' ? 0 : 2
+		}).format(amount);
+	}
+
+	function perCutoffHint(monthlyAmount: number): string | null {
+		if (!isSemiMonthly || monthlyAmount <= 0) {
+			return null;
+		}
+
+		return `${formatMoney(monthlyAmount / 2, data.payrollCurrency)} per cutoff`;
+	}
+
 	function formatDefaultValue(
 		type: (typeof $form.types)[number],
 		currency: PayrollCurrency
@@ -133,15 +151,23 @@
 	<PageHeader
 		eyebrow="Payroll"
 		title="Deduction types"
-		description="Define deduction categories for this workspace. Assign amounts per employee when adding or editing payroll employees."
+		description="Define deduction categories for this workspace. Fixed amounts are monthly totals — each pay run deducts the portion for that period."
 	/>
+
+	{#if isSemiMonthly}
+		<StatusAlert
+			variant="info"
+			title="Semi-monthly deductions"
+			description="With {data.payFrequencyLabel} payroll, fixed deductions like SSS are split across cutoffs. Enter the full monthly amount (e.g. ₱700 SSS → ₱350 deducted per cutoff). Percentage deductions apply to gross pay for that cutoff."
+		/>
+	{/if}
 
 	<Card.Root>
 		<Card.Header>
 			<Card.Title>Workspace deduction catalog</Card.Title>
 			<Card.Description>
 				Common examples in the Philippines include SSS, PhilHealth, Pag-IBIG, withholding tax, and loans.
-				Fixed amounts use your payroll currency ({data.payrollCurrency}).
+				Fixed amounts are monthly totals in {data.payrollCurrency}.
 			</Card.Description>
 			<Card.Action>
 				<div class="flex flex-wrap justify-end gap-2">
@@ -303,6 +329,7 @@
 								<div class="space-y-2">
 									<label class="text-sm font-medium" for="deduction-amount-{typeIndex}">
 										Default amount ({data.payrollCurrency})
+										<span class="text-muted-foreground font-normal">per month</span>
 									</label>
 									<Input
 										id="deduction-amount-{typeIndex}"
@@ -311,6 +338,11 @@
 										step="0.01"
 										bind:value={$form.types[typeIndex].defaultAmount}
 									/>
+									{#if perCutoffHint($form.types[typeIndex].defaultAmount)}
+										<p class="text-muted-foreground text-sm">
+											Deducted per cutoff: {perCutoffHint($form.types[typeIndex].defaultAmount)}
+										</p>
+									{/if}
 									{#if $errors.types?.[typeIndex]?.defaultAmount}
 										<p class="text-destructive text-sm">
 											{$errors.types[typeIndex].defaultAmount}

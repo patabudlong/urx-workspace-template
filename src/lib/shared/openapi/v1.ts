@@ -3115,7 +3115,7 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 					properties: {
 						id: { type: 'string' },
 						name: { type: 'string', maxLength: 120 },
-						payType: { type: 'string', enum: ['hourly', 'monthly'] },
+						payType: { type: 'string', enum: ['hourly', 'daily', 'monthly'] },
 						payRateCents: { type: 'integer', minimum: 0 },
 						isActive: { type: 'boolean' }
 					}
@@ -3133,7 +3133,7 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 								properties: {
 									id: { type: 'string', maxLength: 64 },
 									name: { type: 'string', maxLength: 120 },
-									payType: { type: 'string', enum: ['hourly', 'monthly'] },
+									payType: { type: 'string', enum: ['hourly', 'daily', 'monthly'] },
 									payRate: { type: 'number', minimum: 0 },
 									isActive: { type: 'boolean' }
 								}
@@ -3504,7 +3504,7 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						jobTitle: { type: 'string', nullable: true },
 						employeeCode: { type: 'string', nullable: true },
 						photoUrl: { type: 'string', format: 'uri', nullable: true },
-						payType: { type: 'string', enum: ['hourly', 'monthly'] },
+						payType: { type: 'string', enum: ['hourly', 'daily', 'monthly'] },
 						payRateCents: { type: 'integer', minimum: 0 },
 						isActive: { type: 'boolean' },
 						createdAt: { type: 'string', format: 'date-time' },
@@ -3519,7 +3519,7 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						lastName: { type: 'string', maxLength: 80 },
 						email: { type: 'string', format: 'email' },
 						jobTitle: { type: 'string', maxLength: 120 },
-						payType: { type: 'string', enum: ['hourly', 'monthly'] },
+						payType: { type: 'string', enum: ['hourly', 'daily', 'monthly'] },
 						payRate: { type: 'number', minimum: 0 }
 					}
 				},

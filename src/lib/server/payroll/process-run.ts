@@ -82,13 +82,17 @@ export async function processPayrollRunForWorkspace(input: {
 				standardWorkMinutes,
 				periodStart,
 				periodEnd,
+				payFrequency: settings.payFrequency,
 				dtrDays
 			});
 
 			const { deductionLines, totalDeductionsCents } = computePayslipDeductions({
 				grossCents: earnings.grossCents,
 				employeeDeductions: employee.deductions ?? [],
-				deductionTypes: settings.deductionTypes
+				deductionTypes: settings.deductionTypes,
+				periodStart,
+				periodEnd,
+				payFrequency: settings.payFrequency
 			});
 
 			const netCents = Math.max(0, earnings.grossCents - totalDeductionsCents);

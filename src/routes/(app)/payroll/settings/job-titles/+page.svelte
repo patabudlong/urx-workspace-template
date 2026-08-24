@@ -17,6 +17,16 @@
 		PAYROLL_PAY_TYPE_LABELS,
 		PAYROLL_PAY_TYPES
 	} from '$lib/shared/payroll/pay-rate';
+	import {
+		PH_PAY_RATE_PRESET_CUSTOM,
+		PH_PAY_RATE_PRESET_IDS,
+		PH_PAY_RATE_PRESET_LABELS,
+		applyPhPayRatePreset,
+		deriveMonthlyPayRates,
+		deriveRatesFromDailyPay,
+		resolvePhPayRatePreset,
+		type PhPayRatePresetId
+	} from '$lib/shared/payroll/ph-rates';
 	import { payrollJobTitlesSchema } from '$lib/shared/payroll/schemas';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
@@ -63,12 +73,65 @@
 
 	const payRateStep = $derived(data.payrollCurrency === 'JPY' ? '1' : '0.01');
 
-	function formatPayRate(title: (typeof $form.titles)[number], currency: PayrollCurrency): string {
+	const isSemiMonthly = $derived(data.payFrequency === 'semi-monthly');
+
+	function formatMoney(amount: number, currency: PayrollCurrency): string {
 		return new Intl.NumberFormat(undefined, {
 			style: 'currency',
 			currency,
 			maximumFractionDigits: currency === 'JPY' ? 0 : 2
-		}).format(title.payRate);
+		}).format(amount);
+	}
+
+	function formatPayRate(title: (typeof $form.titles)[number], currency: PayrollCurrency): string {
+		return formatMoney(title.payRate, currency);
+	}
+
+	function payRateSuffix(payType: (typeof $form.titles)[number]['payType']): string {
+		if (payType === 'hourly') {
+			return '/hr';
+		}
+
+		if (payType === 'daily') {
+			return '/day';
+		}
+
+		return '/mo';
+	}
+
+	function payRateDerivation(title: (typeof $form.titles)[number]) {
+		if (title.payRate <= 0) {
+			return null;
+		}
+
+		if (title.payType === 'monthly') {
+			return deriveMonthlyPayRates(title.payRate);
+		}
+
+		if (title.payType === 'daily') {
+			return deriveRatesFromDailyPay(title.payRate);
+		}
+
+		return null;
+	}
+
+	function setPayRatePreset(index: number, presetId: PhPayRatePresetId) {
+		const preset = applyPhPayRatePreset(presetId);
+
+		if (!preset) {
+			return;
+		}
+
+		$form.titles[index].payType = preset.payType;
+		$form.titles[index].payRate = preset.payRate;
+	}
+
+	function payRatePresetForTitle(title: (typeof $form.titles)[number]) {
+		if (data.payrollCurrency !== 'PHP') {
+			return PH_PAY_RATE_PRESET_CUSTOM;
+		}
+
+		return resolvePhPayRatePreset(title.payType, title.payRate);
 	}
 
 	function addTitle() {
@@ -104,8 +167,16 @@
 	<PageHeader
 		eyebrow="Payroll"
 		title="Job titles"
-		description="Define standard roles and default compensation for this workspace. Selecting a title when adding employees pre-fills pay rate."
+		description="Define standard roles and default compensation. Use per day for minimum-wage roles (DTR drives pay). Use per month for fixed semi-monthly salaries."
 	/>
+
+	{#if isSemiMonthly}
+		<StatusAlert
+			variant="plain"
+			title="Semi-monthly pay periods"
+			description="Pay runs use 1st–15th and 16th–end cutoffs. Monthly employees get half their monthly rate each cutoff. Daily employees are paid per worked day from time records in that cutoff."
+		/>
+	{/if}
 
 	<Card.Root>
 		<Card.Header>
@@ -171,7 +242,7 @@
 										<Table.Cell class="text-muted-foreground align-top text-sm whitespace-nowrap">
 											{formatPayRate(title, data.payrollCurrency)}
 											<span class="text-muted-foreground/80">
-												{title.payType === 'hourly' ? '/hr' : '/mo'}
+												{payRateSuffix(title.payType)}
 											</span>
 										</Table.Cell>
 										<Table.Cell class="align-top">
@@ -247,48 +318,145 @@
 								{/if}
 							</div>
 
-							<div class="space-y-2">
-								<label class="text-sm font-medium" for="job-title-pay-type-{titleIndex}">
-									Pay rate type
-								</label>
-								<Select.Root type="single" bind:value={$form.titles[titleIndex].payType}>
-									<Select.Trigger id="job-title-pay-type-{titleIndex}" class="h-10 w-full">
-										<span class="truncate">
-											{PAYROLL_PAY_TYPE_LABELS[$form.titles[titleIndex].payType]}
-										</span>
-									</Select.Trigger>
-									<Select.Content>
-										<Select.Group>
-											{#each PAYROLL_PAY_TYPES as payType (payType)}
-												<Select.Item value={payType} label={PAYROLL_PAY_TYPE_LABELS[payType]}>
-													{PAYROLL_PAY_TYPE_LABELS[payType]}
-												</Select.Item>
-											{/each}
-										</Select.Group>
-									</Select.Content>
-								</Select.Root>
-							</div>
+							{#if data.payrollCurrency === 'PHP'}
+								<div class="space-y-2">
+									<label
+										class="text-sm font-medium"
+										for="job-title-pay-rate-preset-{titleIndex}"
+									>
+										Default pay rate
+									</label>
+									<Select.Root
+										type="single"
+										value={payRatePresetForTitle($form.titles[titleIndex])}
+										onValueChange={(value) => {
+											if (value) {
+												setPayRatePreset(titleIndex, value as PhPayRatePresetId);
+											}
+										}}
+									>
+										<Select.Trigger id="job-title-pay-rate-preset-{titleIndex}" class="h-10 w-full">
+											<span class="truncate">
+												{PH_PAY_RATE_PRESET_LABELS[
+													payRatePresetForTitle($form.titles[titleIndex])
+												]}
+											</span>
+										</Select.Trigger>
+										<Select.Content>
+											<Select.Group>
+												{#each PH_PAY_RATE_PRESET_IDS as presetId (presetId)}
+													<Select.Item
+														value={presetId}
+														label={PH_PAY_RATE_PRESET_LABELS[presetId]}
+													>
+														{PH_PAY_RATE_PRESET_LABELS[presetId]}
+													</Select.Item>
+												{/each}
+											</Select.Group>
+										</Select.Content>
+									</Select.Root>
+								</div>
+							{:else}
+								<div class="space-y-2">
+									<label class="text-sm font-medium" for="job-title-pay-type-{titleIndex}">
+										Pay rate type
+									</label>
+									<Select.Root type="single" bind:value={$form.titles[titleIndex].payType}>
+										<Select.Trigger id="job-title-pay-type-{titleIndex}" class="h-10 w-full">
+											<span class="truncate">
+												{PAYROLL_PAY_TYPE_LABELS[$form.titles[titleIndex].payType]}
+											</span>
+										</Select.Trigger>
+										<Select.Content>
+											<Select.Group>
+												{#each PAYROLL_PAY_TYPES as payType (payType)}
+													<Select.Item value={payType} label={PAYROLL_PAY_TYPE_LABELS[payType]}>
+														{PAYROLL_PAY_TYPE_LABELS[payType]}
+													</Select.Item>
+												{/each}
+											</Select.Group>
+										</Select.Content>
+									</Select.Root>
+								</div>
+							{/if}
 						</div>
 
 						<div class="grid gap-4 sm:grid-cols-2">
-							<div class="space-y-2">
-								<label class="text-sm font-medium" for="job-title-pay-rate-{titleIndex}">
-									Default pay rate ({data.payrollCurrency})
-									<span class="text-muted-foreground font-normal">
-										{$form.titles[titleIndex].payType === 'hourly' ? 'per hour' : 'per month'}
-									</span>
-								</label>
-								<Input
-									id="job-title-pay-rate-{titleIndex}"
-									type="number"
-									min="0"
-									step={payRateStep}
-									bind:value={$form.titles[titleIndex].payRate}
-								/>
-								{#if $errors.titles?.[titleIndex]?.payRate}
-									<p class="text-destructive text-sm">{$errors.titles[titleIndex].payRate}</p>
+							{#if data.payrollCurrency !== 'PHP' || payRatePresetForTitle($form.titles[titleIndex]) === PH_PAY_RATE_PRESET_CUSTOM}
+								{#if data.payrollCurrency === 'PHP'}
+									<div class="space-y-2">
+										<label class="text-sm font-medium" for="job-title-pay-type-{titleIndex}">
+											Pay rate type
+										</label>
+										<Select.Root type="single" bind:value={$form.titles[titleIndex].payType}>
+											<Select.Trigger id="job-title-pay-type-{titleIndex}" class="h-10 w-full">
+												<span class="truncate">
+													{PAYROLL_PAY_TYPE_LABELS[$form.titles[titleIndex].payType]}
+												</span>
+											</Select.Trigger>
+											<Select.Content>
+												<Select.Group>
+													{#each PAYROLL_PAY_TYPES as payType (payType)}
+														<Select.Item value={payType} label={PAYROLL_PAY_TYPE_LABELS[payType]}>
+															{PAYROLL_PAY_TYPE_LABELS[payType]}
+														</Select.Item>
+													{/each}
+												</Select.Group>
+											</Select.Content>
+										</Select.Root>
+									</div>
 								{/if}
-							</div>
+
+								<div class="space-y-2">
+									<label class="text-sm font-medium" for="job-title-pay-rate-{titleIndex}">
+										Default pay rate ({data.payrollCurrency})
+										<span class="text-muted-foreground font-normal">
+											{$form.titles[titleIndex].payType === 'hourly'
+												? 'per hour'
+												: $form.titles[titleIndex].payType === 'daily'
+													? 'per day'
+													: 'per month'}
+										</span>
+									</label>
+									<Input
+										id="job-title-pay-rate-{titleIndex}"
+										type="number"
+										min="0"
+										step={payRateStep}
+										bind:value={$form.titles[titleIndex].payRate}
+									/>
+									{#if $errors.titles?.[titleIndex]?.payRate}
+										<p class="text-destructive text-sm">{$errors.titles[titleIndex].payRate}</p>
+									{/if}
+								</div>
+							{/if}
+
+							{#if payRateDerivation($form.titles[titleIndex])}
+								{@const derived = payRateDerivation($form.titles[titleIndex])!}
+								<div
+									class="space-y-2 {data.payrollCurrency === 'PHP' &&
+									payRatePresetForTitle($form.titles[titleIndex]) !== PH_PAY_RATE_PRESET_CUSTOM
+										? 'sm:col-span-2'
+										: ''}"
+								>
+									<p class="text-muted-foreground text-sm">
+										{#if $form.titles[titleIndex].payType === 'daily'}
+											Monthly equivalent (×{derived.workingDaysPerMonth}):
+											{formatMoney(
+												derived.dailyRate * derived.workingDaysPerMonth,
+												data.payrollCurrency
+											)}/mo
+										{:else}
+											Daily equivalent (÷{derived.workingDaysPerMonth}):
+											{formatMoney(derived.dailyRate, data.payrollCurrency)}/day
+										{/if}
+										{#if isSemiMonthly}
+											· Per cutoff (÷2):
+											{formatMoney(derived.semiMonthlyRate, data.payrollCurrency)}
+										{/if}
+									</p>
+								</div>
+							{/if}
 
 							<label class="flex items-center gap-3 self-end text-sm">
 								<input type="checkbox" bind:checked={$form.titles[titleIndex].isActive} />

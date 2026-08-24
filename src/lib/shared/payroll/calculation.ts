@@ -2,10 +2,16 @@ import type { PayrollDeductionType } from '$lib/shared/payroll/deductions';
 import type { PayrollEmployeeDeduction } from '$lib/shared/payroll/deductions';
 import { basisPointsToPercent } from '$lib/shared/payroll/deductions';
 import type { PayrollPayType } from '$lib/shared/payroll/pay-rate';
+import type { PayFrequency } from '$lib/shared/payroll/frequency';
 import type { DtrDayDto } from '$lib/shared/models/dtr-day';
 import type { PayrollPayslipDeductionLine } from '$lib/shared/models/payroll-payslip';
+import {
+	computeMonthlyAmountForPayPeriod,
+	computeSalariedBasePayCents,
+	PH_MONTHLY_WORKING_DAYS
+} from '$lib/shared/payroll/ph-rates';
 
-const MONTHLY_WORKING_DAYS = 22;
+const MONTHLY_WORKING_DAYS = PH_MONTHLY_WORKING_DAYS;
 
 export type PayrollEarningsBreakdown = {
 	basePayCents: number;
@@ -14,18 +20,6 @@ export type PayrollEarningsBreakdown = {
 	workedMinutes: number;
 	workDays: number;
 };
-
-function countDaysInclusive(startDate: string, endDate: string): number {
-	const start = Date.parse(`${startDate}T00:00:00Z`);
-	const end = Date.parse(`${endDate}T00:00:00Z`);
-	return Math.max(0, Math.round((end - start) / 86_400_000) + 1);
-}
-
-function daysInCalendarMonth(date: string): number {
-	const year = Number(date.slice(0, 4));
-	const month = Number(date.slice(5, 7));
-	return new Date(Date.UTC(year, month, 0)).getUTCDate();
-}
 
 export function computeHourlyRateCents(
 	payType: PayrollPayType,
@@ -36,8 +30,17 @@ export function computeHourlyRateCents(
 		return payRateCents;
 	}
 
-	const dailyRateCents = Math.round(payRateCents / MONTHLY_WORKING_DAYS);
 	const hoursPerDay = standardWorkMinutes / 60;
+
+	if (payType === 'daily') {
+		if (hoursPerDay <= 0) {
+			return 0;
+		}
+
+		return Math.round(payRateCents / hoursPerDay);
+	}
+
+	const dailyRateCents = Math.round(payRateCents / MONTHLY_WORKING_DAYS);
 
 	if (hoursPerDay <= 0) {
 		return 0;
@@ -55,17 +58,25 @@ export function computeDailyRateCents(
 		return Math.round(payRateCents * (standardWorkMinutes / 60));
 	}
 
+	if (payType === 'daily') {
+		return payRateCents;
+	}
+
 	return Math.round(payRateCents / MONTHLY_WORKING_DAYS);
 }
 
 function computeMonthlyBasePayCents(
 	payRateCents: number,
 	periodStart: string,
-	periodEnd: string
+	periodEnd: string,
+	payFrequency: PayFrequency
 ): number {
-	const periodDays = countDaysInclusive(periodStart, periodEnd);
-	const monthDays = daysInCalendarMonth(periodEnd);
-	return Math.round((payRateCents * periodDays) / monthDays);
+	return computeSalariedBasePayCents({
+		payRateCents,
+		periodStart,
+		periodEnd,
+		payFrequency
+	});
 }
 
 function isHolidayDay(day: DtrDayDto): boolean {
@@ -78,6 +89,7 @@ export function computeEmployeeEarnings(input: {
 	standardWorkMinutes: number;
 	periodStart: string;
 	periodEnd: string;
+	payFrequency: PayFrequency;
 	dtrDays: DtrDayDto[];
 }): PayrollEarningsBreakdown {
 	const hourlyRateCents = computeHourlyRateCents(
@@ -100,7 +112,8 @@ export function computeEmployeeEarnings(input: {
 		basePayCents = computeMonthlyBasePayCents(
 			input.payRateCents,
 			input.periodStart,
-			input.periodEnd
+			input.periodEnd,
+			input.payFrequency
 		);
 	}
 
@@ -127,6 +140,10 @@ export function computeEmployeeEarnings(input: {
 		if (input.payType === 'hourly' && day.workedMinutes > 0) {
 			basePayCents += Math.round(hourlyRateCents * (day.workedMinutes / 60));
 		}
+
+		if (input.payType === 'daily' && day.workedMinutes > 0) {
+			basePayCents += input.payRateCents;
+		}
 	}
 
 	const grossCents = basePayCents + holidayPayCents;
@@ -144,6 +161,9 @@ export function computePayslipDeductions(input: {
 	grossCents: number;
 	employeeDeductions: PayrollEmployeeDeduction[];
 	deductionTypes: PayrollDeductionType[];
+	periodStart: string;
+	periodEnd: string;
+	payFrequency: PayFrequency;
 }): {
 	deductionLines: PayrollPayslipDeductionLine[];
 	totalDeductionsCents: number;
@@ -165,7 +185,13 @@ export function computePayslipDeductions(input: {
 		let amountCents = 0;
 
 		if (type.kind === 'fixed') {
-			amountCents = deduction.amountCents ?? type.defaultAmountCents;
+			const monthlyAmountCents = deduction.amountCents ?? type.defaultAmountCents;
+			amountCents = computeMonthlyAmountForPayPeriod({
+				monthlyAmountCents,
+				periodStart: input.periodStart,
+				periodEnd: input.periodEnd,
+				payFrequency: input.payFrequency
+			});
 		} else {
 			const basisPoints = deduction.rateBasisPoints ?? type.defaultRateBasisPoints;
 			amountCents = Math.round((input.grossCents * basisPoints) / 10_000);

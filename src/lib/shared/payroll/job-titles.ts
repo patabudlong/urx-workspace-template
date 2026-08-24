@@ -1,4 +1,5 @@
 import type { PayrollPayType } from '$lib/shared/payroll/pay-rate';
+import { normalizePayrollPayType } from '$lib/shared/payroll/pay-rate';
 import type { PayrollCurrency } from '$lib/shared/payroll/currency';
 import { centsToMajorUnits } from '$lib/shared/payroll/format';
 
@@ -24,7 +25,7 @@ export function normalizePayrollJobTitles(
 	return titles.map((title) => ({
 		id: title.id,
 		name: title.name.trim(),
-		payType: title.payType === 'hourly' ? 'hourly' : 'monthly',
+		payType: normalizePayrollPayType(title.payType),
 		payRateCents: Math.max(0, Math.round(title.payRateCents ?? 0)),
 		isActive: title.isActive !== false
 	}));

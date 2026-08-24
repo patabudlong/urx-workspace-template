@@ -452,7 +452,11 @@
 						<Form.Label required>
 							Pay rate ({currencyLabel})
 							<span class="text-muted-foreground font-normal">
-								{$form.payType === 'hourly' ? 'per hour' : 'per month'}
+								{$form.payType === 'hourly'
+									? 'per hour'
+									: $form.payType === 'daily'
+										? 'per day'
+										: 'per month'}
 							</span>
 						</Form.Label>
 						<Input
@@ -475,7 +479,8 @@
 			<div>
 				<p class="text-sm font-medium">Deductions</p>
 				<p class="text-muted-foreground text-sm">
-					Enable workspace deduction types and set amounts for this employee.
+					Enable workspace deduction types and set amounts for this employee. Fixed amounts are monthly
+					totals — semi-monthly payroll deducts half per cutoff.
 				</p>
 			</div>
 
