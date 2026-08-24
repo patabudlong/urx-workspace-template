@@ -1,6 +1,7 @@
 <script lang="ts">
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
 	import DtrDayCell from '$lib/components/dtr/dtr-day-cell.svelte';
+	import DtrStatusLegend from '$lib/components/dtr/dtr-status-legend.svelte';
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -14,6 +15,7 @@
 		DTR_DAY_SAVE_FAILED_MESSAGE
 	} from '$lib/shared/dtr/messages';
 	import { upsertDtrDaySchema } from '$lib/shared/dtr/schemas';
+	import { formatHolidayPayPercent } from '$lib/shared/dtr/holidays';
 	import type { PayrollEmployeeDto } from '$lib/shared/models/payroll-employee';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import { goto, invalidateAll } from '$app/navigation';
@@ -161,6 +163,7 @@
 						<DtrDayCell
 							status={day.status}
 							dayOfMonth={day.dayOfMonth}
+							holidayName={day.holidayName}
 							selected={data.selectedDate === day.date}
 							interactive={true}
 							onclick={() => updateQuery({ date: day.date })}
@@ -168,11 +171,7 @@
 					{/each}
 				</div>
 
-				<div class="text-muted-foreground flex flex-wrap gap-4 text-xs">
-					{#each DTR_DAY_STATUSES as status (status)}
-						<span>{DTR_DAY_STATUS_LABELS[status]}</span>
-					{/each}
-				</div>
+				<DtrStatusLegend />
 			{/if}
 		</Card.Content>
 	</Card.Root>
@@ -261,6 +260,16 @@
 							Worked time: {Math.round((data.selectedRecord.workedMinutes / 60) * 100) / 100} hours
 							({data.selectedRecord.workedMinutes} minutes), after any lunch break deduction.
 						</p>
+					{/if}
+
+					{#if data.selectedRecord?.holidayName}
+						<StatusAlert
+							variant="info"
+							title={data.selectedRecord.holidayName}
+							description={data.selectedRecord.holidayPayPercent !== null
+								? `Holiday pay credit: ${formatHolidayPayPercent(data.selectedRecord.holidayPayPercent)} (${data.selectedRecord.holidayWorked ? 'worked' : 'unworked'}).`
+								: 'This date is a configured holiday.'}
+						/>
 					{/if}
 
 					<Form.Field form={superform} name="notes">

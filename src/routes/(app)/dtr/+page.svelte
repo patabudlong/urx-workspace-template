@@ -5,6 +5,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import CalendarClockIcon from '@lucide/svelte/icons/calendar-clock';
 	import ClockIcon from '@lucide/svelte/icons/clock';
+	import UploadIcon from '@lucide/svelte/icons/upload';
 
 	let { data } = $props();
 
@@ -53,6 +54,10 @@
 			<Button href="/dtr/records" class="h-10">
 				<ClockIcon class="size-4" aria-hidden="true" />
 				Time records
+			</Button>
+			<Button href="/dtr/import" variant="outline" class="h-10">
+				<UploadIcon class="size-4" aria-hidden="true" />
+				Upload timecard
 			</Button>
 		{/snippet}
 	</PageHeader>

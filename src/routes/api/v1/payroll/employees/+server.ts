@@ -3,9 +3,11 @@ import { jsonError, jsonOk, jsonPaginated } from '$lib/server/api/response';
 import { requirePayrollWorkspace } from '$lib/server/payroll/api-context';
 import {
 	createPayrollEmployeeForWorkspace,
+	isDuplicatePayrollEmployeeCodeError,
 	listPayrollEmployeesForWorkspace
 } from '$lib/server/repositories/payroll-employees';
 import { getPayrollSettingsForWorkspace } from '$lib/server/repositories/payroll-settings';
+import { PAYROLL_EMPLOYEE_CODE_TAKEN_MESSAGE } from '$lib/shared/payroll/messages';
 import {
 	createPayrollEmployeeSchema,
 	payrollEmployeesQuerySchema
@@ -91,6 +93,10 @@ export const POST: RequestHandler = async ({ locals, request, url }) => {
 			return jsonError('BAD_REQUEST', 'Selected work schedule is invalid or no longer available.', {
 				requestId
 			});
+		}
+
+		if (isDuplicatePayrollEmployeeCodeError(error)) {
+			return jsonError('BAD_REQUEST', PAYROLL_EMPLOYEE_CODE_TAKEN_MESSAGE, { requestId });
 		}
 
 		throw error;

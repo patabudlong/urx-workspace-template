@@ -23,7 +23,8 @@ export const CollectionNames = {
 // urixoft-workspace-dtr:collections:start
 	dtrSettings: 'dtr_settings',
 	dtrDays: 'dtr_days',
-	dtrWorkSchedules: 'dtr_work_schedules'
+	dtrWorkSchedules: 'dtr_work_schedules',
+	dtrHolidayCalendars: 'dtr_holiday_calendars'
 // urixoft-workspace-dtr:collections:end
 } as const;
 
@@ -114,5 +115,9 @@ export async function getDtrDaysCollection<T extends Document = Document>(): Pro
 
 export async function getDtrWorkSchedulesCollection<T extends Document = Document>(): Promise<Collection<T>> {
 	return getCollection<T>('dtrWorkSchedules');
+}
+
+export async function getDtrHolidayCalendarsCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('dtrHolidayCalendars');
 }
 // urixoft-workspace-dtr:getter:end

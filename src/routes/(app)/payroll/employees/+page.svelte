@@ -1,18 +1,24 @@
 <script lang="ts">
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
 	import ListSearchInput from '$lib/components/list/list-search-input.svelte';
+	import PayrollEmployeeAvatar from '$lib/components/payroll/payroll-employee-avatar.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import * as Table from '$lib/components/ui/table/index.js';
+	import { PAYROLL_EMPLOYEE_DEACTIVATED_MESSAGE } from '$lib/shared/payroll/messages';
 	import { filterPayrollEmployees } from '$lib/shared/payroll/filter-employees';
 	import { formatPayRateCents } from '$lib/shared/payroll/format';
 	import { PAYROLL_PAY_TYPE_LABELS } from '$lib/shared/payroll/pay-rate';
 	import type { PayrollEmployeeDto } from '$lib/shared/models/payroll-employee';
+	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import UserPlusIcon from '@lucide/svelte/icons/user-plus';
+	import { page } from '$app/state';
 
 	let { data } = $props();
+
+	const showDeactivatedAlert = $derived(page.url.searchParams.get('deactivated') === '1');
 
 	let searchQuery = $state('');
 	let employees = $state<PayrollEmployeeDto[] | null>(null);
@@ -60,6 +66,14 @@
 			</Button>
 		{/snippet}
 	</PageHeader>
+
+	{#if showDeactivatedAlert}
+		<StatusAlert
+			variant="success"
+			title="Employee deactivated"
+			description={PAYROLL_EMPLOYEE_DEACTIVATED_MESSAGE}
+		/>
+	{/if}
 
 	<Card.Root>
 		{#if employees === null}
@@ -115,13 +129,28 @@
 									<Table.Head class="min-w-32">Pay rate</Table.Head>
 									<Table.Head class="min-w-36">Schedule</Table.Head>
 									<Table.Head class="w-28 text-right">Deductions</Table.Head>
+									<Table.Head class="w-24 text-right">Actions</Table.Head>
 								</Table.Row>
 							</Table.Header>
 							<Table.Body>
 								{#each filteredEmployees as employee (employee.id)}
 									<Table.Row>
 										<Table.Cell class="font-medium whitespace-nowrap">
-											{employee.fullName}
+											<div class="flex min-w-0 items-center gap-3">
+												<PayrollEmployeeAvatar
+													firstName={employee.firstName}
+													lastName={employee.lastName}
+													photoUrl={employee.photoUrl}
+													updatedAt={employee.updatedAt}
+													class="size-8"
+												/>
+												<a
+													href="/payroll/employees/{employee.id}/edit"
+													class="hover:text-primary truncate hover:underline"
+												>
+													{employee.fullName}
+												</a>
+											</div>
 										</Table.Cell>
 										<Table.Cell class="text-muted-foreground whitespace-nowrap">
 											{formatCell(employee.employeeCode)}
@@ -157,6 +186,17 @@
 											{:else}
 												<span class="text-muted-foreground">None</span>
 											{/if}
+										</Table.Cell>
+										<Table.Cell class="text-right whitespace-nowrap">
+											<Button
+												href="/payroll/employees/{employee.id}/edit"
+												variant="outline"
+												size="sm"
+												class="h-8"
+												aria-label="Edit {employee.fullName}"
+											>
+												<PencilIcon class="size-4" aria-hidden="true" />
+											</Button>
 										</Table.Cell>
 									</Table.Row>
 								{/each}

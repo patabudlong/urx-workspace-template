@@ -193,3 +193,72 @@ export const dtrWorkSchedulesSchema = z.object({
 });
 
 export type DtrWorkSchedulesInput = z.infer<typeof dtrWorkSchedulesSchema>;
+
+const dtrHolidayPercentSchema = z.coerce
+	.number()
+	.min(0, 'Percent must be zero or greater.')
+	.max(300, 'Percent cannot exceed 300.');
+
+const dtrHolidayCategoryRatesSchema = z.object({
+	workedPercent: dtrHolidayPercentSchema,
+	unworkedPercent: dtrHolidayPercentSchema
+});
+
+export const dtrHolidayEntrySchema = z.object({
+	date: dtrDateSchema,
+	name: z.string().trim().min(1, 'Holiday name is required.').max(120),
+	category: z.enum(['regular', 'special_non_working', 'special_working'])
+});
+
+export const dtrHolidayCalendarSchema = z.object({
+	year: z.coerce
+		.number()
+		.int()
+		.min(2000, 'Year must be 2000 or later.')
+		.max(2100, 'Year must be 2100 or earlier.'),
+	title: z.string().trim().min(1, 'Calendar title is required.').max(120),
+	regularHoliday: dtrHolidayCategoryRatesSchema,
+	specialNonWorkingDay: dtrHolidayCategoryRatesSchema,
+	specialWorkingDay: dtrHolidayCategoryRatesSchema,
+	holidays: z
+		.array(dtrHolidayEntrySchema)
+		.max(100, 'Too many holidays in one calendar.')
+}).superRefine((data, ctx) => {
+	const dates = new Set<string>();
+
+	for (let index = 0; index < data.holidays.length; index += 1) {
+		const holiday = data.holidays[index];
+		const holidayYear = Number(holiday.date.slice(0, 4));
+
+		if (holidayYear !== data.year) {
+			ctx.addIssue({
+				code: 'custom',
+				message: `Holiday date must fall in ${data.year}.`,
+				path: ['holidays', index, 'date']
+			});
+		}
+
+		if (dates.has(holiday.date)) {
+			ctx.addIssue({
+				code: 'custom',
+				message: 'Duplicate holiday date.',
+				path: ['holidays', index, 'date']
+			});
+		}
+
+		dates.add(holiday.date);
+	}
+});
+
+export type DtrHolidayCalendarInput = z.infer<typeof dtrHolidayCalendarSchema>;
+
+export const dtrHolidayCalendarQuerySchema = z.object({
+	year: z.coerce
+		.number()
+		.int()
+		.min(2000)
+		.max(2100)
+		.optional()
+});
+
+export type DtrHolidayCalendarQuery = z.infer<typeof dtrHolidayCalendarQuerySchema>;

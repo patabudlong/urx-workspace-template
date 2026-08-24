@@ -24,6 +24,7 @@
 		"rotate:jwt-secret": "node --import tsx scripts/rotate-jwt-secret.ts",
 		"rotate:jwt-secret:dry": "node --import tsx scripts/rotate-jwt-secret.ts --dry-run",
 		"upload:email-assets": "node --import tsx scripts/upload-email-assets.ts",
+		"import:ng-timecard": "node --import tsx scripts/import-ng-timecard.ts",
 		"workspace:mailbox:install": "node ../urx-workspace-mailbox/bin/cli.mjs install",
 		"workspace:mailbox:sync": "node ../urx-workspace-mailbox/bin/cli.mjs sync",
 		"workspace:mailbox:uninstall": "node ../urx-workspace-mailbox/bin/cli.mjs uninstall",
@@ -74,6 +75,7 @@
 		"nodemailer": "^9.0.3",
 		"otplib": "^13.4.1",
 		"qrcode": "^1.5.4",
+		"xlsx": "^0.18.5",
 		"zod": "^4.4.3"
 	}
 }

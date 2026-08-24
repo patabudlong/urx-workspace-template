@@ -54,6 +54,10 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 				description: 'Workspace payroll employees and pay runs'
 			},
 			{
+				name: 'DTR',
+				description: 'Daily time records, work schedules, and attendance'
+			},
+			{
 				name: 'Mailbox',
 				description: 'Per-user IMAP mailbox read and SMTP send (PrivateEmail compatible)'
 			}
@@ -1054,6 +1058,189 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 					}
 				}
 			},
+			'/payroll/employees/{id}': {
+				get: {
+					tags: ['Payroll'],
+					summary: 'Get payroll employee',
+					description: 'Returns a single active employee for the active workspace.',
+					operationId: 'getPayrollEmployee',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{
+							name: 'id',
+							in: 'path',
+							required: true,
+							schema: { type: 'string' }
+						}
+					],
+					responses: {
+						'200': {
+							description: 'Employee record',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/PayrollEmployeeSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Payroll access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'Employee not found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				patch: {
+					tags: ['Payroll'],
+					summary: 'Update payroll employee',
+					description: 'Updates an active employee record for the active workspace.',
+					operationId: 'updatePayrollEmployee',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{
+							name: 'id',
+							in: 'path',
+							required: true,
+							schema: { type: 'string' }
+						}
+					],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/PayrollEmployeeCreateRequest' }
+							}
+						}
+					},
+					responses: {
+						'200': {
+							description: 'Updated employee',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/PayrollEmployeeSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Payroll access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'Employee not found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				delete: {
+					tags: ['Payroll'],
+					summary: 'Deactivate payroll employee',
+					description:
+						'Soft-deactivates an employee (sets isActive to false). Historical records are preserved.',
+					operationId: 'deactivatePayrollEmployee',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{
+							name: 'id',
+							in: 'path',
+							required: true,
+							schema: { type: 'string' }
+						}
+					],
+					responses: {
+						'200': {
+							description: 'Employee deactivated',
+							content: {
+								'application/json': {
+									schema: {
+										type: 'object',
+										required: ['data', 'meta'],
+										properties: {
+											data: {
+												type: 'object',
+												required: ['id', 'isActive'],
+												properties: {
+													id: { type: 'string' },
+													isActive: { type: 'boolean', enum: [false] }
+												}
+											},
+											meta: { $ref: '#/components/schemas/ApiMeta' }
+										}
+									}
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Payroll access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'Employee not found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
 			'/payroll/settings': {
 				get: {
 					tags: ['Payroll'],
@@ -1110,6 +1297,93 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 							content: {
 								'application/json': {
 									schema: { $ref: '#/components/schemas/PayrollSettingsSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Payroll access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/payroll/settings/job-titles': {
+				get: {
+					tags: ['Payroll'],
+					summary: 'List payroll job titles',
+					description:
+						'Returns workspace job title catalog with default pay rates for the active workspace.',
+					operationId: 'listPayrollJobTitles',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Job title catalog',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/PayrollJobTitlesSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Payroll access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				put: {
+					tags: ['Payroll'],
+					summary: 'Update payroll job titles',
+					description: 'Creates or replaces the workspace job title catalog.',
+					operationId: 'updatePayrollJobTitles',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/PayrollJobTitlesUpdateRequest' }
+							}
+						}
+					},
+					responses: {
+						'200': {
+							description: 'Updated job title catalog',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/PayrollJobTitlesSuccessResponse' }
 								}
 							}
 						},
@@ -1229,6 +1503,331 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						},
 						'403': {
 							description: 'Payroll access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/dtr/status': {
+				get: {
+					tags: ['DTR'],
+					summary: 'DTR module status',
+					description:
+						'Returns DTR configuration summary and employee count for the active workspace. Requires workspace owner or admin role.',
+					operationId: 'getDtrStatus',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'DTR status for the active workspace',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/DtrStatusSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'DTR access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/dtr/settings': {
+				get: {
+					tags: ['DTR'],
+					summary: 'Get workspace default schedule',
+					description:
+						'Returns workspace default rest days, standard work minutes, and lunch break. Requires workspace owner or admin role.',
+					operationId: 'getDtrSettings',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Workspace default DTR settings',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/DtrSettingsSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'DTR access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				put: {
+					tags: ['DTR'],
+					summary: 'Update workspace default schedule',
+					description:
+						'Updates workspace default rest days, standard work minutes, and lunch break. Requires workspace owner or admin role.',
+					operationId: 'updateDtrSettings',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/DtrSettingsUpdateRequest' }
+							}
+						}
+					},
+					responses: {
+						'200': {
+							description: 'Updated workspace default DTR settings',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/DtrSettingsSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'DTR access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/dtr/work-schedules': {
+				get: {
+					tags: ['DTR'],
+					summary: 'List named work schedules',
+					description:
+						'Returns named work schedules for the active workspace. Requires workspace owner or admin role.',
+					operationId: 'listDtrWorkSchedules',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Named work schedules',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/DtrWorkSchedulesSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'DTR access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				put: {
+					tags: ['DTR'],
+					summary: 'Replace named work schedules',
+					description:
+						'Replaces all named work schedules for the active workspace. Requires workspace owner or admin role.',
+					operationId: 'updateDtrWorkSchedules',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/DtrWorkSchedulesUpdateRequest' }
+							}
+						}
+					},
+					responses: {
+						'200': {
+							description: 'Updated named work schedules',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/DtrWorkSchedulesSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'DTR access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/dtr/days': {
+				get: {
+					tags: ['DTR'],
+					summary: 'List time records for a month',
+					description:
+						'Returns DTR day records for a calendar month. Optionally filter by employee. Requires workspace owner or admin role.',
+					operationId: 'listDtrDays',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{
+							name: 'month',
+							in: 'query',
+							required: true,
+							description: 'Calendar month (YYYY-MM)',
+							schema: { type: 'string', pattern: '^\\d{4}-\\d{2}$' }
+						},
+						{
+							name: 'employeeId',
+							in: 'query',
+							required: false,
+							description: 'Filter by payroll employee id',
+							schema: { type: 'string' }
+						}
+					],
+					responses: {
+						'200': {
+							description: 'Monthly time records',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/DtrDaysSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid query parameters',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'DTR access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				post: {
+					tags: ['DTR'],
+					summary: 'Create or update a day record',
+					description:
+						'Upserts a DTR day record for an employee. Requires workspace owner or admin role.',
+					operationId: 'upsertDtrDay',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/DtrDayUpsertRequest' }
+							}
+						}
+					},
+					responses: {
+						'200': {
+							description: 'Upserted day record',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/DtrDaySuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'DTR access required',
 							content: {
 								'application/json': {
 									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
@@ -2510,6 +3109,57 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						meta: { $ref: '#/components/schemas/ApiMeta' }
 					}
 				},
+				PayrollJobTitle: {
+					type: 'object',
+					required: ['id', 'name', 'payType', 'payRateCents', 'isActive'],
+					properties: {
+						id: { type: 'string' },
+						name: { type: 'string', maxLength: 120 },
+						payType: { type: 'string', enum: ['hourly', 'monthly'] },
+						payRateCents: { type: 'integer', minimum: 0 },
+						isActive: { type: 'boolean' }
+					}
+				},
+				PayrollJobTitlesUpdateRequest: {
+					type: 'object',
+					required: ['titles'],
+					properties: {
+						titles: {
+							type: 'array',
+							maxItems: 50,
+							items: {
+								type: 'object',
+								required: ['id', 'name', 'payType', 'payRate', 'isActive'],
+								properties: {
+									id: { type: 'string', maxLength: 64 },
+									name: { type: 'string', maxLength: 120 },
+									payType: { type: 'string', enum: ['hourly', 'monthly'] },
+									payRate: { type: 'number', minimum: 0 },
+									isActive: { type: 'boolean' }
+								}
+							}
+						}
+					}
+				},
+				PayrollJobTitlesSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							type: 'object',
+							required: ['workspaceId', 'currency', 'titles'],
+							properties: {
+								workspaceId: { type: 'string' },
+								currency: { type: 'string' },
+								titles: {
+									type: 'array',
+									items: { $ref: '#/components/schemas/PayrollJobTitle' }
+								}
+							}
+						},
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
 				PayrollStatus: {
 					type: 'object',
 					required: ['enabled', 'workspaceId', 'runCount', 'employeeCount'],
@@ -2525,6 +3175,308 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 					required: ['data', 'meta'],
 					properties: {
 						data: { $ref: '#/components/schemas/PayrollStatus' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				DtrLunchBreak: {
+					type: 'object',
+					required: ['startTime', 'endTime'],
+					properties: {
+						startTime: {
+							type: 'string',
+							pattern: '^([01]\\d|2[0-3]):[0-5]\\d$',
+							description: 'HH:MM'
+						},
+						endTime: {
+							type: 'string',
+							pattern: '^([01]\\d|2[0-3]):[0-5]\\d$',
+							description: 'HH:MM'
+						}
+					}
+				},
+				DtrWeekDay: {
+					type: 'string',
+					enum: [
+						'sunday',
+						'monday',
+						'tuesday',
+						'wednesday',
+						'thursday',
+						'friday',
+						'saturday'
+					]
+				},
+				DtrStatus: {
+					type: 'object',
+					required: ['workspaceId', 'configured', 'restDayCount', 'employeeCount'],
+					properties: {
+						workspaceId: { type: 'string' },
+						configured: { type: 'boolean' },
+						restDayCount: { type: 'integer', minimum: 0 },
+						employeeCount: { type: 'integer', minimum: 0 }
+					}
+				},
+				DtrStatusSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/DtrStatus' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				DtrSettings: {
+					type: 'object',
+					required: [
+						'workspaceId',
+						'restDays',
+						'standardWorkMinutes',
+						'lunchBreak',
+						'configured',
+						'updatedAt'
+					],
+					properties: {
+						workspaceId: { type: 'string' },
+						restDays: {
+							type: 'array',
+							minItems: 1,
+							maxItems: 6,
+							items: { $ref: '#/components/schemas/DtrWeekDay' }
+						},
+						standardWorkMinutes: { type: 'integer', minimum: 60, maximum: 720 },
+						lunchBreak: {
+							oneOf: [{ $ref: '#/components/schemas/DtrLunchBreak' }, { type: 'null' }]
+						},
+						configured: { type: 'boolean' },
+						updatedAt: { type: 'string', format: 'date-time', nullable: true }
+					}
+				},
+				DtrSettingsUpdateRequest: {
+					type: 'object',
+					required: ['restDays', 'standardWorkMinutes'],
+					properties: {
+						restDays: {
+							type: 'array',
+							minItems: 1,
+							maxItems: 6,
+							items: { $ref: '#/components/schemas/DtrWeekDay' }
+						},
+						standardWorkMinutes: { type: 'integer', minimum: 60, maximum: 720 },
+						lunchBreakStart: {
+							type: 'string',
+							pattern: '^([01]\\d|2[0-3]):[0-5]\\d$',
+							description: 'HH:MM'
+						},
+						lunchBreakEnd: {
+							type: 'string',
+							pattern: '^([01]\\d|2[0-3]):[0-5]\\d$',
+							description: 'HH:MM'
+						}
+					}
+				},
+				DtrSettingsSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/DtrSettings' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				DtrWorkScheduleDay: {
+					type: 'object',
+					required: ['day', 'kind', 'startTime', 'endTime'],
+					properties: {
+						day: { $ref: '#/components/schemas/DtrWeekDay' },
+						kind: { type: 'string', enum: ['rest', 'work'] },
+						startTime: {
+							type: 'string',
+							pattern: '^([01]\\d|2[0-3]):[0-5]\\d$',
+							nullable: true,
+							description: 'HH:MM'
+						},
+						endTime: {
+							type: 'string',
+							pattern: '^([01]\\d|2[0-3]):[0-5]\\d$',
+							nullable: true,
+							description: 'HH:MM'
+						}
+					}
+				},
+				DtrWorkSchedule: {
+					type: 'object',
+					required: [
+						'id',
+						'workspaceId',
+						'name',
+						'days',
+						'lunchBreak',
+						'createdAt',
+						'updatedAt'
+					],
+					properties: {
+						id: { type: 'string' },
+						workspaceId: { type: 'string' },
+						name: { type: 'string', maxLength: 80 },
+						days: {
+							type: 'array',
+							minItems: 7,
+							maxItems: 7,
+							items: { $ref: '#/components/schemas/DtrWorkScheduleDay' }
+						},
+						lunchBreak: {
+							oneOf: [{ $ref: '#/components/schemas/DtrLunchBreak' }, { type: 'null' }]
+						},
+						createdAt: { type: 'string', format: 'date-time' },
+						updatedAt: { type: 'string', format: 'date-time' }
+					}
+				},
+				DtrWorkScheduleInput: {
+					type: 'object',
+					required: ['id', 'name', 'days'],
+					properties: {
+						id: { type: 'string', maxLength: 64 },
+						name: { type: 'string', maxLength: 80 },
+						days: {
+							type: 'array',
+							minItems: 7,
+							maxItems: 7,
+							items: { $ref: '#/components/schemas/DtrWorkScheduleDay' }
+						},
+						lunchBreakStart: {
+							type: 'string',
+							pattern: '^([01]\\d|2[0-3]):[0-5]\\d$',
+							description: 'HH:MM'
+						},
+						lunchBreakEnd: {
+							type: 'string',
+							pattern: '^([01]\\d|2[0-3]):[0-5]\\d$',
+							description: 'HH:MM'
+						}
+					}
+				},
+				DtrWorkSchedulesUpdateRequest: {
+					type: 'object',
+					required: ['schedules'],
+					properties: {
+						schedules: {
+							type: 'array',
+							maxItems: 20,
+							items: { $ref: '#/components/schemas/DtrWorkScheduleInput' }
+						}
+					}
+				},
+				DtrWorkSchedulesSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							type: 'object',
+							required: ['schedules'],
+							properties: {
+								schedules: {
+									type: 'array',
+									items: { $ref: '#/components/schemas/DtrWorkSchedule' }
+								}
+							}
+						},
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				DtrDay: {
+					type: 'object',
+					required: [
+						'id',
+						'workspaceId',
+						'employeeId',
+						'date',
+						'status',
+						'timeIn',
+						'timeOut',
+						'workedMinutes',
+						'source',
+						'approvalStatus',
+						'notes',
+						'createdAt',
+						'updatedAt'
+					],
+					properties: {
+						id: { type: 'string' },
+						workspaceId: { type: 'string' },
+						employeeId: { type: 'string' },
+						date: { type: 'string', format: 'date' },
+						status: {
+							type: 'string',
+							enum: ['present', 'absent', 'rest', 'partial', 'pending']
+						},
+						timeIn: {
+							type: 'string',
+							pattern: '^([01]\\d|2[0-3]):[0-5]\\d$',
+							nullable: true,
+							description: 'HH:MM'
+						},
+						timeOut: {
+							type: 'string',
+							pattern: '^([01]\\d|2[0-3]):[0-5]\\d$',
+							nullable: true,
+							description: 'HH:MM'
+						},
+						workedMinutes: { type: 'integer', minimum: 0 },
+						source: { type: 'string', enum: ['manual', 'biometric', 'online'] },
+						approvalStatus: {
+							type: 'string',
+							enum: ['draft', 'submitted', 'approved']
+						},
+						notes: { type: 'string', maxLength: 500, nullable: true },
+						createdAt: { type: 'string', format: 'date-time' },
+						updatedAt: { type: 'string', format: 'date-time' }
+					}
+				},
+				DtrDayUpsertRequest: {
+					type: 'object',
+					required: ['employeeId', 'date', 'status'],
+					properties: {
+						employeeId: { type: 'string' },
+						date: { type: 'string', format: 'date' },
+						status: {
+							type: 'string',
+							enum: ['present', 'absent', 'rest', 'partial', 'pending']
+						},
+						timeIn: {
+							type: 'string',
+							pattern: '^([01]\\d|2[0-3]):[0-5]\\d$',
+							description: 'HH:MM'
+						},
+						timeOut: {
+							type: 'string',
+							pattern: '^([01]\\d|2[0-3]):[0-5]\\d$',
+							description: 'HH:MM'
+						},
+						source: { type: 'string', enum: ['manual', 'biometric', 'online'], default: 'manual' },
+						notes: { type: 'string', maxLength: 500 }
+					}
+				},
+				DtrDaySuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/DtrDay' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				DtrDaysSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							type: 'object',
+							required: ['month', 'items'],
+							properties: {
+								month: { type: 'string', pattern: '^\\d{4}-\\d{2}$' },
+								items: {
+									type: 'array',
+									items: { $ref: '#/components/schemas/DtrDay' }
+								}
+							}
+						},
 						meta: { $ref: '#/components/schemas/ApiMeta' }
 					}
 				},
@@ -2550,6 +3502,8 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						fullName: { type: 'string' },
 						email: { type: 'string', format: 'email', nullable: true },
 						jobTitle: { type: 'string', nullable: true },
+						employeeCode: { type: 'string', nullable: true },
+						photoUrl: { type: 'string', format: 'uri', nullable: true },
 						payType: { type: 'string', enum: ['hourly', 'monthly'] },
 						payRateCents: { type: 'integer', minimum: 0 },
 						isActive: { type: 'boolean' },

@@ -14,7 +14,7 @@
 	</p>
 </Sidebar.Header>
 
-<Sidebar.Content class="min-h-0 flex-1 gap-1 overflow-visible ps-1 pt-1">
+<Sidebar.Content class="min-h-0 flex-1 gap-1 overflow-visible ps-1 pt-1" data-tour="payroll-nav">
 	<Sidebar.Group>
 		<Sidebar.GroupLabel>Manage</Sidebar.GroupLabel>
 		<Sidebar.Menu>
@@ -34,7 +34,7 @@
 	</Sidebar.Group>
 </Sidebar.Content>
 
-<Sidebar.Footer class="border-sidebar-border mt-auto shrink-0 border-t p-2">
+<Sidebar.Footer class="border-sidebar-border mt-auto shrink-0 border-t p-2" data-tour="payroll-settings">
 	<Sidebar.Menu>
 		<PayrollSettingsSidebarMenu />
 	</Sidebar.Menu>

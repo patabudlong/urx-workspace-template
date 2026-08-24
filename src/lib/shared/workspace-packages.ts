@@ -27,17 +27,20 @@ export const WORKSPACE_PACKAGE_CATALOG: WorkspacePackageMeta[] = [
 	{
 		id: WORKSPACE_PACKAGE_IDS.MAILBOX,
 		label: 'Mailbox',
-		description: 'Per-user IMAP/SMTP inbox in the workspace.'
+		description:
+			'Integrate Mailbox to send, receive, and manage emails directly from your workspace.'
 	},
 	{
 		id: WORKSPACE_PACKAGE_IDS.PAYROLL,
 		label: 'Payroll',
-		description: 'Pay runs, employees, and payroll settings.'
+		description:
+			'Connect Payroll to manage pay runs, employees, and compensation settings for your team.'
 	},
 	{
 		id: WORKSPACE_PACKAGE_IDS.DTR,
 		label: 'DTR',
-		description: 'Daily time records and work schedules.'
+		description:
+			'Track daily time records, work schedules, and attendance linked to payroll employees.'
 	}
 ];
 

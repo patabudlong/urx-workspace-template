@@ -116,6 +116,31 @@ export async function getWorkspaceBrandLogoObject(input: {
 
 export { LOGO_EXTENSIONS };
 
+export async function uploadPayrollEmployeePhoto(input: {
+	workspaceId: string;
+	employeeId: string;
+	body: Buffer;
+	contentType: string;
+	extension: string;
+}): Promise<string> {
+	const config = getLinodeObjectStorageConfig();
+
+	if (!config) {
+		throw new Error('LINODE_NOT_CONFIGURED');
+	}
+
+	const key = `workspaces/${input.workspaceId}/payroll/employees/${input.employeeId}/photo.${input.extension}`;
+
+	return uploadPublicObject(
+		{
+			key,
+			body: input.body,
+			contentType: input.contentType
+		},
+		config
+	);
+}
+
 export async function uploadWorkspaceBrandLogo(input: {
 	slug: string;
 	body: Buffer;

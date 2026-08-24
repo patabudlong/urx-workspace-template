@@ -1,28 +1,36 @@
 <script lang="ts">
+	import {
+		DTR_DAY_HOLIDAY_CELL_CLASSES,
+		DTR_DAY_STATUS_CELL_CLASSES
+	} from '$lib/components/dtr/dtr-day-cell-styles';
 	import { DTR_DAY_STATUS_LABELS, type DtrDayStatus } from '$lib/shared/dtr/status';
 	import { cn } from '$lib/utils.js';
 
 	let {
 		status,
 		dayOfMonth,
+		holidayName = null,
 		selected = false,
 		interactive = false,
 		onclick
 	}: {
 		status: DtrDayStatus;
 		dayOfMonth: number;
+		holidayName?: string | null;
 		selected?: boolean;
 		interactive?: boolean;
 		onclick?: () => void;
 	} = $props();
 
-	const statusClasses: Record<DtrDayStatus, string> = {
-		present: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
-		absent: 'bg-destructive/15 text-destructive',
-		rest: 'bg-muted text-muted-foreground',
-		partial: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
-		pending: 'bg-background text-muted-foreground border border-dashed border-border'
-	};
+	const title = $derived(
+		holidayName
+			? `${DTR_DAY_STATUS_LABELS[status]} · ${holidayName}`
+			: DTR_DAY_STATUS_LABELS[status]
+	);
+
+	const cellClasses = $derived(
+		holidayName ? DTR_DAY_HOLIDAY_CELL_CLASSES : DTR_DAY_STATUS_CELL_CLASSES[status]
+	);
 </script>
 
 {#if interactive}
@@ -30,23 +38,33 @@
 		type="button"
 		class={cn(
 			'flex h-10 w-full min-w-8 flex-col items-center justify-center rounded-md text-xs font-medium transition-colors',
-			statusClasses[status],
+			cellClasses,
 			selected && 'ring-primary ring-2 ring-offset-2',
 			'hover:opacity-90'
 		)}
-		title={DTR_DAY_STATUS_LABELS[status]}
+		title={title}
 		{onclick}
 	>
-		{dayOfMonth}
+		{#if holidayName}
+			<span class="leading-none">{dayOfMonth}</span>
+			<span class="text-[10px] leading-none">Holiday</span>
+		{:else}
+			{dayOfMonth}
+		{/if}
 	</button>
 {:else}
 	<div
 		class={cn(
 			'flex h-10 w-full min-w-8 flex-col items-center justify-center rounded-md text-xs font-medium',
-			statusClasses[status]
+			cellClasses
 		)}
-		title={DTR_DAY_STATUS_LABELS[status]}
+		title={title}
 	>
-		{dayOfMonth}
+		{#if holidayName}
+			<span class="leading-none">{dayOfMonth}</span>
+			<span class="text-[10px] leading-none">Holiday</span>
+		{:else}
+			{dayOfMonth}
+		{/if}
 	</div>
 {/if}

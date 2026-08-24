@@ -2,9 +2,19 @@ import { fail } from '@sveltejs/kit';
 import { message, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import type { Actions, PageServerLoad } from './$types';
-import { createPayrollEmployeeForWorkspace } from '$lib/server/repositories/payroll-employees';
+import {
+	PAYROLL_EMPLOYEE_CODE_TAKEN_MESSAGE,
+	PAYROLL_EMPLOYEE_CREATE_FAILED_MESSAGE,
+	PAYROLL_EMPLOYEE_CREATED_MESSAGE
+} from '$lib/shared/payroll/messages';
+import {
+	createPayrollEmployeeForWorkspace,
+	isDuplicatePayrollEmployeeCodeError
+} from '$lib/server/repositories/payroll-employees';
 import { listDtrWorkSchedulesForWorkspace } from '$lib/server/repositories/dtr-work-schedules';
 import { getPayrollSettingsForWorkspace } from '$lib/server/repositories/payroll-settings';
+import { applyPayrollEmployeePhotoChanges } from '$lib/server/payroll/employee-photo-actions';
+import { parsePayrollEmployeeFormSubmission } from '$lib/server/payroll/employee-form-submission';
 import {
 	listUserWorkspaceContexts,
 	resolveActiveWorkspaceContext
@@ -12,14 +22,11 @@ import {
 import { getWorkspaceHostSuffix } from '$lib/server/workspace-host';
 import { canManagePayroll } from '$lib/shared/payroll/access';
 import {
-	PAYROLL_EMPLOYEE_CREATED_MESSAGE,
-	PAYROLL_EMPLOYEE_CREATE_FAILED_MESSAGE
-} from '$lib/shared/payroll/messages';
-import {
 	createPayrollEmployeeSchema,
 	createPayrollEmployeeDefaults
 } from '$lib/shared/payroll/schemas';
 import { buildEmployeeDeductionFormDefaults } from '$lib/shared/payroll/deductions';
+import { mapActiveJobTitlesForEmployeeForm } from '$lib/shared/payroll/job-titles';
 
 function buildEmployeeFormDefaults(
 	deductionTypes: Awaited<ReturnType<typeof getPayrollSettingsForWorkspace>>['deductionTypes']
@@ -40,7 +47,8 @@ export const load: PageServerLoad = async ({ parent }) => {
 			}),
 			payrollCurrency: 'PHP' as const,
 			deductionTypes: [],
-			workSchedules: []
+			workSchedules: [],
+			jobTitles: []
 		};
 	}
 
@@ -54,13 +62,14 @@ export const load: PageServerLoad = async ({ parent }) => {
 		form,
 		payrollCurrency: settings.currency,
 		deductionTypes: settings.deductionTypes.filter((type) => type.isActive),
-		workSchedules
+		workSchedules,
+		jobTitles: mapActiveJobTitlesForEmployeeForm(settings.jobTitles, settings.currency)
 	};
 };
 
 export const actions: Actions = {
 	default: async ({ request, url, locals }) => {
-		const form = await superValidate(request, zod4(createPayrollEmployeeSchema));
+		const { form, photo } = await parsePayrollEmployeeFormSubmission(request);
 
 		if (!locals.user) {
 			return fail(401, { form });
@@ -80,16 +89,32 @@ export const actions: Actions = {
 		const settings = await getPayrollSettingsForWorkspace(workspace.workspaceId);
 
 		try {
-			await createPayrollEmployeeForWorkspace({
+			const employee = await createPayrollEmployeeForWorkspace({
 				workspaceId: workspace.workspaceId,
 				data: form.data,
 				currency: settings.currency
 			});
+
+			if (photo) {
+				const photoResult = await applyPayrollEmployeePhotoChanges({
+					workspaceId: workspace.workspaceId,
+					employeeId: employee.id,
+					photo
+				});
+
+				if (!photoResult.ok) {
+					return message(form, photoResult.message, { status: 400 });
+				}
+			}
 		} catch (error) {
 			if (error instanceof Error && error.message === 'Invalid work schedule') {
 				return message(form, 'Selected work schedule is invalid or no longer available.', {
 					status: 400
 				});
+			}
+
+			if (isDuplicatePayrollEmployeeCodeError(error)) {
+				return message(form, PAYROLL_EMPLOYEE_CODE_TAKEN_MESSAGE, { status: 400 });
 			}
 
 			return message(form, PAYROLL_EMPLOYEE_CREATE_FAILED_MESSAGE, { status: 500 });

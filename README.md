@@ -146,7 +146,7 @@ Optional host defaults in `.env` (see `.env.example` `urixoft-workspace-mailbox`
 
 ### Payroll (`urixoft-workspace-payroll`)
 
-Workspace payroll runs and pay period tracking stored in MongoDB (`payroll_runs`). Installed from the sibling `urx-workspace-payroll` package.
+Workspace payroll runs and pay period tracking stored in MongoDB (`payroll_runs`, `payroll_employees`, `payroll_settings`). Installed from the sibling `urx-workspace-payroll` package.
 
 ```sh
 pnpm workspace:payroll:install    # copy routes, patch nav/collections/layout, update .env.example
@@ -154,7 +154,55 @@ pnpm workspace:payroll:sync       # copy payroll changes from this app back into
 pnpm workspace:payroll:uninstall  # remove package files and patches
 ```
 
-Open **Payroll** at `/payroll` (workspace owners and admins). Configure pay schedule at `/payroll/settings`, add employees at `/payroll/employees`, then create draft pay runs at `/payroll/runs`. API routes live under `/api/v1/payroll/*` and are documented at `/docs`.
+Open **Payroll** at `/payroll` (workspace owners and admins). A first-visit guided tour is available on the overview page; click **Show tour** to replay it.
+
+#### Flow
+
+Payroll is split into **setup** (one-time configuration) and **runs** (repeating per pay period).
+
+```mermaid
+flowchart TD
+    A[Open /payroll] --> B{Settings configured?}
+    B -->|No| C[/payroll/settings<br/>Pay frequency, currency, timezone/]
+    B -->|Yes| D
+    C --> E[/payroll/settings/deductions<br/>SSS, PhilHealth, loans, etc./]
+    E --> F[/payroll/employees/new<br/>Add employees with pay rates/]
+    D[/payroll/employees<br/>Review team on payroll/] --> G[/payroll/runs<br/>Create draft pay run/]
+    F --> G
+    G --> H{Process run}
+    H -.->|Not built yet| I[Calculate gross, deductions, net]
+    I -.-> J[Review line items & complete run]
+    J -.-> K[Export payslips / disbursement]
+```
+
+**Typical setup path**
+
+1. **Settings** (`/payroll/settings`) — set pay frequency, currency, and timezone. Weekly and bi-weekly schedules also need a week-start day and period anchor date.
+2. **Deduction types** (`/payroll/settings/deductions`) — define fixed or percentage deductions (Philippines presets included).
+3. **Employees** (`/payroll/employees` → **Add employee**) — store name, pay rate (hourly or monthly), optional deductions, and an optional DTR work schedule.
+4. **Pay runs** (`/payroll/runs`) — create a **draft** run for a pay period. Dates and title are suggested from settings and the last run.
+
+**Access:** owners and admins only (`canManagePayroll`). API routes live under `/api/v1/payroll/*` and are documented at `/docs`.
+
+#### What's implemented
+
+| Area | Routes / API | Notes |
+|------|----------------|-------|
+| Overview | `/payroll` | Employee and pay-run counts; guided tour |
+| Settings | `/payroll/settings`, `GET/PATCH /api/v1/payroll/settings` | Pay schedule, currency, timezone |
+| Deductions | `/payroll/settings/deductions`, `GET/PATCH /api/v1/payroll/settings/deductions` | Workspace deduction type catalog |
+| Employees | `/payroll/employees`, `/payroll/employees/new`, `/payroll/employees/[id]/edit`, `GET/POST /api/v1/payroll/employees`, `GET/PATCH/DELETE /api/v1/payroll/employees/{id}` | List, search, create, edit, deactivate (soft) |
+| Pay runs | `/payroll/runs`, `GET/POST /api/v1/payroll/runs` | Create draft runs; suggested next period |
+| Status | `GET /api/v1/payroll/status` | Counts for mobile / dashboard probes |
+
+#### What's still needed
+
+- **Pay run detail** — no `/payroll/runs/[id]` page; runs are listed but not opened or edited.
+- **Processing pipeline** — runs stay in `draft`; no transitions to `processing` / `completed` / `failed`.
+- **Pay calculation** — no gross pay, per-employee deductions, or net pay from DTR time records.
+- **Payslips & export** — no PDF/CSV generation or disbursement tracking.
+- **List pagination (web)** — API paginates; web UI loads the first page only.
+- **Package manifest** — `.urx-packages/urixoft-workspace-payroll.json` may lag behind files added after install (employees, settings, deductions).
 
 ## Dev credentials
 

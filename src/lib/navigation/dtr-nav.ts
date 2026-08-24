@@ -3,6 +3,7 @@ import { canManageDtr } from '$lib/shared/dtr/access';
 import ClipboardClockIcon from '@lucide/svelte/icons/clipboard-clock';
 import ClockIcon from '@lucide/svelte/icons/clock';
 import SettingsIcon from '@lucide/svelte/icons/settings';
+import UploadIcon from '@lucide/svelte/icons/upload';
 
 export const DTR_SETTINGS_NAV_ITEM: AppNavItem = {
 	title: 'Settings',
@@ -22,6 +23,12 @@ export const DTR_NAV_ITEMS: AppNavItem[] = [
 		title: 'Time records',
 		href: '/dtr/records',
 		icon: ClockIcon,
+		match: 'exact'
+	},
+	{
+		title: 'Upload',
+		href: '/dtr/import',
+		icon: UploadIcon,
 		match: 'exact'
 	}
 ];

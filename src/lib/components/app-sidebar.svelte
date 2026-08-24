@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import SidebarModulesCta from '$lib/components/sidebar-modules-cta.svelte';
 	import SiteBrandMark from '$lib/components/site-brand-mark.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import { getAppNavGroups, isAppNavActive, type AppNavItem } from '$lib/navigation/app-nav';
+	import { getAppNavGroups, isAppNavActive, isWorkspaceOwner, type AppNavItem } from '$lib/navigation/app-nav';
 
 	const navGroups = $derived(getAppNavGroups(page.data.workspace?.enabledPackages ?? []));
+	const showModulesCta = $derived(isWorkspaceOwner(page.data.workspace?.role));
 
 	function navTarget(item: AppNavItem): string | undefined {
 		return item.external ? '_blank' : undefined;
@@ -52,6 +54,12 @@
 			</Sidebar.Group>
 		{/each}
 	</Sidebar.Content>
+
+	{#if showModulesCta}
+		<Sidebar.Footer class="mt-auto shrink-0 p-0">
+			<SidebarModulesCta />
+		</Sidebar.Footer>
+	{/if}
 
 	<Sidebar.Rail />
 </Sidebar.Root>

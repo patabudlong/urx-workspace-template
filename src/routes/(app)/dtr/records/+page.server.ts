@@ -6,6 +6,9 @@ import { listDtrDaysForWorkspace, upsertDtrDayForWorkspace } from '$lib/server/r
 import { getDtrSettingsForWorkspace } from '$lib/server/repositories/dtr-settings';
 import { getDtrWorkScheduleForWorkspace } from '$lib/server/repositories/dtr-work-schedules';
 import {
+	getDtrHolidayCalendarForWorkspace
+} from '$lib/server/repositories/dtr-holiday-calendars';
+import {
 	getPayrollEmployeeForWorkspace,
 	listPayrollEmployeesForWorkspace
 } from '$lib/server/repositories/payroll-employees';
@@ -78,6 +81,11 @@ export const load: PageServerLoad = async ({ parent, url }) => {
 			})
 		: null;
 	const { start, end } = getMonthDateRange(month);
+	const calendarYear = Number(month.slice(0, 4));
+	const holidayCalendar = await getDtrHolidayCalendarForWorkspace({
+		workspaceId: workspace.workspaceId,
+		year: calendarYear
+	});
 	const records = selectedEmployeeId
 		? await listDtrDaysForWorkspace({
 				workspaceId: workspace.workspaceId,
@@ -92,7 +100,9 @@ export const load: PageServerLoad = async ({ parent, url }) => {
 				month,
 				restDays: settings.restDays,
 				workSchedule,
-				records
+				records,
+				holidays: holidayCalendar?.holidays ?? [],
+				holidayRates: holidayCalendar?.rates ?? null
 			})
 		: [];
 
@@ -120,7 +130,8 @@ export const load: PageServerLoad = async ({ parent, url }) => {
 		selectedDate,
 		selectedRecord,
 		settingsConfigured: settings.configured,
-		workScheduleName: selectedEmployee?.workScheduleName ?? null
+		workScheduleName: selectedEmployee?.workScheduleName ?? null,
+		holidayCalendarTitle: holidayCalendar?.title ?? null
 	};
 };
 
