@@ -16,6 +16,10 @@ export type DtrDayDocument = {
 	status: DtrDayStatus;
 	timeIn: string | null;
 	timeOut: string | null;
+	morningTimeIn: string | null;
+	morningTimeOut: string | null;
+	afternoonTimeIn: string | null;
+	afternoonTimeOut: string | null;
 	workedMinutes: number;
 	source: DtrDaySource;
 	approvalStatus: DtrApprovalStatus;
@@ -37,6 +41,10 @@ export type DtrDayDto = {
 	status: DtrDayStatus;
 	timeIn: string | null;
 	timeOut: string | null;
+	morningTimeIn: string | null;
+	morningTimeOut: string | null;
+	afternoonTimeIn: string | null;
+	afternoonTimeOut: string | null;
 	workedMinutes: number;
 	source: DtrDaySource;
 	approvalStatus: DtrApprovalStatus;

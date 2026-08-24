@@ -16,6 +16,10 @@ export type DtrNgImportPreviewRow = {
 	status: DtrDayStatus;
 	timeIn: string | null;
 	timeOut: string | null;
+	morningTimeIn: string | null;
+	morningTimeOut: string | null;
+	afternoonTimeIn: string | null;
+	afternoonTimeOut: string | null;
 	notes: string | null;
 };
 
@@ -35,4 +39,34 @@ export function formatDtrNgImportTimeRange(timeIn: string | null, timeOut: strin
 	}
 
 	return `${timeIn ?? '—'} → ${timeOut ?? '—'}`;
+}
+
+export function formatDtrNgImportDayTimes(row: {
+	timeIn?: string | null;
+	timeOut?: string | null;
+	morningTimeIn?: string | null;
+	morningTimeOut?: string | null;
+	afternoonTimeIn?: string | null;
+	afternoonTimeOut?: string | null;
+}): string {
+	const morning = formatDtrNgImportTimeRange(row.morningTimeIn ?? null, row.morningTimeOut ?? null);
+	const afternoon = formatDtrNgImportTimeRange(
+		row.afternoonTimeIn ?? null,
+		row.afternoonTimeOut ?? null
+	);
+	const parts: string[] = [];
+
+	if (morning !== '—') {
+		parts.push(`AM ${morning}`);
+	}
+
+	if (afternoon !== '—') {
+		parts.push(`PM ${afternoon}`);
+	}
+
+	if (parts.length > 0) {
+		return parts.join(' · ');
+	}
+
+	return formatDtrNgImportTimeRange(row.timeIn ?? null, row.timeOut ?? null);
 }

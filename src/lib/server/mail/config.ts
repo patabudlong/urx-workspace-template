@@ -1,4 +1,5 @@
 import { env } from '$env/dynamic/private';
+import { normalizeLegacyBrandMailFrom } from '$lib/shared/brand-normalize';
 
 export type MailProvider = 'smtp' | 'postmark';
 
@@ -26,7 +27,7 @@ export function getSmtpConfig() {
 		return null;
 	}
 
-	return { host, port, from };
+	return { host, port, from: normalizeLegacyBrandMailFrom(from) };
 }
 
 export function getPostmarkConfig() {
@@ -38,5 +39,9 @@ export function getPostmarkConfig() {
 		return null;
 	}
 
-	return { serverToken, from, messageStream };
+	return {
+		serverToken,
+		from: normalizeLegacyBrandMailFrom(from),
+		messageStream
+	};
 }

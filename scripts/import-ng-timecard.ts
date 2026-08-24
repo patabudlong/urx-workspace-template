@@ -4,12 +4,16 @@ import { MongoClient, ObjectId } from 'mongodb';
 import XLSX from 'xlsx';
 import { loadEnvFile } from './load-env.ts';
 import { resolveMongoDbName, resolveMongoUri } from '../src/lib/server/db/resolve-mongo-uri.ts';
-import { computeWorkedMinutes } from '../src/lib/shared/dtr/calendar.ts';
+import {
+	computeDtrDayWorkedMinutes,
+	type DtrLunchBreakWindow
+} from '../src/lib/shared/dtr/calendar.ts';
 import {
 	buildNgTimecardImportRow,
 	parseNgTimecardRows,
 	type NgTimecardImportRow
 } from '../src/lib/shared/dtr/ng-timecard.ts';
+import { formatDtrNgImportDayTimes } from '../src/lib/shared/dtr/ng-timecard-import.ts';
 import { isRestDay } from '../src/lib/shared/dtr/weekdays.ts';
 import { isWorkScheduleRestDay } from '../src/lib/shared/dtr/work-schedule.ts';
 import { dtrSettingsDefaults } from '../src/lib/shared/dtr/schemas.ts';
@@ -332,7 +336,15 @@ async function upsertDtrDay(input: {
 	const now = new Date();
 	const workspaceObjectId = new ObjectId(input.workspaceId);
 	const employeeObjectId = new ObjectId(input.employeeId);
-	const workedMinutes = computeWorkedMinutes(input.row.timeIn, input.row.timeOut, input.lunchBreak);
+	const punchInput = {
+		timeIn: input.row.timeIn,
+		timeOut: input.row.timeOut,
+		morningTimeIn: input.row.morningTimeIn,
+		morningTimeOut: input.row.morningTimeOut,
+		afternoonTimeIn: input.row.afternoonTimeIn,
+		afternoonTimeOut: input.row.afternoonTimeOut
+	};
+	const workedMinutes = computeDtrDayWorkedMinutes(punchInput, input.lunchBreak);
 
 	await collection.updateOne(
 		{
@@ -345,6 +357,10 @@ async function upsertDtrDay(input: {
 				status: input.row.status,
 				timeIn: input.row.timeIn,
 				timeOut: input.row.timeOut,
+				morningTimeIn: input.row.morningTimeIn,
+				morningTimeOut: input.row.morningTimeOut,
+				afternoonTimeIn: input.row.afternoonTimeIn,
+				afternoonTimeOut: input.row.afternoonTimeOut,
 				workedMinutes,
 				source: 'biometric',
 				approvalStatus: 'draft',
@@ -363,8 +379,7 @@ async function upsertDtrDay(input: {
 }
 
 function formatRowPreview(row: NgTimecardImportRow, employeeName: string): string {
-	const times =
-		row.timeIn || row.timeOut ? `${row.timeIn ?? '—'} → ${row.timeOut ?? '—'}` : 'no times';
+	const times = formatDtrNgImportDayTimes(row);
 	const notes = row.notes ? ` (${row.notes})` : '';
 
 	return `  ${row.date}  ${employeeName} [${row.employeeCode}]  ${row.status}  ${times}${notes}`;

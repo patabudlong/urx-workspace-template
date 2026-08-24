@@ -8,7 +8,7 @@ import {
 } from '$lib/server/dtr/holidays';
 import { resolveLunchBreakForEmployeeDay } from '$lib/server/dtr/lunch-break';
 import { DtrDayLockedError } from '$lib/server/dtr/errors';
-import { computeWorkedMinutes } from '$lib/shared/dtr/calendar';
+import { computeDtrDayWorkedMinutes, collapseDtrTimePunches } from '$lib/shared/dtr/calendar';
 import { enrichDtrDayWithHolidayCredit } from '$lib/shared/dtr/holidays';
 import type { UpsertDtrDayInput } from '$lib/shared/dtr/schemas';
 import { ObjectId } from 'mongodb';
@@ -22,6 +22,10 @@ const DTR_DAY_PROJECTION = {
 	status: 1,
 	timeIn: 1,
 	timeOut: 1,
+	morningTimeIn: 1,
+	morningTimeOut: 1,
+	afternoonTimeIn: 1,
+	afternoonTimeOut: 1,
 	workedMinutes: 1,
 	source: 1,
 	approvalStatus: 1,
@@ -44,6 +48,10 @@ function toDtrDayDto(doc: DtrDayDocument): DtrDayDto {
 		status: doc.status,
 		timeIn: doc.timeIn,
 		timeOut: doc.timeOut,
+		morningTimeIn: doc.morningTimeIn ?? null,
+		morningTimeOut: doc.morningTimeOut ?? null,
+		afternoonTimeIn: doc.afternoonTimeIn ?? null,
+		afternoonTimeOut: doc.afternoonTimeOut ?? null,
 		workedMinutes: doc.workedMinutes,
 		source: doc.source,
 		approvalStatus: doc.approvalStatus,
@@ -209,13 +217,32 @@ export async function upsertDtrDayForWorkspace(input: {
 
 	const timeIn = input.data.timeIn?.trim() ? input.data.timeIn.trim() : null;
 	const timeOut = input.data.timeOut?.trim() ? input.data.timeOut.trim() : null;
+	const morningTimeIn = input.data.morningTimeIn?.trim() ? input.data.morningTimeIn.trim() : null;
+	const morningTimeOut = input.data.morningTimeOut?.trim()
+		? input.data.morningTimeOut.trim()
+		: null;
+	const afternoonTimeIn = input.data.afternoonTimeIn?.trim()
+		? input.data.afternoonTimeIn.trim()
+		: null;
+	const afternoonTimeOut = input.data.afternoonTimeOut?.trim()
+		? input.data.afternoonTimeOut.trim()
+		: null;
 	const notes = input.data.notes?.trim() ? input.data.notes.trim() : null;
 	const lunchBreak = await resolveLunchBreakForEmployeeDay({
 		workspaceId: input.workspaceId,
 		employeeId: input.data.employeeId,
 		date: input.data.date
 	});
-	const workedMinutes = computeWorkedMinutes(timeIn, timeOut, lunchBreak);
+	const punchInput = {
+		timeIn,
+		timeOut,
+		morningTimeIn,
+		morningTimeOut,
+		afternoonTimeIn,
+		afternoonTimeOut
+	};
+	const collapsed = collapseDtrTimePunches(punchInput);
+	const workedMinutes = computeDtrDayWorkedMinutes(punchInput, lunchBreak);
 	const year = Number(input.data.date.slice(0, 4));
 	const holidayContext = await loadDtrHolidayContextForWorkspace({
 		workspaceId: input.workspaceId,
@@ -225,8 +252,8 @@ export async function upsertDtrDayForWorkspace(input: {
 		context: holidayContext,
 		date: input.data.date,
 		status: input.data.status,
-		timeIn,
-		timeOut,
+		timeIn: collapsed.timeIn,
+		timeOut: collapsed.timeOut,
 		workedMinutes
 	});
 
@@ -238,10 +265,14 @@ export async function upsertDtrDayForWorkspace(input: {
 		},
 		{
 			$set: {
-				status: input.data.status,
-				timeIn,
-				timeOut,
-				workedMinutes,
+		status: input.data.status,
+		timeIn: collapsed.timeIn,
+		timeOut: collapsed.timeOut,
+		morningTimeIn,
+		morningTimeOut,
+		afternoonTimeIn,
+		afternoonTimeOut,
+		workedMinutes,
 				source: input.data.source,
 				approvalStatus: 'draft',
 				notes,

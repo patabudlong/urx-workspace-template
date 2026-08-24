@@ -22,6 +22,7 @@ import { buildEmployeeMonthCalendar, getMonthDateRange } from '$lib/shared/dtr/c
 import { canManageDtr } from '$lib/shared/dtr/access';
 import { DTR_DAY_LOCKED_MESSAGE, DTR_DAY_SAVED_MESSAGE, DTR_DAY_SAVE_FAILED_MESSAGE } from '$lib/shared/dtr/messages';
 import { isDtrDayLockedError } from '$lib/server/dtr/errors';
+import { resolveLunchBreakForEmployeeDay } from '$lib/server/dtr/lunch-break';
 import { upsertDtrDaySchema } from '$lib/shared/dtr/schemas';
 
 function currentMonthValue(): string {
@@ -42,6 +43,10 @@ export const load: PageServerLoad = async ({ parent, url }) => {
 			status: 'present',
 			timeIn: '',
 			timeOut: '',
+			morningTimeIn: '',
+			morningTimeOut: '',
+			afternoonTimeIn: '',
+			afternoonTimeOut: '',
 			source: 'manual',
 			notes: ''
 		}
@@ -55,7 +60,9 @@ export const load: PageServerLoad = async ({ parent, url }) => {
 			employees: [],
 			calendar: [],
 			selectedRecord: null,
-			settingsConfigured: false
+			settingsConfigured: false,
+			standardWorkMinutes: 480,
+			selectedLunchBreak: null
 		};
 	}
 
@@ -108,6 +115,7 @@ export const load: PageServerLoad = async ({ parent, url }) => {
 				month,
 				restDays: settings.restDays,
 				workSchedule,
+				standardWorkMinutes: settings.standardWorkMinutes,
 				records,
 				holidays: holidayCalendar?.holidays ?? [],
 				holidayRates: holidayCalendar?.rates ?? null,
@@ -118,6 +126,14 @@ export const load: PageServerLoad = async ({ parent, url }) => {
 	const selectedDate = url.searchParams.get('date') ?? '';
 	const selectedRecord = records.find((record) => record.date === selectedDate) ?? null;
 	const selectedDateLocked = selectedDate ? lockedDates.has(selectedDate) : false;
+	const selectedLunchBreak =
+		selectedDate && selectedEmployeeId
+			? await resolveLunchBreakForEmployeeDay({
+					workspaceId: workspace.workspaceId,
+					employeeId: selectedEmployeeId,
+					date: selectedDate
+				})
+			: null;
 	const form = await superValidate(
 		{
 			employeeId: selectedEmployeeId,
@@ -125,6 +141,10 @@ export const load: PageServerLoad = async ({ parent, url }) => {
 			status: selectedRecord?.status ?? 'present',
 			timeIn: selectedRecord?.timeIn ?? '',
 			timeOut: selectedRecord?.timeOut ?? '',
+			morningTimeIn: selectedRecord?.morningTimeIn ?? '',
+			morningTimeOut: selectedRecord?.morningTimeOut ?? '',
+			afternoonTimeIn: selectedRecord?.afternoonTimeIn ?? '',
+			afternoonTimeOut: selectedRecord?.afternoonTimeOut ?? '',
 			source: selectedRecord?.source ?? 'manual',
 			notes: selectedRecord?.notes ?? ''
 		},
@@ -140,7 +160,9 @@ export const load: PageServerLoad = async ({ parent, url }) => {
 		selectedDate,
 		selectedRecord,
 		selectedDateLocked,
+		selectedLunchBreak,
 		settingsConfigured: settings.configured,
+		standardWorkMinutes: settings.standardWorkMinutes,
 		workScheduleName: selectedEmployee?.workScheduleName ?? null,
 		holidayCalendarTitle: holidayCalendar?.title ?? null
 	};

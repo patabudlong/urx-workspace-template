@@ -1,4 +1,5 @@
-import { listDtrDaysForWorkspace, lockDtrDaysForPayPeriod } from '$lib/server/repositories/dtr-days';
+import { lockDtrDaysForPayPeriod } from '$lib/server/repositories/dtr-days';
+import { listDtrDaysForPayrollEarnings } from '$lib/server/payroll/dtr-days-for-earnings';
 import { getDtrSettingsForWorkspace } from '$lib/server/repositories/dtr-settings';
 import {
 	listActivePayrollEmployeeDocumentsForWorkspace,
@@ -69,7 +70,7 @@ export async function processPayrollRunForWorkspace(input: {
 		const payslipWrites: Omit<PayrollPayslipDocument, '_id' | 'createdAt' | 'updatedAt'>[] = [];
 
 		for (const employee of employees) {
-			const dtrDays = await listDtrDaysForWorkspace({
+			const dtrDays = await listDtrDaysForPayrollEarnings({
 				workspaceId: input.workspaceId,
 				startDate: periodStart,
 				endDate: periodEnd,

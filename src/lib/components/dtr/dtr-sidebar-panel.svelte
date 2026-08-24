@@ -5,23 +5,30 @@
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { isAppNavActive, type AppNavItem } from '$lib/navigation/app-nav';
 
+	const navActiveClass =
+		'data-[active=true]:bg-sidebar-accent data-[active=true]:font-semibold data-[active=true]:text-sidebar-accent-foreground data-[active=true]:shadow-[inset_0_0_0_1px_var(--sidebar-border)]';
+
 	let { items }: { items: AppNavItem[] } = $props();
 </script>
 
 <Sidebar.Header class="border-sidebar-border shrink-0 gap-1 border-b p-4">
 	<h2 class="text-sm font-semibold">DTR</h2>
-	<p class="text-muted-foreground mt-1 text-xs leading-relaxed">
+	<p class="text-muted-foreground mt-1 text-sm leading-relaxed">
 		Daily time records, work schedules, and attendance for this workspace.
 	</p>
 </Sidebar.Header>
 
 <Sidebar.Content class="min-h-0 flex-1 gap-1 overflow-visible ps-1 pt-1">
 	<Sidebar.Group>
-		<Sidebar.GroupLabel>Manage</Sidebar.GroupLabel>
+		<Sidebar.GroupLabel class="text-sm">Manage</Sidebar.GroupLabel>
 		<Sidebar.Menu>
 			{#each items as item (item.href)}
 				<Sidebar.MenuItem>
-					<Sidebar.MenuButton isActive={isAppNavActive(page.url.pathname, item)} tooltipContent={item.title}>
+					<Sidebar.MenuButton
+						class={navActiveClass}
+						isActive={isAppNavActive(page.url.pathname, item)}
+						tooltipContent={item.title}
+					>
 						{#snippet child({ props })}
 							<a href={item.href} {...props}>
 								<AppIcon icon={item.icon} />
@@ -33,10 +40,11 @@
 			{/each}
 		</Sidebar.Menu>
 	</Sidebar.Group>
-</Sidebar.Content>
 
-<Sidebar.Footer class="border-sidebar-border mt-auto shrink-0 border-t p-2">
-	<Sidebar.Menu>
-		<DtrSettingsSidebarMenu />
-	</Sidebar.Menu>
-</Sidebar.Footer>
+	<Sidebar.Group>
+		<Sidebar.GroupLabel class="text-sm">Configuration</Sidebar.GroupLabel>
+		<Sidebar.Menu>
+			<DtrSettingsSidebarMenu />
+		</Sidebar.Menu>
+	</Sidebar.Group>
+</Sidebar.Content>

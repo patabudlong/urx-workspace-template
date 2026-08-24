@@ -225,6 +225,10 @@ export async function buildDtrNgImportPreview(input: {
 				status: importRow.status,
 				timeIn: importRow.timeIn,
 				timeOut: importRow.timeOut,
+				morningTimeIn: importRow.morningTimeIn,
+				morningTimeOut: importRow.morningTimeOut,
+				afternoonTimeIn: importRow.afternoonTimeIn,
+				afternoonTimeOut: importRow.afternoonTimeOut,
 				notes: importRow.notes
 			});
 		}
@@ -261,6 +265,10 @@ export async function importDtrNgPreviewRows(input: {
 					status: row.status,
 					timeIn: row.timeIn ?? '',
 					timeOut: row.timeOut ?? '',
+					morningTimeIn: row.morningTimeIn ?? '',
+					morningTimeOut: row.morningTimeOut ?? '',
+					afternoonTimeIn: row.afternoonTimeIn ?? '',
+					afternoonTimeOut: row.afternoonTimeOut ?? '',
 					source: 'biometric',
 					notes: row.notes ?? ''
 				}

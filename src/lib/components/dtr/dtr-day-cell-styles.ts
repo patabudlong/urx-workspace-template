@@ -16,3 +16,6 @@ export const DTR_DAY_HOLIDAY_CELL_CLASSES =
 
 export const DTR_DAY_LOCKED_CELL_CLASSES =
 	'ring-1 ring-inset ring-foreground/10 after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:bg-background/25';
+
+export const DTR_DAY_UNDERTIME_LABEL_CLASSES =
+	'font-semibold text-amber-800 dark:text-amber-200';

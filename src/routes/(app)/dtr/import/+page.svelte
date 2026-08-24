@@ -13,7 +13,7 @@
 		DTR_NG_IMPORT_SUCCESS_MESSAGE
 	} from '$lib/shared/dtr/messages';
 	import {
-		formatDtrNgImportTimeRange,
+		formatDtrNgImportDayTimes,
 		type DtrNgImportPreview
 	} from '$lib/shared/dtr/ng-timecard-import';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
@@ -232,7 +232,7 @@
 									<Table.Cell>{row.employeeCode}</Table.Cell>
 									<Table.Cell>{DTR_DAY_STATUS_LABELS[row.status]}</Table.Cell>
 									<Table.Cell>
-										{formatDtrNgImportTimeRange(row.timeIn, row.timeOut)}
+										{formatDtrNgImportDayTimes(row)}
 									</Table.Cell>
 									<Table.Cell class="text-muted-foreground max-w-48 truncate">
 										{row.notes ?? '—'}

@@ -80,25 +80,99 @@ export const dtrDaysQuerySchema = z.object({
 
 export type DtrDaysQuery = z.infer<typeof dtrDaysQuerySchema>;
 
+const optionalTimeFieldSchema = timeInputSchema.optional().or(z.literal(''));
+
+function hasAnyDtrDayTime(data: {
+	timeIn?: string;
+	timeOut?: string;
+	morningTimeIn?: string;
+	morningTimeOut?: string;
+	afternoonTimeIn?: string;
+	afternoonTimeOut?: string;
+}): boolean {
+	return Boolean(
+		data.timeIn ||
+			data.timeOut ||
+			data.morningTimeIn ||
+			data.morningTimeOut ||
+			data.afternoonTimeIn ||
+			data.afternoonTimeOut
+	);
+}
+
 export const upsertDtrDaySchema = z
 	.object({
 		employeeId: z.string().trim().min(1, 'Employee is required.'),
 		date: dtrDateSchema,
 		status: z.enum(DTR_DAY_STATUSES),
-		timeIn: timeInputSchema.optional().or(z.literal('')),
-		timeOut: timeInputSchema.optional().or(z.literal('')),
+		timeIn: optionalTimeFieldSchema,
+		timeOut: optionalTimeFieldSchema,
+		morningTimeIn: optionalTimeFieldSchema,
+		morningTimeOut: optionalTimeFieldSchema,
+		afternoonTimeIn: optionalTimeFieldSchema,
+		afternoonTimeOut: optionalTimeFieldSchema,
 		source: z.enum(DTR_DAY_SOURCES).default('manual'),
 		notes: z.string().trim().max(500).optional().or(z.literal(''))
 	})
 	.superRefine((data, ctx) => {
-		if (data.status === 'present' || data.status === 'partial') {
-			if (!data.timeIn) {
+		if (data.status !== 'present' && data.status !== 'partial') {
+			return;
+		}
+
+		if (!hasAnyDtrDayTime(data)) {
+			ctx.addIssue({
+				code: 'custom',
+				message: 'Enter morning or afternoon times for present or partial days.',
+				path: ['morningTimeIn']
+			});
+			return;
+		}
+
+		const hasMorningIn = Boolean(data.morningTimeIn);
+		const hasMorningOut = Boolean(data.morningTimeOut);
+		const hasAfternoonIn = Boolean(data.afternoonTimeIn);
+		const hasAfternoonOut = Boolean(data.afternoonTimeOut);
+
+		if (hasMorningOut && !hasMorningIn) {
+			ctx.addIssue({
+				code: 'custom',
+				message: 'Morning time in is required when morning time out is set.',
+				path: ['morningTimeIn']
+			});
+		}
+
+		if (hasAfternoonOut && !hasAfternoonIn) {
+			ctx.addIssue({
+				code: 'custom',
+				message: 'Afternoon time in is required when afternoon time out is set.',
+				path: ['afternoonTimeIn']
+			});
+		}
+
+		if (data.status === 'present') {
+			if (hasMorningIn && !hasMorningOut) {
 				ctx.addIssue({
 					code: 'custom',
-					message: 'Time in is required for present or partial days.',
-					path: ['timeIn']
+					message: 'Morning time out is required for present days.',
+					path: ['morningTimeOut']
 				});
 			}
+
+			if (hasAfternoonIn && !hasAfternoonOut) {
+				ctx.addIssue({
+					code: 'custom',
+					message: 'Afternoon time out is required for present days.',
+					path: ['afternoonTimeOut']
+				});
+			}
+		}
+
+		if (!data.morningTimeIn && !data.afternoonTimeIn && !data.timeIn) {
+			ctx.addIssue({
+				code: 'custom',
+				message: 'At least one time in is required for present or partial days.',
+				path: ['morningTimeIn']
+			});
 		}
 	});
 

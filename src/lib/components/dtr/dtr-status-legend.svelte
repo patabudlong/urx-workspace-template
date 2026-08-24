@@ -6,6 +6,7 @@
 	import { DTR_DAY_STATUS_LABELS, DTR_DAY_STATUSES } from '$lib/shared/dtr/status';
 	import { cn } from '$lib/utils.js';
 	import LockIcon from '@lucide/svelte/icons/lock';
+	import { DTR_DAY_UNDERTIME_LABEL_CLASSES } from '$lib/components/dtr/dtr-day-cell-styles';
 </script>
 
 <div
@@ -28,14 +29,27 @@
 	<span class="inline-flex items-center gap-1.5">
 		<span
 			class={cn(
-				'inline-flex h-4 min-w-10 shrink-0 items-center justify-center rounded px-1 text-[10px] font-medium',
+				'inline-flex h-4 max-w-24 shrink-0 items-center justify-center truncate rounded px-1 text-[10px] font-medium',
 				DTR_DAY_HOLIDAY_CELL_CLASSES
 			)}
 			aria-hidden="true"
 		>
-			Holiday
+			New Year
 		</span>
-		<span>Holiday</span>
+		<span>Holiday (name on calendar)</span>
+	</span>
+
+	<span class="inline-flex items-center gap-1.5">
+		<span
+			class={cn(
+				'inline-flex h-4 min-w-10 shrink-0 items-center justify-center rounded px-1 text-[10px] font-semibold',
+				DTR_DAY_UNDERTIME_LABEL_CLASSES
+			)}
+			aria-hidden="true"
+		>
+			1h UT
+		</span>
+		<span>Undertime</span>
 	</span>
 
 	<span class="inline-flex items-center gap-1.5">

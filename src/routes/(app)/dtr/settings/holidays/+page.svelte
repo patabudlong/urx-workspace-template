@@ -30,7 +30,7 @@
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
-	import CalendarDaysIcon from '@lucide/svelte/icons/calendar-days';
+	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import PercentIcon from '@lucide/svelte/icons/percent';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { untrack } from 'svelte';
@@ -41,6 +41,7 @@
 
 	let submitting = $state(false);
 	let showSuccess = $state(false);
+	let showYearPreview = $state(false);
 
 	const superform = superForm(untrack(() => data.form), {
 		validators: zod4Client(dtrHolidayCalendarSchema),
@@ -129,6 +130,7 @@
 	);
 
 	function changeYear(year: number) {
+		showYearPreview = false;
 		void goto(`/dtr/settings/holidays?year=${year}`, { keepFocus: true, noScroll: true });
 	}
 
@@ -178,196 +180,120 @@
 		description="Set annual holidays and pay percentages for worked and unworked days. Credits apply when time records are saved or imported."
 	/>
 
-	<Card.Root>
-		<Card.Header class="border-b">
-			<div class="flex flex-wrap items-start justify-between gap-4">
-				<div class="space-y-1">
-					<Card.Title class="flex items-center gap-2">
-						<CalendarDaysIcon class="text-muted-foreground size-5" aria-hidden="true" />
-						Calendar year
-					</Card.Title>
-					<Card.Description>
-						Choose a year to edit. Saved calendars:
-						{#if savedCalendarYears.length === 0}
-							none yet.
-						{:else}
-							<span class="text-foreground font-medium">
-								{savedCalendarYears.join(', ')}.
-							</span>
-						{/if}
-					</Card.Description>
-				</div>
-				{#if data.year === currentYear}
-					<Badge variant="secondary" class="font-normal">Current year</Badge>
-				{/if}
-			</div>
-		</Card.Header>
-		<Card.Content class="space-y-5 pt-6">
-			<div class="flex flex-wrap items-center gap-2">
-				<Button
-					type="button"
-					variant="outline"
-					size="icon"
-					class="size-10 shrink-0"
-					aria-label="Previous year"
-					onclick={() => shiftYear(-1)}
-				>
-					<ChevronLeftIcon class="size-4" aria-hidden="true" />
-				</Button>
+	<form method="POST" class="space-y-6" use:enhance>
 
-				<div class="bg-muted/30 flex h-10 min-w-28 items-center justify-center rounded-md border px-4">
-					<span class="text-sm font-semibold tracking-tight">{data.year}</span>
-				</div>
+		{#if showSuccess}
+			<StatusAlert
+				variant="success"
+				title="Holiday calendar saved"
+				description={DTR_HOLIDAY_CALENDAR_SAVED_MESSAGE}
+			/>
+		{:else if formError}
+			<StatusAlert
+				variant="danger"
+				title="Could not save holiday calendar"
+				description={$formMessage === DTR_HOLIDAY_CALENDAR_SAVE_FAILED_MESSAGE
+					? DTR_HOLIDAY_CALENDAR_SAVE_FAILED_MESSAGE
+					: String($formMessage)}
+			/>
+		{:else if hasValidationErrors}
+			<StatusAlert
+				variant="danger"
+				title="Could not save holiday calendar"
+				description="Check the calendar title, pay percentages, and holiday dates."
+			/>
+		{/if}
 
-				<Button
-					type="button"
-					variant="outline"
-					size="icon"
-					class="size-10 shrink-0"
-					aria-label="Next year"
-					onclick={() => shiftYear(1)}
-				>
-					<ChevronRightIcon class="size-4" aria-hidden="true" />
-				</Button>
+		<div class="bg-muted/25 space-y-4 rounded-xl border p-4">
+			<div class="flex flex-wrap items-center justify-between gap-3">
+				<div class="flex flex-wrap items-center gap-2">
+					<Button
+						type="button"
+						variant="outline"
+						size="icon"
+						class="size-10 shrink-0"
+						aria-label="Previous year"
+						onclick={() => shiftYear(-1)}
+					>
+						<ChevronLeftIcon class="size-4" aria-hidden="true" />
+					</Button>
 
-				{#each savedCalendarYears as savedYear (savedYear)}
-					{#if savedYear !== data.year}
-						<Button
-							type="button"
-							variant="outline"
-							class="h-10"
-							onclick={() => changeYear(savedYear)}
-						>
-							{savedYear}
-						</Button>
+					<div
+						class="bg-background flex h-10 min-w-28 items-center justify-center rounded-md border px-4"
+					>
+						<span class="text-sm font-semibold tracking-tight">{data.year}</span>
+					</div>
+
+					<Button
+						type="button"
+						variant="outline"
+						size="icon"
+						class="size-10 shrink-0"
+						aria-label="Next year"
+						onclick={() => shiftYear(1)}
+					>
+						<ChevronRightIcon class="size-4" aria-hidden="true" />
+					</Button>
+
+					{#if data.year === currentYear}
+						<Badge variant="secondary" class="font-normal">Current year</Badge>
 					{/if}
-				{/each}
+
+					{#each savedCalendarYears as savedYear (savedYear)}
+						{#if savedYear !== data.year}
+							<Button
+								type="button"
+								variant="outline"
+								class="h-10"
+								onclick={() => changeYear(savedYear)}
+							>
+								{savedYear}
+							</Button>
+						{/if}
+					{/each}
+				</div>
+
+				{#if completeHolidayCount > 0}
+					<Button
+						type="button"
+						variant="outline"
+						class="h-10"
+						aria-expanded={showYearPreview}
+						onclick={() => {
+							showYearPreview = !showYearPreview;
+						}}
+					>
+						{showYearPreview ? 'Hide year preview' : 'Show year preview'}
+						<ChevronDownIcon
+							class={cn('size-4 transition-transform', showYearPreview && 'rotate-180')}
+							aria-hidden="true"
+						/>
+					</Button>
+				{/if}
 			</div>
 
-			{#if completeHolidayCount > 0}
-				<div class="bg-muted/25 rounded-xl border p-4 sm:p-5">
-					<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-						<p class="text-sm font-semibold tracking-tight">{data.year} overview</p>
-						<span class="text-muted-foreground text-xs">
-							{completeHolidayCount} holiday{completeHolidayCount === 1 ? '' : 's'} configured
-						</span>
-					</div>
-					<DtrHolidayYearOverview year={data.year} holidays={$form.holidays} />
-				</div>
-			{/if}
-		</Card.Content>
-	</Card.Root>
-
-	<form method="POST" class="space-y-8" use:enhance>
-		<Card.Root>
-			<Card.Header class="border-b">
-				<Card.Title>Calendar details</Card.Title>
-				<Card.Description>Title and default pay rules for each holiday type.</Card.Description>
-			</Card.Header>
-			<Card.Content class="space-y-6 pt-6">
-				{#if showSuccess}
-					<StatusAlert
-						variant="success"
-						title="Holiday calendar saved"
-						description={DTR_HOLIDAY_CALENDAR_SAVED_MESSAGE}
-					/>
-				{:else if formError}
-					<StatusAlert
-						variant="danger"
-						title="Could not save holiday calendar"
-						description={$formMessage === DTR_HOLIDAY_CALENDAR_SAVE_FAILED_MESSAGE
-							? DTR_HOLIDAY_CALENDAR_SAVE_FAILED_MESSAGE
-							: String($formMessage)}
-					/>
-				{:else if hasValidationErrors}
-					<StatusAlert
-						variant="danger"
-						title="Could not save holiday calendar"
-						description="Check the calendar title, pay percentages, and holiday dates."
-					/>
+			<p class="text-muted-foreground text-xs">
+				Saved calendars:
+				{#if savedCalendarYears.length === 0}
+					none yet.
+				{:else}
+					<span class="text-foreground font-medium">{savedCalendarYears.join(', ')}.</span>
 				{/if}
+				{#if completeHolidayCount > 0}
+					· {completeHolidayCount} holiday{completeHolidayCount === 1 ? '' : 's'} in this year.
+				{/if}
+			</p>
 
-				<div class="grid gap-5 sm:grid-cols-2">
-					<div class="grid gap-2">
-						<Label for="holiday-year">Year</Label>
-						<Input
-							id="holiday-year"
-							bind:value={$form.year}
-							type="number"
-							min="2000"
-							max="2100"
-							class="h-10 bg-muted/30"
-						/>
-					</div>
-					<div class="grid gap-2">
-						<Label for="holiday-title">Calendar title</Label>
-						<Input id="holiday-title" bind:value={$form.title} class="h-10 bg-muted/30" />
-					</div>
-				</div>
-
-				<div class="space-y-3">
-					<div class="flex items-center gap-2">
-						<PercentIcon class="text-muted-foreground size-4" aria-hidden="true" />
-						<p class="text-sm font-medium">Pay percentages by holiday type</p>
-					</div>
-
-					<div class="grid gap-4 lg:grid-cols-3">
-						{#each categoryFields as category (category.key)}
-							<div
-								class={cn(
-									'space-y-4 rounded-xl border p-4',
-									DTR_HOLIDAY_CATEGORY_CARD_CLASSES[category.category]
-								)}
-							>
-								<div class="space-y-1">
-									<p class="text-sm font-semibold">{category.label}</p>
-									<p class="text-muted-foreground text-xs">
-										Default unworked:
-										{formatHolidayPayPercent(
-											DTR_HOLIDAY_DEFAULT_RATES[category.key].unworkedPercent
-										)}
-										· worked:
-										{formatHolidayPayPercent(
-											DTR_HOLIDAY_DEFAULT_RATES[category.key].workedPercent
-										)}
-									</p>
-								</div>
-								<div class="grid gap-2">
-									<Label for="{category.key}-worked">Worked (%)</Label>
-									<Input
-										id="{category.key}-worked"
-										bind:value={$form[category.key].workedPercent}
-										type="number"
-										min="0"
-										max="300"
-										step="1"
-										class="h-10 bg-background/80"
-									/>
-								</div>
-								<div class="grid gap-2">
-									<Label for="{category.key}-unworked">Unworked (%)</Label>
-									<Input
-										id="{category.key}-unworked"
-										bind:value={$form[category.key].unworkedPercent}
-										type="number"
-										min="0"
-										max="300"
-										step="1"
-										class="h-10 bg-background/80"
-									/>
-								</div>
-							</div>
-						{/each}
-					</div>
-				</div>
-			</Card.Content>
-		</Card.Root>
+			{#if showYearPreview && completeHolidayCount > 0}
+				<DtrHolidayYearOverview year={data.year} holidays={$form.holidays} />
+			{/if}
+		</div>
 
 		<Card.Root>
 			<Card.Header class="border-b">
 				<Card.Title>Holidays</Card.Title>
 				<Card.Description>
-					Add each date with its holiday type. Empty rows are ignored when you save.
+					Add each date with its holiday type for {data.year}. Empty rows are ignored when you save.
 				</Card.Description>
 				<Card.Action>
 					<Button type="button" variant="outline" class="h-10" onclick={addHoliday}>
@@ -450,6 +376,73 @@
 						</Table.Root>
 					</div>
 				{/if}
+			</Card.Content>
+		</Card.Root>
+
+		<Card.Root>
+			<Card.Header class="border-b">
+				<Card.Title class="flex items-center gap-2">
+					<PercentIcon class="text-muted-foreground size-4" aria-hidden="true" />
+					Pay rules
+				</Card.Title>
+				<Card.Description>
+					Calendar title and pay percentages by holiday type for {data.year}.
+				</Card.Description>
+			</Card.Header>
+			<Card.Content class="space-y-6 pt-6">
+				<div class="grid gap-2">
+					<Label for="holiday-title">Calendar title</Label>
+					<Input id="holiday-title" bind:value={$form.title} class="h-10 bg-muted/30" />
+				</div>
+
+				<div class="grid gap-4 lg:grid-cols-3">
+					{#each categoryFields as category (category.key)}
+						<div
+							class={cn(
+								'space-y-4 rounded-xl border p-4',
+								DTR_HOLIDAY_CATEGORY_CARD_CLASSES[category.category]
+							)}
+						>
+							<div class="space-y-1">
+								<p class="text-sm font-semibold">{category.label}</p>
+								<p class="text-muted-foreground text-xs">
+									Default unworked:
+									{formatHolidayPayPercent(
+										DTR_HOLIDAY_DEFAULT_RATES[category.key].unworkedPercent
+									)}
+									· worked:
+									{formatHolidayPayPercent(
+										DTR_HOLIDAY_DEFAULT_RATES[category.key].workedPercent
+									)}
+								</p>
+							</div>
+							<div class="grid gap-2">
+								<Label for="{category.key}-worked">Worked (%)</Label>
+								<Input
+									id="{category.key}-worked"
+									bind:value={$form[category.key].workedPercent}
+									type="number"
+									min="0"
+									max="300"
+									step="1"
+									class="h-10 bg-background/80"
+								/>
+							</div>
+							<div class="grid gap-2">
+								<Label for="{category.key}-unworked">Unworked (%)</Label>
+								<Input
+									id="{category.key}-unworked"
+									bind:value={$form[category.key].unworkedPercent}
+									type="number"
+									min="0"
+									max="300"
+									step="1"
+									class="h-10 bg-background/80"
+								/>
+							</div>
+						</div>
+					{/each}
+				</div>
 			</Card.Content>
 		</Card.Root>
 
