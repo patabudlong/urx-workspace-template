@@ -1,6 +1,7 @@
 <script lang="ts">
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
 	import PayrollDeductionTypeIcon from '$lib/components/payroll/payroll-deduction-type-icon.svelte';
+	import PayrollMoneyInput from '$lib/components/payroll/payroll-money-input.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -353,12 +354,10 @@
 										Default amount ({data.payrollCurrency})
 										<span class="text-muted-foreground font-normal">per month</span>
 									</label>
-									<Input
+									<PayrollMoneyInput
 										id="deduction-amount-{typeIndex}"
-										type="number"
-										min="0"
-										step="0.01"
 										bind:value={$form.types[typeIndex].defaultAmount}
+										payrollCurrency={data.payrollCurrency}
 									/>
 									{#if perCutoffHint($form.types[typeIndex].defaultAmount)}
 										<p class="text-muted-foreground text-sm">

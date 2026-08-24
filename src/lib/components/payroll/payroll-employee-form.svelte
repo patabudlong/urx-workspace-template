@@ -2,6 +2,7 @@
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
 	import PayrollDeductionTypeIcon from '$lib/components/payroll/payroll-deduction-type-icon.svelte';
 	import PayrollEmployeePhotoUpload from '$lib/components/payroll/payroll-employee-photo-upload.svelte';
+	import PayrollMoneyInput from '$lib/components/payroll/payroll-money-input.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import * as Form from '$lib/components/ui/form/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -147,7 +148,6 @@
 	);
 
 	const currencyLabel = $derived(getPayrollCurrencyLabel(payrollCurrency));
-	const payRateStep = $derived(payrollCurrency === 'JPY' ? '1' : '0.01');
 
 	const showPhDeductionIcons = $derived(
 		payrollCurrency === 'PHP' && Object.keys(phDeductionIconUrls).length > 0
@@ -467,13 +467,10 @@
 										: 'per month'}
 							</span>
 						</Form.Label>
-						<Input
+						<PayrollMoneyInput
 							{...props}
 							bind:value={$form.payRate}
-							type="number"
-							min="0"
-							step={payRateStep}
-							inputmode="decimal"
+							payrollCurrency={payrollCurrency}
 						/>
 					{/snippet}
 				</Form.Control>
@@ -515,11 +512,9 @@
 
 								{#if deductionType.kind === 'fixed'}
 									<div class="sm:w-48">
-										<Input
-											type="number"
-											min="0"
-											step={payRateStep}
+										<PayrollMoneyInput
 											bind:value={$form.deductions[index].amount}
+											payrollCurrency={payrollCurrency}
 											disabled={!$form.deductions[index].enabled}
 											aria-label="{deductionType.name} amount"
 										/>

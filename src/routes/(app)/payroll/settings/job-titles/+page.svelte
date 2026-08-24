@@ -1,5 +1,6 @@
 <script lang="ts">
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
+	import PayrollMoneyInput from '$lib/components/payroll/payroll-money-input.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -41,6 +42,7 @@
 	let submitting = $state(false);
 	let showSuccess = $state(false);
 	let activeTitleIndex = $state<number | null>(null);
+	let titlePresetSelections = $state<Record<string, PhPayRatePresetId>>({});
 
 	const superform = superForm(untrack(() => data.form), {
 		validators: zod4Client(payrollJobTitlesSchema),
@@ -70,8 +72,6 @@
 			$formMessage.length > 0 &&
 			$formMessage !== PAYROLL_JOB_TITLES_SAVED_MESSAGE
 	);
-
-	const payRateStep = $derived(data.payrollCurrency === 'JPY' ? '1' : '0.01');
 
 	const isSemiMonthly = $derived(data.payFrequency === 'semi-monthly');
 
@@ -115,7 +115,33 @@
 		return null;
 	}
 
+	function presetForTitle(title: (typeof $form.titles)[number]): PhPayRatePresetId {
+		if (data.payrollCurrency !== 'PHP') {
+			return PH_PAY_RATE_PRESET_CUSTOM;
+		}
+
+		return (
+			titlePresetSelections[title.id] ??
+			resolvePhPayRatePreset(title.payType, title.payRate)
+		);
+	}
+
+	function syncPresetSelection(title: (typeof $form.titles)[number]) {
+		if (data.payrollCurrency !== 'PHP') {
+			return;
+		}
+
+		titlePresetSelections[title.id] = resolvePhPayRatePreset(title.payType, title.payRate);
+	}
+
 	function setPayRatePreset(index: number, presetId: PhPayRatePresetId) {
+		const title = $form.titles[index];
+		titlePresetSelections[title.id] = presetId;
+
+		if (presetId === PH_PAY_RATE_PRESET_CUSTOM) {
+			return;
+		}
+
 		const preset = applyPhPayRatePreset(presetId);
 
 		if (!preset) {
@@ -124,14 +150,6 @@
 
 		$form.titles[index].payType = preset.payType;
 		$form.titles[index].payRate = preset.payRate;
-	}
-
-	function payRatePresetForTitle(title: (typeof $form.titles)[number]) {
-		if (data.payrollCurrency !== 'PHP') {
-			return PH_PAY_RATE_PRESET_CUSTOM;
-		}
-
-		return resolvePhPayRatePreset(title.payType, title.payRate);
 	}
 
 	function addTitle() {
@@ -146,14 +164,22 @@
 			}
 		];
 		activeTitleIndex = $form.titles.length - 1;
+		syncPresetSelection($form.titles[activeTitleIndex]);
 	}
 
 	function editTitle(index: number) {
 		activeTitleIndex = index;
+		syncPresetSelection($form.titles[index]);
 	}
 
 	function removeTitle(index: number) {
+		const removedId = $form.titles[index]?.id;
 		$form.titles = $form.titles.filter((_, currentIndex) => currentIndex !== index);
+
+		if (removedId) {
+			const { [removedId]: _, ...rest } = titlePresetSelections;
+			titlePresetSelections = rest;
+		}
 
 		if (activeTitleIndex === index) {
 			activeTitleIndex = null;
@@ -328,7 +354,7 @@
 									</label>
 									<Select.Root
 										type="single"
-										value={payRatePresetForTitle($form.titles[titleIndex])}
+										value={presetForTitle($form.titles[titleIndex])}
 										onValueChange={(value) => {
 											if (value) {
 												setPayRatePreset(titleIndex, value as PhPayRatePresetId);
@@ -337,9 +363,7 @@
 									>
 										<Select.Trigger id="job-title-pay-rate-preset-{titleIndex}" class="h-10 w-full">
 											<span class="truncate">
-												{PH_PAY_RATE_PRESET_LABELS[
-													payRatePresetForTitle($form.titles[titleIndex])
-												]}
+												{PH_PAY_RATE_PRESET_LABELS[presetForTitle($form.titles[titleIndex])]}
 											</span>
 										</Select.Trigger>
 										<Select.Content>
@@ -382,7 +406,7 @@
 						</div>
 
 						<div class="grid gap-4 sm:grid-cols-2">
-							{#if data.payrollCurrency !== 'PHP' || payRatePresetForTitle($form.titles[titleIndex]) === PH_PAY_RATE_PRESET_CUSTOM}
+							{#if data.payrollCurrency !== 'PHP' || presetForTitle($form.titles[titleIndex]) === PH_PAY_RATE_PRESET_CUSTOM}
 								{#if data.payrollCurrency === 'PHP'}
 									<div class="space-y-2">
 										<label class="text-sm font-medium" for="job-title-pay-type-{titleIndex}">
@@ -418,12 +442,10 @@
 													: 'per month'}
 										</span>
 									</label>
-									<Input
+									<PayrollMoneyInput
 										id="job-title-pay-rate-{titleIndex}"
-										type="number"
-										min="0"
-										step={payRateStep}
 										bind:value={$form.titles[titleIndex].payRate}
+										payrollCurrency={data.payrollCurrency}
 									/>
 									{#if $errors.titles?.[titleIndex]?.payRate}
 										<p class="text-destructive text-sm">{$errors.titles[titleIndex].payRate}</p>
@@ -435,7 +457,7 @@
 								{@const derived = payRateDerivation($form.titles[titleIndex])!}
 								<div
 									class="space-y-2 {data.payrollCurrency === 'PHP' &&
-									payRatePresetForTitle($form.titles[titleIndex]) !== PH_PAY_RATE_PRESET_CUSTOM
+									presetForTitle($form.titles[titleIndex]) !== PH_PAY_RATE_PRESET_CUSTOM
 										? 'sm:col-span-2'
 										: ''}"
 								>
