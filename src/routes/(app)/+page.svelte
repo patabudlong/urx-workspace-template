@@ -1,4 +1,5 @@
 <script lang="ts">
+	import DashboardCard from '$lib/components/dashboard/dashboard-card.svelte';
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
 	import StatCard from '$lib/components/dashboard/stat-card.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
@@ -37,12 +38,17 @@
 			<StatCard
 				label="Workspace"
 				value={workspace.workspaceName}
-				hint="{workspace.workspaceSlug}.workspace.urixoft.com"
+				period="{workspace.workspaceSlug}.workspace.urixoft.com"
 				icon={Building2Icon}
 			/>
 			<StatCard
 				label="Your role"
 				value={formatWorkspaceRole(workspace.role)}
+				period="Workspace access"
+				trend={{
+					label: workspace.role === 'owner' ? 'Full access' : 'Member',
+					direction: 'neutral'
+				}}
 				hint={workspace.role === 'owner'
 					? 'You can manage workspace settings and invite teammates.'
 					: 'You have member access to this workspace.'}
@@ -51,6 +57,8 @@
 			<StatCard
 				label="Status"
 				value="Active"
+				period="Current workspace"
+				trend={{ label: 'Healthy', direction: 'up' }}
 				hint="Your workspace is approved and ready to use."
 				icon={ShieldCheckIcon}
 				class="sm:col-span-2 xl:col-span-1"
@@ -59,7 +67,7 @@
 	{/if}
 
 	<div class="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-		<Card.Root>
+		<DashboardCard>
 			<Card.Header>
 				<Card.Title>Quick actions</Card.Title>
 				<Card.Description>Common links for your team and developers.</Card.Description>
@@ -89,9 +97,9 @@
 					</div>
 				</Button>
 			</Card.Content>
-		</Card.Root>
+		</DashboardCard>
 
-		<Card.Root>
+		<DashboardCard>
 			<Card.Header>
 				<Card.Title>Getting started</Card.Title>
 				<Card.Description>What you can do from here.</Card.Description>
@@ -123,7 +131,7 @@
 					<ArrowRightIcon class="size-4" />
 				</Button>
 			</Card.Content>
-		</Card.Root>
+		</DashboardCard>
 	</div>
 
 	<StatusAlert
