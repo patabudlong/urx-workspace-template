@@ -1,6 +1,7 @@
 <script lang="ts">
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
 	import PayrollPayslipDetail from '$lib/components/payroll/payroll-payslip-detail.svelte';
+	import PayrollPayslipPrintPreviewDialog from '$lib/components/payroll/payroll-payslip-print-preview-dialog.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import {
@@ -12,12 +13,14 @@
 	import DownloadIcon from '@lucide/svelte/icons/download';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import MailIcon from '@lucide/svelte/icons/mail';
+	import PrinterIcon from '@lucide/svelte/icons/printer';
 
 	let { data } = $props();
 
 	let emailing = $state(false);
 	let emailSuccess = $state(false);
 	let emailError = $state<string | null>(null);
+	let printPreviewOpen = $state(false);
 
 	const pdfUrl = $derived(`/api/v1/payroll/payslips/${data.payslip.id}/pdf`);
 
@@ -66,6 +69,15 @@
 					<DownloadIcon class="size-4" aria-hidden="true" />
 					Download PDF
 				</Button>
+				<Button
+					type="button"
+					variant="outline"
+					class="h-10"
+					onclick={() => (printPreviewOpen = true)}
+				>
+					<PrinterIcon class="size-4" aria-hidden="true" />
+					Print preview
+				</Button>
 				<Button type="button" variant="outline" class="h-10" disabled={emailing} onclick={emailPayslip}>
 					{#if emailing}
 						<Loader2Icon class="size-4 animate-spin" aria-hidden="true" />
@@ -92,6 +104,19 @@
 	<PayrollPayslipDetail
 		payslip={data.payslip}
 		currency={data.currency}
+		workspaceName={data.workspaceName}
+		brandLogoUrl={data.brandLogoUrl}
 		showEmployee={data.canManagePayroll}
+		phDeductionIconUrls={data.phDeductionIconUrls}
 	/>
 </div>
+
+<PayrollPayslipPrintPreviewDialog
+	bind:open={printPreviewOpen}
+	payslip={data.payslip}
+	currency={data.currency}
+	workspaceName={data.workspaceName}
+	brandLogoUrl={data.brandLogoUrl}
+	showEmployee={data.canManagePayroll}
+	phDeductionIconUrls={data.phDeductionIconUrls}
+/>

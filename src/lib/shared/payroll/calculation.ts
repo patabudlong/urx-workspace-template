@@ -5,6 +5,7 @@ import type { PayrollPayType } from '$lib/shared/payroll/pay-rate';
 import type { PayFrequency } from '$lib/shared/payroll/frequency';
 import type { DtrDayDto } from '$lib/shared/models/dtr-day';
 import type { PayrollPayslipDeductionLine } from '$lib/shared/models/payroll-payslip';
+import { shouldIncludeZeroAmountDeductionLine } from '$lib/shared/payroll/payslip-deductions';
 import {
 	computeMonthlyAmountForPayPeriod,
 	computeSalariedBasePayCents,
@@ -197,7 +198,7 @@ export function computePayslipDeductions(input: {
 			amountCents = Math.round((input.grossCents * basisPoints) / 10_000);
 		}
 
-		if (amountCents <= 0) {
+		if (amountCents <= 0 && !shouldIncludeZeroAmountDeductionLine(type.name)) {
 			continue;
 		}
 
