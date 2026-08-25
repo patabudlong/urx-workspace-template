@@ -1,6 +1,6 @@
 import type { AppNavItem } from '$lib/navigation/app-nav';
 import { SOLAR } from '$lib/icons/solar-icons';
-import { canEditTeamSettings, canViewTeamRoles } from '$lib/shared/team/member-management';
+import { canEditTeamSettings, canViewTeamRoles, canViewWorkspaceSecurityLog } from '$lib/shared/team/member-management';
 
 export const TEAM_NAV_ITEMS: AppNavItem[] = [
 	{
@@ -26,6 +26,12 @@ export const TEAM_NAV_ITEMS: AppNavItem[] = [
 		href: '/team/settings',
 		icon: SOLAR.settings,
 		match: 'exact'
+	},
+	{
+		title: 'Security log',
+		href: '/team/security',
+		icon: SOLAR.securityLog,
+		match: 'exact'
 	}
 ];
 
@@ -37,6 +43,10 @@ export function getTeamNavItems(role: string | null | undefined): AppNavItem[] {
 
 		if (item.href === '/team/settings') {
 			return canEditTeamSettings(role);
+		}
+
+		if (item.href === '/team/security') {
+			return canViewWorkspaceSecurityLog(role);
 		}
 
 		return true;

@@ -35,6 +35,9 @@ import {
 	TEAM_INVITATION_DUPLICATE_PENDING_MESSAGE,
 	TEAM_INVITATION_SELF_MESSAGE
 } from '$lib/shared/team/invitation-messages';
+import type { SecurityEventRequestContext } from '$lib/server/security/record-security-event';
+import { recordWorkspaceSecurityEvent } from '$lib/server/security/record-security-event';
+import { SECURITY_EVENT_ACTIONS } from '$lib/shared/models/security-event';
 
 const TOKEN_BYTES = 16;
 import { INVITATION_TTL_MS } from '$lib/shared/team/invitation-ttl';
@@ -188,6 +191,7 @@ export async function queueTeamInvitationForWeb(
 		inviterEmail: string;
 		data: TeamInvitationInput;
 		origin: string;
+		security?: SecurityEventRequestContext;
 	}
 ): Promise<
 	| { ok: true; inviteeHasAccount: boolean }
@@ -238,6 +242,21 @@ export async function queueTeamInvitationForWeb(
 	if (!sent.ok) {
 		return sent;
 	}
+
+	const roleLabel = findTeamInviteRoleOption(input.data.role)?.label ?? input.data.role;
+
+	await recordWorkspaceSecurityEvent({
+		workspaceId: input.workspaceId,
+		actorUserId: input.invitedByUserId,
+		action: SECURITY_EVENT_ACTIONS.INVITATION_SENT,
+		ipAddress: input.security?.ipAddress,
+		userAgent: input.security?.userAgent,
+		metadata: {
+			detail: `Invited ${prepared.payload.to} as ${roleLabel}.`,
+			invitedEmail: prepared.payload.to,
+			role: input.data.role
+		}
+	});
 
 	return { ok: true, inviteeHasAccount: prepared.payload.hasAccount };
 }
@@ -344,6 +363,18 @@ export async function acceptWorkspaceInvitation(input: {
 	}
 
 	await markWorkspaceInvitationAccepted(invitation._id.toString());
+
+	await recordWorkspaceSecurityEvent({
+		workspaceId: invitation.workspaceId.toString(),
+		actorUserId: input.userId,
+		action: SECURITY_EVENT_ACTIONS.INVITATION_ACCEPTED,
+		targetUserId: input.userId,
+		metadata: {
+			detail: `${invitedEmail} accepted the invitation and joined as ${findTeamInviteRoleOption(invitation.role)?.label ?? invitation.role}.`,
+			invitedEmail,
+			role: invitation.role
+		}
+	});
 
 	return { ok: true, workspaceSlug: workspace.slug };
 }

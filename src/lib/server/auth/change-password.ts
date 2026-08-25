@@ -1,8 +1,7 @@
 import { hashPassword, verifyPassword } from '$lib/server/auth/password';
 import { matchesStoredPassword } from '$lib/server/auth/password-history';
-import { isMailConfigured } from '$lib/server/mail/index';
-import { sendPasswordSuccessEmail } from '$lib/server/mail/password-success-email';
 import { findUserById, rotateUserPassword } from '$lib/server/repositories/users';
+import { recordPasswordChanged } from '$lib/server/security/record-security-event';
 import { isPasswordStrong } from '$lib/shared/password-policy';
 
 export async function changePasswordForUser(input: {
@@ -10,6 +9,8 @@ export async function changePasswordForUser(input: {
 	currentPassword: string;
 	newPassword: string;
 	origin?: string;
+	ipAddress?: string;
+	userAgent?: string;
 }): Promise<
 	| { ok: true }
 	| { ok: false; reason: 'NO_APP_PASSWORD' }
@@ -53,18 +54,12 @@ export async function changePasswordForUser(input: {
 		return { ok: false, reason: 'UPDATE_FAILED' };
 	}
 
-	if (input.origin && (await isMailConfigured())) {
-		try {
-			await sendPasswordSuccessEmail({
-				to: user.email,
-				firstName: user.firstName,
-				changedAt: new Date(),
-				origin: input.origin
-			});
-		} catch (error) {
-			console.error('Failed to send password success email', error);
-		}
-	}
+	await recordPasswordChanged({
+		userId: input.userId,
+		ipAddress: input.ipAddress,
+		userAgent: input.userAgent,
+		origin: input.origin
+	});
 
 	return { ok: true };
 }

@@ -19,6 +19,12 @@ import {
 } from '$lib/server/auth/two-factor/challenge';
 import { getPlatformAuthOrigin, getSessionCookieDomain } from '$lib/server/workspace-host';
 import { CONSENT_CONTEXTS, type ConsentContext } from '$lib/shared/models/consent-event';
+import { resolveWorkspaceIdBySlug } from '$lib/server/security/request-workspace-context';
+import {
+	recordLoginSuccessInBackground,
+	recordTwoFactorChallengeInBackground
+} from '$lib/server/security/record-security-event';
+import { findUserByEmail } from '$lib/server/repositories/users';
 
 function safeRedirectPath(value: string | null | undefined): string {
 	if (!value || !value.startsWith('/') || value.startsWith('//')) {
@@ -51,7 +57,7 @@ function authErrorRedirect(context: ConsentContext, code: string): never {
 	redirect(303, `${returnPath}?error=${encodeURIComponent(code)}`);
 }
 
-export const GET: RequestHandler = async ({ url, cookies }) => {
+export const GET: RequestHandler = async ({ url, cookies, request, getClientAddress, platform }) => {
 	const context =
 		cookies.get(GOOGLE_OAUTH_CONTEXT_COOKIE) === CONSENT_CONTEXTS.SIGNUP
 			? CONSENT_CONTEXTS.SIGNUP
@@ -98,6 +104,16 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		}
 
 		if ('twoFactorRequired' in result && result.twoFactorRequired) {
+			const pendingUser = await findUserByEmail(profile.email);
+
+			if (pendingUser) {
+				recordTwoFactorChallengeInBackground({ platform }, {
+					userId: pendingUser._id.toString(),
+					ipAddress: getClientAddress(),
+					userAgent: request.headers.get('user-agent') ?? undefined
+				});
+			}
+
 			cookies.set(
 				TWO_FACTOR_PENDING_COOKIE_NAME,
 				result.pendingToken,
@@ -114,9 +130,20 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 
 		const session = result as typeof result & {
 			accessToken: string;
-			user: { id: string };
+			user: { id: string; email: string };
 		};
 		cookies.set(SESSION_COOKIE_NAME, session.accessToken, getSessionCookieOptions());
+
+		const workspaceId = await resolveWorkspaceIdBySlug(session.user.id, url);
+		recordLoginSuccessInBackground({ platform }, {
+			userId: session.user.id,
+			email: session.user.email,
+			ipAddress: getClientAddress(),
+			userAgent: request.headers.get('user-agent') ?? undefined,
+			method: 'google',
+			workspaceId,
+			origin: url.origin
+		});
 
 		redirect(
 			303,

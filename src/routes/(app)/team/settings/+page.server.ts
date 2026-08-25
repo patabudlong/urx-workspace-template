@@ -12,6 +12,8 @@ import {
 } from '$lib/server/workspace-context';
 import { getWorkspaceHostSuffix } from '$lib/server/workspace-host';
 import { canEditTeamSettings } from '$lib/shared/team/member-management';
+import { buildSecurityEventRequestContext, recordWorkspaceSecurityEvent } from '$lib/server/security/record-security-event';
+import { SECURITY_EVENT_ACTIONS } from '$lib/shared/models/security-event';
 import { updateWorkspaceNameSchema } from '$lib/shared/schemas/workspace-settings';
 import { buildWorkspaceBrandLogoDisplayUrl } from '$lib/shared/workspace-branding';
 import {
@@ -53,7 +55,8 @@ export const load: PageServerLoad = async ({ parent }) => {
 };
 
 export const actions: Actions = {
-	updateName: async ({ request, url, locals }) => {
+	updateName: async (event) => {
+		const { request, url, locals } = event;
 		const form = await superValidate(request, zod4(updateWorkspaceNameSchema), {
 			id: 'workspaceNameForm'
 		});
@@ -99,10 +102,24 @@ export const actions: Actions = {
 			return message(form, WORKSPACE_NAME_UPDATE_FAILED_MESSAGE, { status: 500 });
 		}
 
+		await recordWorkspaceSecurityEvent({
+			workspaceId: workspace.workspaceId,
+			actorUserId: locals.user.id,
+			action: SECURITY_EVENT_ACTIONS.WORKSPACE_SETTINGS_UPDATED,
+			ipAddress: buildSecurityEventRequestContext(event).ipAddress,
+			userAgent: buildSecurityEventRequestContext(event).userAgent,
+			metadata: {
+				detail: `Renamed the workspace to "${result.name}".`,
+				field: 'name',
+				value: result.name
+			}
+		});
+
 		return message(form, WORKSPACE_NAME_UPDATED_MESSAGE);
 	},
 
-	updateLogo: async ({ request, url, locals }) => {
+	updateLogo: async (event) => {
+		const { request, url, locals } = event;
 		if (!locals.user) {
 			return fail(401);
 		}
@@ -155,6 +172,21 @@ export const actions: Actions = {
 
 			return fail(500, { message: WORKSPACE_LOGO_UPDATE_FAILED_MESSAGE });
 		}
+
+		await recordWorkspaceSecurityEvent({
+			workspaceId: workspace.workspaceId,
+			actorUserId: locals.user.id,
+			action: SECURITY_EVENT_ACTIONS.WORKSPACE_SETTINGS_UPDATED,
+			ipAddress: buildSecurityEventRequestContext(event).ipAddress,
+			userAgent: buildSecurityEventRequestContext(event).userAgent,
+			metadata: {
+				detail: result.removed
+					? 'Removed the workspace brand logo.'
+					: 'Updated the workspace brand logo.',
+				field: 'brandLogo',
+				removed: result.removed
+			}
+		});
 
 		return {
 			message: result.removed ? WORKSPACE_LOGO_REMOVED_MESSAGE : WORKSPACE_LOGO_UPDATED_MESSAGE,

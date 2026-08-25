@@ -53,7 +53,9 @@ export const actions: Actions = {
 
 		const result = await queuePasswordResetEmailForWeb(event, {
 			email: form.data.email,
-			origin: url.origin
+			origin: url.origin,
+			ipAddress: getClientAddress(),
+			userAgent: request.headers.get('user-agent') ?? undefined
 		});
 
 		if (!result.ok) {

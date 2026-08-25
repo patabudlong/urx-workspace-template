@@ -33,6 +33,7 @@ export const SOLAR = {
 	layers: 'solar:layers-linear',
 	inviteUser: 'solar:user-plus-linear',
 	activity: 'solar:pulse-2-linear',
+	securityLog: 'solar:shield-user-linear',
 	arrowRight: 'solar:arrow-right-linear',
 	search: 'solar:magnifer-linear'
 } as const;

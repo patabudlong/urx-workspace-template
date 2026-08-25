@@ -14,6 +14,7 @@ import {
 	startTotpSetup
 } from '$lib/server/auth/two-factor/setup';
 import { findUserById } from '$lib/server/repositories/users';
+import { listAccountSecurityEvents } from '$lib/server/repositories/security-events';
 import { removeTrustedDevice } from '$lib/server/repositories/user-two-factor';
 import type { TwoFactorSecurityContext } from '$lib/server/mail/two-factor-email';
 import { consumeChangePasswordRateLimit } from '$lib/server/security/account-security-rate-limit';
@@ -77,6 +78,12 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 
 	const security = toSecurityProfile(user);
 
+	const { items: recentActivity } = await listAccountSecurityEvents({
+		userId: locals.user!.id,
+		page: 1,
+		limit: 5
+	});
+
 	const changePasswordForm = await superValidate(
 		{
 			currentPassword: '',
@@ -130,6 +137,7 @@ export const load: PageServerLoad = async ({ parent, locals }) => {
 
 	return {
 		security,
+		recentActivity,
 		changePasswordForm,
 		confirmTotpForm,
 		confirmSmsForm,
@@ -171,7 +179,9 @@ export const actions: Actions = {
 			userId: locals.user.id,
 			currentPassword: form.data.currentPassword,
 			newPassword: form.data.newPassword,
-			origin: url.origin
+			origin: url.origin,
+			ipAddress: getClientAddress(),
+			userAgent: request.headers.get('user-agent') ?? undefined
 		});
 
 		if (!result.ok) {

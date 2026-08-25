@@ -1,6 +1,7 @@
 import { resolvePlatformWorkspaceOrigin } from '$lib/server/mail/platform-origin';
 import {
 	EMAIL_ASSET_PREFIX,
+	EMAIL_ASSET_CACHE_VERSIONS,
 	EMAIL_ASSETS,
 	type EmailAssetName
 } from '$lib/shared/mail/email-asset-names';
@@ -16,7 +17,10 @@ export function resolveEmailAssetUrl(filename: EmailAssetName | string, requestO
 	const linode = getLinodeObjectStorageConfig();
 
 	if (linode) {
-		return `${linode.publicBase}/${EMAIL_ASSET_PREFIX}/${filename}`;
+		const base = `${linode.publicBase}/${EMAIL_ASSET_PREFIX}/${filename}`;
+		const version = EMAIL_ASSET_CACHE_VERSIONS[filename];
+
+		return version ? `${base}?v=${version}` : base;
 	}
 
 	if (!requestOrigin) {
