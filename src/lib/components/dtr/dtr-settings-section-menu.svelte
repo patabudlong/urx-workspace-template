@@ -1,5 +1,7 @@
 <script lang="ts">
+	import AppIcon from '$lib/components/app-icon.svelte';
 	import { isAppNavActive } from '$lib/navigation/app-nav';
+	import { DTR_SETTINGS_NAV_ITEM } from '$lib/navigation/dtr-nav';
 	import { DTR_SETTINGS_NAV_ITEMS } from '$lib/navigation/dtr-settings-nav';
 	import { cn } from '$lib/utils.js';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
@@ -35,6 +37,7 @@
 				settingsOpen = !settingsOpen;
 			}}
 		>
+			<AppIcon icon={DTR_SETTINGS_NAV_ITEM.icon} class="shrink-0" aria-hidden="true" />
 			<span class="min-w-0 flex-1 truncate text-left">Settings</span>
 			<ChevronDownIcon
 				class={cn('size-4 shrink-0 transition-transform', settingsOpen && 'rotate-180')}
@@ -43,20 +46,21 @@
 		</button>
 
 		{#if settingsOpen}
-			<div class="mt-1 ms-3 flex flex-col gap-1 ps-2">
+			<div class="border-sidebar-border mt-1 ms-5 flex flex-col gap-1 border-l ps-2.5">
 				{#each DTR_SETTINGS_NAV_ITEMS as item (item.href)}
 					{@const active = isAppNavActive(page.url.pathname, item)}
 					<a
 						href={item.href}
 						class={cn(
-							'rounded-md px-3 py-2 text-sm transition-colors',
+							'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
 							active
 								? navActiveClass
 								: 'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
 						)}
 						aria-current={active ? 'page' : undefined}
 					>
-						{item.title}
+						<AppIcon icon={item.icon} class="shrink-0" aria-hidden="true" />
+						<span>{item.title}</span>
 					</a>
 				{/each}
 			</div>

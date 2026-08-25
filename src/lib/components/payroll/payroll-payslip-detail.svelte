@@ -10,7 +10,8 @@
 	import {
 		formatPayslipMoney,
 		formatPayslipPeriod,
-		formatWorkedHours
+		formatWorkedHours,
+		getPayslipEmployeeNameParts
 	} from '$lib/shared/payroll/payslip-format';
 	import { PAYROLL_PAY_TYPE_LABELS } from '$lib/shared/payroll/pay-rate';
 	import { formatPayRateCents } from '$lib/shared/payroll/format';
@@ -20,7 +21,6 @@
 		payslip,
 		currency,
 		workspaceName,
-		brandLogoUrl = null,
 		showEmployee = false,
 		phDeductionIconUrls = {},
 		class: className = '',
@@ -29,7 +29,6 @@
 		payslip: PayrollPayslipDto;
 		currency: PayrollCurrency;
 		workspaceName: string;
-		brandLogoUrl?: string | null;
 		showEmployee?: boolean;
 		phDeductionIconUrls?: Partial<Record<PhDeductionIconKey, string>>;
 		class?: string;
@@ -43,6 +42,8 @@
 	const displayTotalDeductionsCents = $derived(
 		payslip.deductionLines.reduce((sum, line) => sum + line.amountCents, 0)
 	);
+
+	const employeeNames = $derived(getPayslipEmployeeNameParts(payslip));
 </script>
 
 {#if variant === 'card'}
@@ -54,7 +55,7 @@
 					<Card.Description>{formatPayslipPeriod(payslip)}</Card.Description>
 					<Badge variant="outline" class="w-fit capitalize">{payslip.payType}</Badge>
 				</div>
-				<PayrollPayslipWorkspaceHeader {workspaceName} {brandLogoUrl} />
+				<PayrollPayslipWorkspaceHeader {workspaceName} />
 			</div>
 		</Card.Header>
 		<Card.Content class="space-y-6">
@@ -69,7 +70,7 @@
 				<p class="text-muted-foreground text-sm">{formatPayslipPeriod(payslip)}</p>
 				<p class="text-muted-foreground text-sm capitalize">{payslip.payType} pay</p>
 			</div>
-			<PayrollPayslipWorkspaceHeader {workspaceName} {brandLogoUrl} />
+			<PayrollPayslipWorkspaceHeader {workspaceName} />
 		</div>
 		{@render payslipBody()}
 	</div>
@@ -77,20 +78,35 @@
 
 {#snippet payslipBody()}
 	{#if showEmployee}
-		<div class="grid gap-4 sm:grid-cols-2">
-			<div>
-				<p class="text-muted-foreground text-sm">Employee</p>
-				<p class="font-medium">{payslip.employeeFullName}</p>
+		<div class="space-y-4">
+			<div class="grid gap-4 sm:grid-cols-3">
+				<div>
+					<p class="text-muted-foreground text-sm">First name</p>
+					<p class="font-medium">{employeeNames.firstName}</p>
+				</div>
+				<div>
+					<p class="text-muted-foreground text-sm">Middle name</p>
+					<p class="font-medium">{employeeNames.middleName ?? '—'}</p>
+				</div>
+				<div>
+					<p class="text-muted-foreground text-sm">Last name</p>
+					<p class="font-medium">{employeeNames.lastName}</p>
+				</div>
+			</div>
+			<div class="grid gap-4 sm:grid-cols-2">
 				{#if payslip.employeeCode}
-					<p class="text-muted-foreground text-sm">{payslip.employeeCode}</p>
+					<div>
+						<p class="text-muted-foreground text-sm">Employee code</p>
+						<p class="font-medium">{payslip.employeeCode}</p>
+					</div>
+				{/if}
+				{#if payslip.jobTitle}
+					<div>
+						<p class="text-muted-foreground text-sm">Job title</p>
+						<p class="font-medium">{payslip.jobTitle}</p>
+					</div>
 				{/if}
 			</div>
-			{#if payslip.jobTitle}
-				<div>
-					<p class="text-muted-foreground text-sm">Job title</p>
-					<p class="font-medium">{payslip.jobTitle}</p>
-				</div>
-			{/if}
 		</div>
 	{/if}
 

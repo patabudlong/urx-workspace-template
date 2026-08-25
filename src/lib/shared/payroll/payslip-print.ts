@@ -10,9 +10,9 @@ import {
 	formatPayslipGeneratedAt,
 	formatPayslipMoney,
 	formatPayslipPeriod,
-	formatWorkedHours
+	formatWorkedHours,
+	getPayslipEmployeeNameParts
 } from '$lib/shared/payroll/payslip-format';
-import { getWorkspaceInitials } from '$lib/shared/workspace-context';
 
 /** 1 cm ≈ 28.35 pt (PDFKit). */
 const CM_TO_PT = 72 / 2.54;
@@ -40,35 +40,8 @@ export const PAYSLIP_PRINT_DOCUMENT_CSS = `
 	}
 
 	.pd-workspace {
-		align-items: center;
-		display: flex;
-		flex-direction: row-reverse;
 		flex-shrink: 0;
-		gap: 12px;
-		justify-content: flex-end;
 		text-align: right;
-	}
-
-	.pd-workspace-mark {
-		align-items: center;
-		background: #18181b;
-		border-radius: 8px;
-		color: #fafafa;
-		display: flex;
-		flex-shrink: 0;
-		font-size: 13px;
-		font-weight: 600;
-		height: 44px;
-		justify-content: center;
-		width: 44px;
-	}
-
-	.pd-workspace-logo {
-		border-radius: 8px;
-		flex-shrink: 0;
-		height: 44px;
-		object-fit: contain;
-		width: 44px;
 	}
 
 	.pd-workspace-name {
@@ -133,6 +106,13 @@ export const PAYSLIP_PRINT_DOCUMENT_CSS = `
 		gap: 16px;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		margin-bottom: 24px;
+	}
+
+	.pd-employee-names {
+		display: grid;
+		gap: 16px;
+		grid-column: 1 / -1;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
 	}
 
 	.pd-section {
@@ -225,7 +205,6 @@ export type PayslipPrintDocumentInput = {
 	payslip: PayrollPayslipDto;
 	currency: PayrollCurrency;
 	workspaceName: string;
-	brandLogoUrl?: string | null;
 	showEmployee?: boolean;
 	phDeductionIconUrls?: Partial<Record<PhDeductionIconKey, string>>;
 };
@@ -252,14 +231,9 @@ function renderDeductionLabel(
 	return `<span class="pd-label"><img src="${escapeHtml(iconUrl)}" alt="" /><span>${escapeHtml(name)}</span></span>`;
 }
 
-function renderWorkspaceHeader(workspaceName: string, brandLogoUrl: string | null | undefined): string {
-	const mark = brandLogoUrl?.trim()
-		? `<img class="pd-workspace-logo" src="${escapeHtml(brandLogoUrl)}" alt="" />`
-		: `<span class="pd-workspace-mark" aria-hidden="true">${escapeHtml(getWorkspaceInitials(workspaceName))}</span>`;
-
+function renderWorkspaceHeader(workspaceName: string): string {
 	return `
 		<div class="pd-workspace">
-			${mark}
 			<p class="pd-workspace-name">${escapeHtml(workspaceName)}</p>
 		</div>`;
 }
@@ -269,7 +243,6 @@ export function buildPayslipPrintDocumentHtml(input: PayslipPrintDocumentInput):
 		payslip,
 		currency,
 		workspaceName,
-		brandLogoUrl = null,
 		showEmployee = false,
 		phDeductionIconUrls = {}
 	} = input;
@@ -281,17 +254,34 @@ export function buildPayslipPrintDocumentHtml(input: PayslipPrintDocumentInput):
 
 	const employeeSection =
 		showEmployee
-			? `
+			? (() => {
+					const names = getPayslipEmployeeNameParts(payslip);
+
+					return `
 		<section class="pd-employee">
-			<div>
-				<p class="pd-meta-label">Employee</p>
-				<p class="pd-meta-value">${escapeHtml(payslip.employeeFullName)}</p>
-				${
-					payslip.employeeCode
-						? `<p class="pd-meta-hint">${escapeHtml(payslip.employeeCode)}</p>`
-						: ''
-				}
+			<div class="pd-employee-names">
+				<div>
+					<p class="pd-meta-label">First name</p>
+					<p class="pd-meta-value">${escapeHtml(names.firstName)}</p>
+				</div>
+				<div>
+					<p class="pd-meta-label">Middle name</p>
+					<p class="pd-meta-value">${names.middleName ? escapeHtml(names.middleName) : '—'}</p>
+				</div>
+				<div>
+					<p class="pd-meta-label">Last name</p>
+					<p class="pd-meta-value">${escapeHtml(names.lastName)}</p>
+				</div>
 			</div>
+			${
+				payslip.employeeCode
+					? `
+			<div>
+				<p class="pd-meta-label">Employee code</p>
+				<p class="pd-meta-value">${escapeHtml(payslip.employeeCode)}</p>
+			</div>`
+					: ''
+			}
 			${
 				payslip.jobTitle
 					? `
@@ -301,7 +291,8 @@ export function buildPayslipPrintDocumentHtml(input: PayslipPrintDocumentInput):
 			</div>`
 					: ''
 			}
-		</section>`
+		</section>`;
+				})()
 			: '';
 
 	const holidayRow =
@@ -348,7 +339,7 @@ export function buildPayslipPrintDocumentHtml(input: PayslipPrintDocumentInput):
 					<p class="pd-subtitle">${escapeHtml(formatPayslipPeriod(payslip))}</p>
 					<p class="pd-subtitle">${escapeHtml(payslip.payType)} pay</p>
 				</div>
-				${renderWorkspaceHeader(workspaceName, brandLogoUrl)}
+				${renderWorkspaceHeader(workspaceName)}
 			</header>
 
 			${employeeSection}

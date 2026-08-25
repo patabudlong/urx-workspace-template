@@ -1,6 +1,6 @@
 <script lang="ts">
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
-	import DtrDayCell from '$lib/components/dtr/dtr-day-cell.svelte';
+	import DtrRecordsCalendar from '$lib/components/dtr/dtr-records-calendar.svelte';
 	import DtrStatusLegend from '$lib/components/dtr/dtr-status-legend.svelte';
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
@@ -30,8 +30,6 @@
 	import type { PayrollEmployeeDto } from '$lib/shared/models/payroll-employee';
 	import { cn } from '$lib/utils.js';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
-	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
-	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import CalendarDaysIcon from '@lucide/svelte/icons/calendar-days';
 	import LockIcon from '@lucide/svelte/icons/lock';
 	import { goto, invalidateAll } from '$app/navigation';
@@ -198,13 +196,6 @@
 		void goto(`?${params.toString()}`, { keepFocus: true, noScroll: true });
 	}
 
-	function shiftMonth(delta: number) {
-		const [year, month] = data.month.split('-').map(Number);
-		const next = new Date(year, month - 1 + delta, 1);
-		const monthValue = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`;
-		updateQuery({ month: monthValue, date: '' });
-	}
-
 	function clearSelectedDate() {
 		updateQuery({ date: '' });
 	}
@@ -277,72 +268,32 @@
 			</div>
 		</Card.Header>
 		<Card.Content class="space-y-6 pt-6">
-			<div class="grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-				<div class="space-y-2">
-					<label for="dtr-employee" class="text-sm font-medium">Employee</label>
-					<Select.Root
-						type="single"
-						value={data.employeeId}
-						onValueChange={(value) => {
-							if (value) {
-								updateQuery({ employeeId: value, date: '' });
-							}
-						}}
-					>
-						<Select.Trigger id="dtr-employee" class="h-10 w-full bg-muted/30">
-							<span class="truncate">
-								{selectedEmployee?.fullName ?? 'Select employee'}
-							</span>
-						</Select.Trigger>
-						<Select.Content>
-							<Select.Group>
-								{#each data.employees as employee (employee.id)}
-									<Select.Item value={employee.id} label={employee.fullName}>
-										{employee.fullName}
-									</Select.Item>
-								{/each}
-							</Select.Group>
-						</Select.Content>
-					</Select.Root>
-				</div>
-
-				<div class="space-y-2">
-					<label for="dtr-month" class="text-sm font-medium">Month</label>
-					<div class="flex items-center gap-2">
-						<Button
-							type="button"
-							variant="outline"
-							size="icon"
-							class="size-10 shrink-0"
-							aria-label="Previous month"
-							onclick={() => shiftMonth(-1)}
-						>
-							<ChevronLeftIcon class="size-4" aria-hidden="true" />
-						</Button>
-						<Input
-							id="dtr-month"
-							type="month"
-							value={data.month}
-							class="h-10 min-w-0 flex-1 bg-muted/30"
-							onchange={(event) => {
-								updateQuery({
-									month: (event.currentTarget as HTMLInputElement).value,
-									date: ''
-								});
-							}}
-						/>
-						<Button
-							type="button"
-							variant="outline"
-							size="icon"
-							class="size-10 shrink-0"
-							aria-label="Next month"
-							onclick={() => shiftMonth(1)}
-						>
-							<ChevronRightIcon class="size-4" aria-hidden="true" />
-						</Button>
-					</div>
-				</div>
+			<div class="max-w-md space-y-2">
+				<label for="dtr-employee" class="text-sm font-medium">Employee</label>
+				<Select.Root
+					type="single"
+					value={data.employeeId}
+					onValueChange={(value) => {
+						if (value) {
+							updateQuery({ employeeId: value, date: '' });
+						}
+					}}
+				>
+					<Select.Trigger id="dtr-employee" class="h-10 w-full bg-muted/30">
+						<span class="truncate">
+							{selectedEmployee?.fullName ?? 'Select employee'}
+						</span>
+					</Select.Trigger>
+					<Select.Content>
+						<Select.Group>
+							{#each data.employees as employee (employee.id)}
+								<Select.Item value={employee.id} label={employee.fullName}>
+									{employee.fullName}
+								</Select.Item>
+							{/each}
+						</Select.Group>
+					</Select.Content>
+				</Select.Root>
 			</div>
 
 			{#if data.employees.length === 0}
@@ -375,33 +326,13 @@
 						</div>
 					</div>
 
-					<div class="grid grid-cols-7 gap-1.5 sm:gap-2">
-						{#each ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as weekday, weekdayIndex (weekdayIndex)}
-							<div
-								class="text-muted-foreground px-1 py-1 text-center text-[11px] font-semibold uppercase tracking-wide sm:text-xs"
-							>
-								{weekday}
-							</div>
-						{/each}
-
-						{#each Array.from({ length: new Date(`${data.month}-01T12:00:00`).getDay() }) as _, index (index)}
-							<div class="min-h-11" aria-hidden="true"></div>
-						{/each}
-
-						{#each data.calendar as day (day.date)}
-							<DtrDayCell
-								status={day.status}
-								dayOfMonth={day.dayOfMonth}
-								holidayName={day.holidayName}
-								undertimeMinutes={day.undertimeMinutes}
-								locked={day.isLocked}
-								selected={data.selectedDate === day.date}
-								isToday={day.date === todayDate}
-								interactive={true}
-								onclick={() => updateQuery({ date: day.date })}
-							/>
-						{/each}
-					</div>
+					<DtrRecordsCalendar
+						month={data.month}
+						selectedDate={data.selectedDate}
+						days={data.calendar}
+						onMonthChange={(month) => updateQuery({ month, date: '' })}
+						onDateSelect={(date) => updateQuery({ date })}
+					/>
 
 					{#if monthHolidays.length > 0}
 						<div class="space-y-2 border-t pt-4">

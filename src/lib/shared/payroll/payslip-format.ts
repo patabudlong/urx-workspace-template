@@ -2,6 +2,20 @@ import type { PayrollCurrency } from '$lib/shared/payroll/currency';
 import { centsToMajorUnits } from '$lib/shared/payroll/format';
 import type { PayrollPayslipDto } from '$lib/shared/models/payroll-payslip';
 
+export type PayslipEmployeeNameParts = {
+	firstName: string;
+	middleName: string | null;
+	lastName: string;
+};
+
+export function getPayslipEmployeeNameParts(payslip: PayrollPayslipDto): PayslipEmployeeNameParts {
+	return {
+		firstName: payslip.employeeFirstName,
+		middleName: payslip.employeeInitialName?.trim() || null,
+		lastName: payslip.employeeLastName
+	};
+}
+
 export function formatPayslipMoney(cents: number, currency: PayrollCurrency): string {
 	return new Intl.NumberFormat(undefined, {
 		style: 'currency',

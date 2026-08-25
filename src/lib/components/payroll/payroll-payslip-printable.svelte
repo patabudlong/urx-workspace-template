@@ -12,21 +12,20 @@
 		formatPayslipGeneratedAt,
 		formatPayslipMoney,
 		formatPayslipPeriod,
-		formatWorkedHours
+		formatWorkedHours,
+		getPayslipEmployeeNameParts
 	} from '$lib/shared/payroll/payslip-format';
 
 	let {
 		payslip,
 		currency,
 		workspaceName,
-		brandLogoUrl = null,
 		showEmployee = false,
 		phDeductionIconUrls = {}
 	}: {
 		payslip: PayrollPayslipDto;
 		currency: PayrollCurrency;
 		workspaceName: string;
-		brandLogoUrl?: string | null;
 		showEmployee?: boolean;
 		phDeductionIconUrls?: Partial<Record<PhDeductionIconKey, string>>;
 	} = $props();
@@ -38,6 +37,8 @@
 	const displayTotalDeductionsCents = $derived(
 		payslip.deductionLines.reduce((sum, line) => sum + line.amountCents, 0)
 	);
+
+	const employeeNames = $derived(getPayslipEmployeeNameParts(payslip));
 
 	const generatedAt = new Date();
 
@@ -62,18 +63,31 @@
 			<p class="pd-subtitle">{formatPayslipPeriod(payslip)}</p>
 			<p class="pd-subtitle capitalize">{payslip.payType} pay</p>
 		</div>
-		<PayrollPayslipWorkspaceHeader {workspaceName} {brandLogoUrl} />
+		<PayrollPayslipWorkspaceHeader {workspaceName} />
 	</header>
 
 	{#if showEmployee}
 		<section class="pd-employee">
-			<div>
-				<p class="pd-meta-label">Employee</p>
-				<p class="pd-meta-value">{payslip.employeeFullName}</p>
-				{#if payslip.employeeCode}
-					<p class="pd-meta-hint">{payslip.employeeCode}</p>
-				{/if}
+			<div class="pd-employee-names">
+				<div>
+					<p class="pd-meta-label">First name</p>
+					<p class="pd-meta-value">{employeeNames.firstName}</p>
+				</div>
+				<div>
+					<p class="pd-meta-label">Middle name</p>
+					<p class="pd-meta-value">{employeeNames.middleName ?? '—'}</p>
+				</div>
+				<div>
+					<p class="pd-meta-label">Last name</p>
+					<p class="pd-meta-value">{employeeNames.lastName}</p>
+				</div>
 			</div>
+			{#if payslip.employeeCode}
+				<div>
+					<p class="pd-meta-label">Employee code</p>
+					<p class="pd-meta-value">{payslip.employeeCode}</p>
+				</div>
+			{/if}
 			{#if payslip.jobTitle}
 				<div>
 					<p class="pd-meta-label">Job title</p>

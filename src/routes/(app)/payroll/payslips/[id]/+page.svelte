@@ -10,7 +10,6 @@
 		PAYROLL_PAYSLIP_EMAIL_SENT_MESSAGE
 	} from '$lib/shared/payroll/messages';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
-	import DownloadIcon from '@lucide/svelte/icons/download';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import MailIcon from '@lucide/svelte/icons/mail';
 	import PrinterIcon from '@lucide/svelte/icons/printer';
@@ -21,8 +20,6 @@
 	let emailSuccess = $state(false);
 	let emailError = $state<string | null>(null);
 	let printPreviewOpen = $state(false);
-
-	const pdfUrl = $derived(`/api/v1/payroll/payslips/${data.payslip.id}/pdf`);
 
 	async function emailPayslip() {
 		emailing = true;
@@ -65,10 +62,6 @@
 					<ArrowLeftIcon class="size-4" aria-hidden="true" />
 					Back to payslips
 				</Button>
-				<Button variant="outline" href={pdfUrl} class="h-10">
-					<DownloadIcon class="size-4" aria-hidden="true" />
-					Download PDF
-				</Button>
 				<Button
 					type="button"
 					variant="outline"
@@ -105,7 +98,6 @@
 		payslip={data.payslip}
 		currency={data.currency}
 		workspaceName={data.workspaceName}
-		brandLogoUrl={data.brandLogoUrl}
 		showEmployee={data.canManagePayroll}
 		phDeductionIconUrls={data.phDeductionIconUrls}
 	/>
@@ -116,7 +108,6 @@
 	payslip={data.payslip}
 	currency={data.currency}
 	workspaceName={data.workspaceName}
-	brandLogoUrl={data.brandLogoUrl}
 	showEmployee={data.canManagePayroll}
 	phDeductionIconUrls={data.phDeductionIconUrls}
 />

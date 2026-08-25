@@ -7,7 +7,8 @@ import {
 	formatPayslipGeneratedAt,
 	formatPayslipMoney,
 	formatPayslipPeriod,
-	formatWorkedHours
+	formatWorkedHours,
+	getPayslipEmployeeNameParts
 } from '$lib/shared/payroll/payslip-format';
 import { PAYSLIP_PRINT_MARGINS } from '$lib/shared/payroll/payslip-print';
 
@@ -48,8 +49,12 @@ export function generatePayslipPdfBuffer(
 		doc.text(formatPayslipPeriod(payslip));
 		doc.moveDown(1);
 
+		const employeeNames = getPayslipEmployeeNameParts(payslip);
+
 		doc.font('Helvetica-Bold').text('Employee');
-		doc.font('Helvetica').text(payslip.employeeFullName);
+		doc.font('Helvetica').text(`First name: ${employeeNames.firstName}`);
+		doc.text(`Middle name: ${employeeNames.middleName ?? '—'}`);
+		doc.text(`Last name: ${employeeNames.lastName}`);
 
 		if (payslip.employeeCode) {
 			doc.text(`Code: ${payslip.employeeCode}`);

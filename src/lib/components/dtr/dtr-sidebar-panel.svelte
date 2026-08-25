@@ -40,11 +40,10 @@
 			{/each}
 		</Sidebar.Menu>
 	</Sidebar.Group>
-
-	<Sidebar.Group>
-		<Sidebar.GroupLabel class="text-sm">Configuration</Sidebar.GroupLabel>
-		<Sidebar.Menu>
-			<DtrSettingsSidebarMenu />
-		</Sidebar.Menu>
-	</Sidebar.Group>
 </Sidebar.Content>
+
+<Sidebar.Footer class="border-sidebar-border mt-auto shrink-0 border-t p-2">
+	<Sidebar.Menu>
+		<DtrSettingsSidebarMenu />
+	</Sidebar.Menu>
+</Sidebar.Footer>
