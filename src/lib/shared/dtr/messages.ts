@@ -4,6 +4,8 @@ export const DTR_WORK_SCHEDULES_SAVED_MESSAGE = 'Named work schedules saved.';
 export const DTR_WORK_SCHEDULES_SAVE_FAILED_MESSAGE = 'Could not save named work schedules.';
 export const DTR_DAY_SAVED_MESSAGE = 'Time record saved.';
 export const DTR_DAY_SAVE_FAILED_MESSAGE = 'Could not save time record.';
+export const DTR_DAY_LOCKED_MESSAGE =
+	'This day is locked because payroll was processed for this period. Contact an admin if a correction is needed.';
 export const DTR_NG_IMPORT_PREVIEW_READY_MESSAGE = 'Timecard preview ready. Review the rows below, then import.';
 export const DTR_NG_IMPORT_PREVIEW_FAILED_MESSAGE = 'Could not read the timecard file.';
 export const DTR_NG_IMPORT_FILE_REQUIRED_MESSAGE = 'Choose a timecard file to upload.';
@@ -16,3 +18,9 @@ export const DTR_NG_IMPORT_FAILED_MESSAGE = 'Could not import the timecard.';
 export const DTR_NG_IMPORT_EMPTY_MESSAGE = 'No timecard rows were found to import.';
 export const DTR_HOLIDAY_CALENDAR_SAVED_MESSAGE = 'Holiday calendar saved.';
 export const DTR_HOLIDAY_CALENDAR_SAVE_FAILED_MESSAGE = 'Could not save holiday calendar.';
+export const DTR_EMPLOYEE_LINK_REQUIRED_MESSAGE =
+	'Your account is not linked to a payroll employee record. Ask an admin to add your email on the employee profile.';
+export const DTR_PUNCH_SUCCESS_MESSAGE = 'Time recorded.';
+export const DTR_PUNCH_FAILED_MESSAGE = 'Could not record your time. Try again.';
+export const DTR_PUNCH_COMPLETE_MESSAGE = 'All punches for today are complete.';
+export const DTR_PUNCH_LOCKED_MESSAGE = DTR_DAY_LOCKED_MESSAGE;

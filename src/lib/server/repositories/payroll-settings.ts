@@ -33,6 +33,8 @@ const PAYROLL_SETTINGS_PROJECTION = {
 	currency: 1,
 	weekStartDay: 1,
 	periodAnchorDate: 1,
+	registeredCompanyName: 1,
+	showYtdTotals: 1,
 	deductionTypes: 1,
 	jobTitles: 1,
 	updatedAt: 1
@@ -55,6 +57,8 @@ function toPayrollSettingsDto(
 			currency: defaults.currency,
 			weekStartDay: defaults.weekStartDay || null,
 			periodAnchorDate: defaults.periodAnchorDate || null,
+			registeredCompanyName: null,
+			showYtdTotals: false,
 			deductionTypes: [],
 			jobTitles: [],
 			configured: false,
@@ -69,6 +73,8 @@ function toPayrollSettingsDto(
 		currency: resolvePayrollCurrency(doc.currency ?? getDefaultPayrollCurrency()),
 		weekStartDay: doc.weekStartDay,
 		periodAnchorDate: doc.periodAnchorDate,
+		registeredCompanyName: doc.registeredCompanyName ?? null,
+		showYtdTotals: doc.showYtdTotals === true,
 		deductionTypes: normalizePayrollDeductionTypes(doc.deductionTypes),
 		jobTitles: normalizePayrollJobTitles(doc.jobTitles),
 		configured: true,
@@ -122,6 +128,8 @@ export async function upsertPayrollSettingsForWorkspace(input: {
 				currency: resolvePayrollCurrency(input.data.currency),
 				weekStartDay: requiresAnchor ? input.data.weekStartDay || null : null,
 				periodAnchorDate: requiresAnchor ? input.data.periodAnchorDate || null : null,
+				registeredCompanyName: input.data.registeredCompanyName?.trim() || null,
+				showYtdTotals: input.data.showYtdTotals === true,
 				updatedAt: now
 			},
 			$setOnInsert: {

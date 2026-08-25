@@ -21,6 +21,7 @@ import {
 } from '$lib/server/workspace-context';
 import { getWorkspaceHostSuffix } from '$lib/server/workspace-host';
 import { canManagePayroll } from '$lib/shared/payroll/access';
+import { buildPhDeductionIconUrlMap } from '$lib/server/payroll/deduction-icons';
 import {
 	createPayrollEmployeeSchema,
 	createPayrollEmployeeDefaults
@@ -37,7 +38,7 @@ function buildEmployeeFormDefaults(
 	};
 }
 
-export const load: PageServerLoad = async ({ parent }) => {
+export const load: PageServerLoad = async ({ parent, url }) => {
 	const { workspace, canManagePayroll: canManage } = await parent();
 
 	if (!workspace || !canManage) {
@@ -48,7 +49,8 @@ export const load: PageServerLoad = async ({ parent }) => {
 			payrollCurrency: 'PHP' as const,
 			deductionTypes: [],
 			workSchedules: [],
-			jobTitles: []
+			jobTitles: [],
+			phDeductionIconUrls: {}
 		};
 	}
 
@@ -58,12 +60,16 @@ export const load: PageServerLoad = async ({ parent }) => {
 		defaults: buildEmployeeFormDefaults(settings.deductionTypes)
 	});
 
+	const phDeductionIconUrls =
+		settings.currency === 'PHP' ? buildPhDeductionIconUrlMap(url.origin) : {};
+
 	return {
 		form,
 		payrollCurrency: settings.currency,
 		deductionTypes: settings.deductionTypes.filter((type) => type.isActive),
 		workSchedules,
-		jobTitles: mapActiveJobTitlesForEmployeeForm(settings.jobTitles, settings.currency)
+		jobTitles: mapActiveJobTitlesForEmployeeForm(settings.jobTitles, settings.currency),
+		phDeductionIconUrls
 	};
 };
 

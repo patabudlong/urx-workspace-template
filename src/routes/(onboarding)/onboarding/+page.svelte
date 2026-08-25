@@ -1,7 +1,10 @@
 <script lang="ts">
 	import { onDestroy, onMount, tick, untrack } from 'svelte';
 	import { invalidateAll } from '$app/navigation';
+	import { AUTH_ACTION_BUTTON_CLASS, AUTH_FIELD_CONTROL_CLASS, AUTH_INLINE_LINK_CLASS } from '$lib/auth/ui';
 	import AuthFormMessageAlert from '$lib/components/auth/auth-form-message-alert.svelte';
+	import GradientButton from '$lib/components/gradient-button.svelte';
+	import GradientText from '$lib/components/gradient-text.svelte';
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
 	import OnboardingElementTour, {
 		type ElementTourStep
@@ -663,12 +666,16 @@
 		{#if wizardStep === 'choose'}
 			<div class="grid gap-6" data-tour="selection">
 				<div class="space-y-2 text-center">
-					<p class="text-primary text-sm font-semibold">
+					<GradientText tone="primary" as="p" class="text-sm font-semibold">
 						Welcome{data.firstName ? `, ${data.firstName}` : ''}
-					</p>
-					<h1 class="text-foreground text-3xl leading-tight font-semibold tracking-tight">
+					</GradientText>
+					<GradientText
+						tone="primary"
+						as="h1"
+						class="text-3xl leading-tight font-bold tracking-tight"
+					>
 						Let's set up your workspace
-					</h1>
+					</GradientText>
 					<p class="text-muted-foreground m-0 text-sm leading-relaxed sm:text-base">
 						Choose how you'd like to get started on the Urixoft Workspace platform.
 					</p>
@@ -723,7 +730,7 @@
 		{:else if wizardStep === 'pending' && pendingAccess}
 			<div class="space-y-6" data-tour="selection">
 				<div class="space-y-2 text-center">
-					<p class="text-primary text-sm font-semibold">Almost there</p>
+					<GradientText tone="primary" as="p" class="text-sm font-semibold">Almost there</GradientText>
 					<h1 class="text-foreground text-2xl font-semibold">Awaiting approval</h1>
 					<p class="text-muted-foreground m-0 text-sm leading-relaxed">
 						Your workspace
@@ -780,8 +787,14 @@
 			</div>
 		{:else if wizardStep === 'join'}
 			<div class="space-y-2 text-center">
-				<p class="text-primary text-sm font-semibold">Join team</p>
-				<h1 class="text-foreground text-[1.75rem] leading-tight font-semibold">Enter your invite</h1>
+				<GradientText tone="primary" as="p" class="text-sm font-semibold">Join team</GradientText>
+				<GradientText
+					tone="primary"
+					as="h1"
+					class="text-[1.75rem] leading-tight font-bold tracking-tight"
+				>
+					Enter your invite
+				</GradientText>
 				<p class="text-muted-foreground m-0 text-sm leading-relaxed">
 					Your workspace admin can share a slug (e.g.
 					<code class="bg-muted rounded px-1.5 py-0.5 text-[0.875em]">acme-corp</code>) or workspace ID.
@@ -797,6 +810,7 @@
 								<Input
 									{...props}
 									id="workspace-ref"
+									class={AUTH_FIELD_CONTROL_CLASS}
 									bind:value={$memberForm.workspaceRef}
 									autocomplete="off"
 									spellcheck="false"
@@ -809,27 +823,36 @@
 					</Form.Field>
 				</div>
 
-				<Button
+				<GradientButton
 					type="submit"
-					class="h-10 w-full"
+					tone="primary"
+					class={cn(
+						AUTH_ACTION_BUTTON_CLASS,
+						$memberSubmitting && 'pointer-events-none cursor-wait'
+					)}
 					data-tour="next-action"
 					disabled={$memberSubmitting}
+					aria-busy={$memberSubmitting}
 				>
 					{#if $memberSubmitting}
-						<Loader2Icon class="size-4 animate-spin" />
+						<Loader2Icon class="size-4 animate-spin" aria-hidden="true" />
 					{/if}
 					Join workspace
-				</Button>
+				</GradientButton>
 			</form>
 		{:else}
 			<div class="grid gap-4">
 				{#if wizardStep === 'workspace'}
 					<div class="grid gap-5" data-tour="selection">
 						<div class="space-y-2 text-center">
-							<p class="text-primary text-sm font-semibold">Step 1 of 5</p>
-							<h1 class="text-foreground text-[1.75rem] leading-tight font-semibold">
+							<GradientText tone="primary" as="p" class="text-sm font-semibold">Step 1 of 5</GradientText>
+							<GradientText
+								tone="primary"
+								as="h1"
+								class="text-[1.75rem] leading-tight font-bold tracking-tight"
+							>
 								Workspace profile
-							</h1>
+							</GradientText>
 							<p class="text-muted-foreground m-0 text-sm leading-relaxed">
 								Tell us about your organization.
 							</p>
@@ -842,6 +865,7 @@
 									<Input
 										{...props}
 										id="workspace-name"
+										class={AUTH_FIELD_CONTROL_CLASS}
 										bind:value={$ownerForm.name}
 										oninput={handleWorkspaceNameInput}
 										autocomplete="organization"
@@ -863,11 +887,11 @@
 										<Input
 											{...props}
 											id="workspace-slug"
+											class={cn(AUTH_FIELD_CONTROL_CLASS, 'min-w-0 flex-1')}
 											bind:value={$ownerForm.slug}
 											oninput={handleWorkspaceSlugInput}
 											autocomplete="off"
 											spellcheck="false"
-											class="min-w-0 flex-1"
 										/>
 										<span class="text-muted-foreground shrink-0 text-sm">.workspace.urixoft.com</span>
 									</div>
@@ -890,7 +914,8 @@
 									<Select.Root type="single" bind:value={$ownerForm.teamSize}>
 										<Select.Trigger
 											class={cn(
-												'h-10 w-full',
+												AUTH_FIELD_CONTROL_CLASS,
+												'w-full',
 												$ownerErrors.teamSize && 'border-destructive ring-3 ring-destructive/20'
 											)}
 											aria-invalid={$ownerErrors.teamSize ? true : undefined}
@@ -919,8 +944,14 @@
 				{:else if wizardStep === 'location'}
 					<div class="grid gap-5" data-tour="selection">
 						<div class="space-y-2 text-center">
-							<p class="text-primary text-sm font-semibold">Step 2 of 5</p>
-							<h1 class="text-foreground text-[1.75rem] leading-tight font-semibold">Location</h1>
+							<GradientText tone="primary" as="p" class="text-sm font-semibold">Step 2 of 5</GradientText>
+							<GradientText
+								tone="primary"
+								as="h1"
+								class="text-[1.75rem] leading-tight font-bold tracking-tight"
+							>
+								Location
+							</GradientText>
 							<p class="text-muted-foreground m-0 text-sm leading-relaxed">
 								Where is your organization based?
 							</p>
@@ -932,6 +963,7 @@
 									<Form.Label required>Country</Form.Label>
 									<WorkspaceCountryCombobox
 										id={props.id}
+										class={AUTH_FIELD_CONTROL_CLASS}
 										countries={data.countries}
 										bind:value={$ownerForm.country}
 										aria-invalid={props['aria-invalid']}
@@ -949,6 +981,7 @@
 									<Input
 										{...props}
 										id="address-line-1"
+										class={AUTH_FIELD_CONTROL_CLASS}
 										bind:value={$ownerForm.addressLine1}
 										autocomplete="address-line1"
 									/>
@@ -965,6 +998,7 @@
 										<Input
 											{...props}
 											id="city"
+											class={AUTH_FIELD_CONTROL_CLASS}
 											bind:value={$ownerForm.city}
 											autocomplete="address-level2"
 										/>
@@ -985,6 +1019,7 @@
 										<Input
 											{...props}
 											id="region"
+											class={AUTH_FIELD_CONTROL_CLASS}
 											bind:value={$ownerForm.region}
 											autocomplete="address-level1"
 										/>
@@ -1005,6 +1040,7 @@
 									<Input
 										{...props}
 										id="postal-code"
+										class={AUTH_FIELD_CONTROL_CLASS}
 										bind:value={$ownerForm.postalCode}
 										autocomplete="postal-code"
 									/>
@@ -1015,8 +1051,14 @@
 				{:else if wizardStep === 'contact'}
 					<div class="grid gap-5" data-tour="selection">
 						<div class="space-y-2 text-center">
-							<p class="text-primary text-sm font-semibold">Step 3 of 5</p>
-							<h1 class="text-foreground text-[1.75rem] leading-tight font-semibold">Contact details</h1>
+							<GradientText tone="primary" as="p" class="text-sm font-semibold">Step 3 of 5</GradientText>
+							<GradientText
+								tone="primary"
+								as="h1"
+								class="text-[1.75rem] leading-tight font-bold tracking-tight"
+							>
+								Contact details
+							</GradientText>
 							<p class="text-muted-foreground m-0 text-sm leading-relaxed">
 								We'll use your contact number for verification and workspace updates.
 							</p>
@@ -1029,6 +1071,7 @@
 									<PhoneCountryInput
 										id={props.id}
 										name={props.name}
+										class={AUTH_FIELD_CONTROL_CLASS}
 										aria-invalid={props['aria-invalid']}
 										aria-describedby={props['aria-describedby']}
 										bind:value={$ownerForm.contactPhone}
@@ -1050,6 +1093,7 @@
 									<Input
 										{...props}
 										id="website"
+										class={AUTH_FIELD_CONTROL_CLASS}
 										bind:value={$ownerForm.website}
 										autocomplete="url"
 										required={false}
@@ -1062,8 +1106,14 @@
 				{:else if wizardStep === 'brand'}
 					<div class="grid gap-5" data-tour="selection">
 						<div class="space-y-2 text-center">
-							<p class="text-primary text-sm font-semibold">Step 4 of 5</p>
-							<h1 class="text-foreground text-[1.75rem] leading-tight font-semibold">Brand & logo</h1>
+							<GradientText tone="primary" as="p" class="text-sm font-semibold">Step 4 of 5</GradientText>
+							<GradientText
+								tone="primary"
+								as="h1"
+								class="text-[1.75rem] leading-tight font-bold tracking-tight"
+							>
+								Brand & logo
+							</GradientText>
 							<p class="text-muted-foreground m-0 text-sm leading-relaxed">
 								Add your company logo so your workspace feels like home.
 							</p>
@@ -1080,7 +1130,7 @@
 							/>
 							<p class="text-muted-foreground text-xs">
 								Optional — you can skip this for now and add or change your logo later in
-								<a href="/team/settings" class="text-primary font-medium hover:underline">
+								<a href="/team/settings" class={AUTH_INLINE_LINK_CLASS}>
 									workspace settings
 								</a>.
 							</p>
@@ -1096,10 +1146,14 @@
 					>
 						<div class="grid gap-5" data-tour="selection">
 							<div class="space-y-2 text-center">
-								<p class="text-primary text-sm font-semibold">Step 5 of 5</p>
-								<h1 class="text-foreground text-[1.75rem] leading-tight font-semibold">
+								<GradientText tone="primary" as="p" class="text-sm font-semibold">Step 5 of 5</GradientText>
+								<GradientText
+									tone="primary"
+									as="h1"
+									class="text-[1.75rem] leading-tight font-bold tracking-tight"
+								>
 									Review & submit
-								</h1>
+								</GradientText>
 								<p class="text-muted-foreground m-0 text-sm leading-relaxed">
 									Confirm your details before we send your workspace for approval.
 								</p>
@@ -1171,24 +1225,35 @@
 						<input type="hidden" name="country" value={$ownerForm.country} />
 						<input type="hidden" name="website" value={$ownerForm.website ?? ''} />
 
-						<Button
+						<GradientButton
 							type="submit"
-							class="h-10 w-full"
+							tone="primary"
+							class={cn(
+								AUTH_ACTION_BUTTON_CLASS,
+								ownerSubmitBlocked && 'pointer-events-none cursor-wait'
+							)}
 							data-tour="next-action"
 							disabled={ownerSubmitBlocked}
+							aria-busy={$ownerSubmitting}
 						>
 							{#if $ownerSubmitting}
-								<Loader2Icon class="size-4 animate-spin" />
+								<Loader2Icon class="size-4 animate-spin" aria-hidden="true" />
 							{/if}
 							Submit for approval
-						</Button>
+						</GradientButton>
 					</form>
 				{/if}
 
 				{#if wizardStep !== 'review'}
-					<Button type="button" class="h-10 w-full" data-tour="next-action" onclick={goNext}>
+					<GradientButton
+						type="button"
+						tone="primary"
+						class={AUTH_ACTION_BUTTON_CLASS}
+						data-tour="next-action"
+						onclick={goNext}
+					>
 						Continue
-					</Button>
+					</GradientButton>
 				{/if}
 			</div>
 		{/if}

@@ -11,6 +11,8 @@ import {
 } from '$lib/server/auth/two-factor/verify-identity';
 import type { Cookies } from '@sveltejs/kit';
 import type { TwoFactorSecurityContext } from '$lib/server/mail/two-factor-email';
+import { recordAccountSecurityChange } from '$lib/server/security/record-security-event';
+import { SECURITY_EVENT_ACTIONS } from '$lib/shared/models/security-event';
 
 export async function disableTwoFactor(input: {
 	userId: string;
@@ -63,6 +65,13 @@ export async function disableTwoFactor(input: {
 		change: 'disabled',
 		changedAt: new Date(),
 		security: input.security
+	});
+
+	await recordAccountSecurityChange({
+		userId: input.userId,
+		action: SECURITY_EVENT_ACTIONS.TWO_FACTOR_DISABLED,
+		ipAddress: input.security?.ipAddress,
+		userAgent: input.security?.userAgent
 	});
 
 	return { ok: true };

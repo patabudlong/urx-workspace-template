@@ -38,7 +38,9 @@ export const POST: RequestHandler = async ({ request, url, getClientAddress }) =
 
 	const result = await requestPasswordReset({
 		email: parsed.data.email,
-		origin: url.origin
+		origin: url.origin,
+		ipAddress: getClientAddress(),
+		userAgent: request.headers.get('user-agent') ?? undefined
 	});
 
 	if (!result.ok) {

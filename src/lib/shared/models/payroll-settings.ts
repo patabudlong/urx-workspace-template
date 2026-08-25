@@ -13,6 +13,8 @@ export type PayrollSettingsDocument = {
 	currency: PayrollCurrency;
 	weekStartDay: WeekStartDay | null;
 	periodAnchorDate: string | null;
+	registeredCompanyName: string | null;
+	showYtdTotals: boolean;
 	deductionTypes: PayrollDeductionType[];
 	jobTitles: PayrollJobTitle[];
 	createdAt: Date;
@@ -26,6 +28,8 @@ export type PayrollSettingsDto = {
 	currency: PayrollCurrency;
 	weekStartDay: WeekStartDay | null;
 	periodAnchorDate: string | null;
+	registeredCompanyName: string | null;
+	showYtdTotals: boolean;
 	deductionTypes: PayrollDeductionType[];
 	jobTitles: PayrollJobTitle[];
 	configured: boolean;

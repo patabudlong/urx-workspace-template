@@ -10,10 +10,12 @@
 	type PasswordInputProps = WithElementRef<Omit<ComponentProps<typeof Input>, 'type' | 'files'>> & {
 		showStrength?: boolean;
 		showReuseHint?: boolean;
+		groupClass?: string;
 	};
 
 	let {
 		class: className,
+		groupClass,
 		value = $bindable(''),
 		showStrength = false,
 		showReuseHint = false,
@@ -24,12 +26,12 @@
 </script>
 
 <div class="space-y-3">
-	<InputGroup.Root>
+	<InputGroup.Root class={groupClass}>
 		<InputGroup.Input
 			{...restProps}
 			bind:value
 			type={visible ? 'text' : 'password'}
-			class={className}
+			class={cn(groupClass && 'h-full', className)}
 		/>
 		<InputGroup.Addon align="inline-end">
 			<InputGroup.Button

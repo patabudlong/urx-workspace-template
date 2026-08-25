@@ -36,3 +36,11 @@ export function resolvePayrollCurrency(
 export function getPayrollCurrencyLabel(value: PayrollCurrency): string {
 	return PAYROLL_CURRENCIES.find((currency) => currency.value === value)?.label ?? value;
 }
+
+export function getPayrollCurrencySymbol(value: PayrollCurrency): string {
+	return PAYROLL_CURRENCIES.find((currency) => currency.value === value)?.symbol ?? value;
+}
+
+export function getPayrollCurrencyStep(currency: PayrollCurrency): string {
+	return currency === 'JPY' ? '1' : '0.01';
+}

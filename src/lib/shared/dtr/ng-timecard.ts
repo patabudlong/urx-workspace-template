@@ -32,6 +32,10 @@ export type NgTimecardImportRow = {
 	status: DtrDayStatus;
 	timeIn: string | null;
 	timeOut: string | null;
+	morningTimeIn: string | null;
+	morningTimeOut: string | null;
+	afternoonTimeIn: string | null;
+	afternoonTimeOut: string | null;
 	notes: string | null;
 };
 
@@ -183,6 +187,12 @@ export function buildNgTimecardImportRow(
 		markAbsentOnEmpty: boolean;
 	}
 ): NgTimecardImportRow | null {
+	const morningPunch = day.punches[0];
+	const afternoonPunch = day.punches[1];
+	const morningTimeIn = morningPunch?.timeIn ?? null;
+	const morningTimeOut = morningPunch?.timeOut ?? null;
+	const afternoonTimeIn = afternoonPunch?.timeIn ?? null;
+	const afternoonTimeOut = afternoonPunch?.timeOut ?? null;
 	const { timeIn, timeOut } = collapseNgPunchesToWindow(day.punches);
 	const statusFromPunches = resolveNgDayStatus({
 		timeIn,
@@ -202,6 +212,10 @@ export function buildNgTimecardImportRow(
 				status: 'absent',
 				timeIn: null,
 				timeOut: null,
+				morningTimeIn: null,
+				morningTimeOut: null,
+				afternoonTimeIn: null,
+				afternoonTimeOut: null,
 				notes: day.note
 			};
 		}
@@ -215,6 +229,10 @@ export function buildNgTimecardImportRow(
 		status: statusFromPunches,
 		timeIn,
 		timeOut,
+		morningTimeIn,
+		morningTimeOut,
+		afternoonTimeIn,
+		afternoonTimeOut,
 		notes: day.note
 	};
 }

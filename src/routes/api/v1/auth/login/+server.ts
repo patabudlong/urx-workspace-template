@@ -2,11 +2,18 @@ import type { RequestHandler } from './$types';
 import { authenticateWithCredentials } from '$lib/server/auth/login';
 import { jsonError, jsonOk } from '$lib/server/api/response';
 import { assertAuthRecaptcha } from '$lib/server/security/recaptcha';
+import { findUserByEmail } from '$lib/server/repositories/users';
+import { resolveWorkspaceIdBySlug } from '$lib/server/security/request-workspace-context';
+import {
+	recordLoginFailedInBackground,
+	recordLoginSuccessInBackground,
+	recordTwoFactorChallengeInBackground
+} from '$lib/server/security/record-security-event';
 import { EMAIL_NOT_VERIFIED_MESSAGE } from '$lib/shared/auth-messages';
 import { loginSchema } from '$lib/shared/schemas/auth';
 import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 
-export const POST: RequestHandler = async ({ request, getClientAddress }) => {
+export const POST: RequestHandler = async ({ request, url, getClientAddress, platform }) => {
 	const requestId = request.headers.get('x-request-id') ?? undefined;
 
 	let body: unknown;
@@ -45,16 +52,38 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 		}
 
 		if (result.reason === 'EMAIL_NOT_VERIFIED') {
+			recordLoginFailedInBackground({ platform }, {
+				email: parsed.data.email,
+				ipAddress: getClientAddress(),
+				userAgent: request.headers.get('user-agent') ?? undefined,
+				reason: 'email_not_verified'
+			});
 			return jsonError('FORBIDDEN', EMAIL_NOT_VERIFIED_MESSAGE, {
 				details: { code: 'EMAIL_NOT_VERIFIED' },
 				requestId
 			});
 		}
 
+		recordLoginFailedInBackground({ platform }, {
+			email: parsed.data.email,
+			ipAddress: getClientAddress(),
+			userAgent: request.headers.get('user-agent') ?? undefined,
+			reason: 'invalid_credentials'
+		});
 		return jsonError('UNAUTHORIZED', 'Invalid email or password', { requestId });
 	}
 
 	if ('twoFactorRequired' in result && result.twoFactorRequired) {
+		const pendingUser = await findUserByEmail(parsed.data.email);
+
+		if (pendingUser) {
+			recordTwoFactorChallengeInBackground({ platform }, {
+				userId: pendingUser._id.toString(),
+				ipAddress: getClientAddress(),
+				userAgent: request.headers.get('user-agent') ?? undefined
+			});
+		}
+
 		return jsonOk(
 			{
 				twoFactorRequired: true,
@@ -72,6 +101,17 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 		expiresIn: number;
 		user: import('$lib/shared/schemas/auth').AuthUser;
 	};
+
+	const workspaceId = await resolveWorkspaceIdBySlug(session.user.id, url);
+	recordLoginSuccessInBackground({ platform }, {
+		userId: session.user.id,
+		email: session.user.email,
+		ipAddress: getClientAddress(),
+		userAgent: request.headers.get('user-agent') ?? undefined,
+		method: 'password',
+		workspaceId,
+		origin: url.origin
+	});
 
 	return jsonOk(
 		{

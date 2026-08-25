@@ -4,20 +4,29 @@
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
 	import VerificationCodeInput from '$lib/components/auth/verification-code-input.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
+	import GradientButton from '$lib/components/gradient-button.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Form from '$lib/components/ui/form/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Switch } from '$lib/components/ui/switch/index.js';
-	import { AUTH_ACTION_BUTTON_CLASS } from '$lib/auth/ui';
+	import {
+		AUTH_ACTION_BUTTON_CLASS,
+		AUTH_FIELD_CONTROL_CLASS,
+		AUTH_INLINE_BUTTON_LINK_CLASS
+	} from '$lib/auth/ui';
 	import { cn } from '$lib/utils.js';
 	import { twoFactorLoginChallengeSchema } from '$lib/shared/schemas/security';
 	import {
 		INVALID_VERIFICATION_CODE_MESSAGE,
-		isAuthRateLimitMessage
+		formatRateLimitCountdown,
+		isAuthRateLimitMessage,
+		type AuthRateLimitMessage
 	} from '$lib/shared/auth-messages';
 	import {
 		TWO_FACTOR_CODE_SENT_MESSAGE
 	} from '$lib/shared/security-messages';
+	import { createVerificationResendCooldown } from '$lib/auth/verification-resend-cooldown.svelte';
 	import { TWO_FACTOR_METHODS } from '$lib/shared/models/two-factor';
 	import { TRUSTED_DEVICE_TTL_DAYS } from '$lib/shared/models/two-factor';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
@@ -32,8 +41,14 @@
 	let submitting = $state(false);
 	let sendingCode = $state(false);
 	let codeSendSuccess = $state(false);
+	let sendCodeRateLimitMessage = $state<AuthRateLimitMessage | null>(null);
+	let sendCodeRateLimited = $state(false);
 	let formRateLimited = $state(false);
 	let useBackupCode = $state(false);
+	const sendCodeCooldown = createVerificationResendCooldown({
+		idleLabel: 'Send code',
+		activeLabel: (remaining) => `Send again in ${formatRateLimitCountdown(remaining)}`
+	});
 
 	const superform = superForm(untrack(() => data.form), {
 		id: 'twoFactorLoginForm',
@@ -53,8 +68,10 @@
 	const { enhance, form, message: formMessage, errors } = superform;
 
 	const sendCodeMessage = $derived(
-		codeSendSuccess || $formMessage === TWO_FACTOR_CODE_SENT_MESSAGE ? TWO_FACTOR_CODE_SENT_MESSAGE : null
+		codeSendSuccess ? TWO_FACTOR_CODE_SENT_MESSAGE : null
 	);
+
+	const sendCodeRateLimit = $derived(sendCodeRateLimitMessage);
 
 	const formError = $derived(
 		$formMessage &&
@@ -103,6 +120,8 @@
 	<div class="space-y-6">
 		{#if rateLimitMessage}
 			<AuthFormMessageAlert message={rateLimitMessage} bind:limited={formRateLimited} />
+		{:else if sendCodeRateLimit}
+			<AuthFormMessageAlert message={sendCodeRateLimit} bind:limited={sendCodeRateLimited} />
 		{:else if sendCodeMessage}
 			<StatusAlert
 				variant="info"
@@ -175,10 +194,11 @@
 					$form.method === TWO_FACTOR_METHODS.EMAIL &&
 						'border-primary bg-primary/5 text-primary ring-primary/20 ring-2 hover:bg-primary/10 hover:text-primary'
 				)}
-				disabled={sendingCode || submitting || formRateLimited}
+				disabled={sendingCode || submitting || formRateLimited || sendCodeRateLimited || sendCodeCooldown.active}
 				onclick={async () => {
 					sendingCode = true;
 					codeSendSuccess = false;
+					sendCodeRateLimitMessage = null;
 					try {
 						const response = await fetch('?/sendCode', {
 							method: 'POST',
@@ -186,8 +206,16 @@
 							body: new URLSearchParams({ method: $form.method })
 						});
 						const result = deserialize(await response.text());
+
 						if (result.type === 'success') {
 							codeSendSuccess = true;
+							sendCodeCooldown.start();
+							return;
+						}
+
+						if (result.type === 'failure' && isAuthRateLimitMessage(result.data?.rateLimit)) {
+							sendCodeRateLimitMessage = result.data.rateLimit;
+							sendCodeCooldown.start(result.data.rateLimit.retryAfterSeconds);
 						}
 					} finally {
 						sendingCode = false;
@@ -197,6 +225,8 @@
 				{#if sendingCode}
 					<Loader2Icon class="size-4 animate-spin" aria-hidden="true" />
 					Sending code…
+				{:else if sendCodeCooldown.active}
+					{sendCodeCooldown.label}
 				{:else}
 					Send code via {methodLabel($form.method)}
 				{/if}
@@ -211,9 +241,9 @@
 					<Form.Control>
 						{#snippet children({ props })}
 							<Form.Label required>Backup code</Form.Label>
-							<input
+							<Input
 								{...props}
-								class="border-input bg-background h-10 w-full rounded-lg border px-3 text-sm"
+								class={AUTH_FIELD_CONTROL_CLASS}
 								bind:value={$form.code}
 								autocomplete="one-time-code"
 								disabled={submitting || formRateLimited}
@@ -275,8 +305,9 @@
 				/>
 			</div>
 
-			<Button
+			<GradientButton
 				type="submit"
+				tone="primary"
 				class={AUTH_ACTION_BUTTON_CLASS}
 				disabled={submitting || formRateLimited}
 				aria-busy={submitting}
@@ -288,14 +319,14 @@
 					<ShieldCheckIcon class="size-4" aria-hidden="true" />
 					Verify and sign in
 				{/if}
-			</Button>
+			</GradientButton>
 		</form>
 
 		<p class="text-muted-foreground text-center text-sm">
 			{#if useBackupCode}
 				<button
 					type="button"
-					class="text-primary font-medium hover:underline"
+					class={AUTH_INLINE_BUTTON_LINK_CLASS}
 					onclick={() => {
 						useBackupCode = false;
 						$form.method = data.methods[0] ?? TWO_FACTOR_METHODS.TOTP;
@@ -306,7 +337,7 @@
 			{:else}
 				<button
 					type="button"
-					class="text-primary font-medium hover:underline"
+					class={AUTH_INLINE_BUTTON_LINK_CLASS}
 					onclick={() => {
 						useBackupCode = true;
 						$form.code = '';

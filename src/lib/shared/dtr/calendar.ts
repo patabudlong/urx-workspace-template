@@ -5,6 +5,10 @@ import type { DtrDayDto } from '$lib/shared/models/dtr-day';
 import type { DtrHolidayEntry, DtrHolidayCalendarRates } from '$lib/shared/dtr/holidays';
 import { getHolidayRatesForCategory } from '$lib/shared/dtr/holidays';
 import type { DtrWorkScheduleDto } from '$lib/shared/models/dtr-work-schedule';
+import {
+	computeUndertimeMinutes,
+	resolveExpectedWorkMinutesForDate
+} from '$lib/shared/dtr/undertime';
 
 export type DtrCalendarCell = {
 	date: string;
@@ -15,6 +19,10 @@ export type DtrCalendarCell = {
 	recordId: string | null;
 	holidayName: string | null;
 	holidayPayPercent: number | null;
+	isLocked: boolean;
+	workedMinutes: number;
+	expectedWorkMinutes: number;
+	undertimeMinutes: number;
 };
 
 export function getMonthDateRange(month: string): { start: string; end: string; days: string[] } {
@@ -77,9 +85,11 @@ export function buildEmployeeMonthCalendar(input: {
 	month: string;
 	restDays: DtrWeekDay[];
 	workSchedule?: DtrWorkScheduleDto | null;
+	standardWorkMinutes: number;
 	records: DtrDayDto[];
 	holidays?: DtrHolidayEntry[];
 	holidayRates?: DtrHolidayCalendarRates | null;
+	lockedDates?: Set<string>;
 }): DtrCalendarCell[] {
 	const { days } = getMonthDateRange(input.month);
 	const recordByDate = new Map(input.records.map((record) => [record.date, record]));
@@ -101,6 +111,19 @@ export function buildEmployeeMonthCalendar(input: {
 			holidayPayPercent = categoryRates.unworkedPercent;
 		}
 
+		const workedMinutes = record?.workedMinutes ?? 0;
+		const expectedWorkMinutes = resolveExpectedWorkMinutesForDate({
+			date,
+			restDays: input.restDays,
+			workSchedule: input.workSchedule,
+			standardWorkMinutes: input.standardWorkMinutes
+		});
+		const undertimeMinutes = computeUndertimeMinutes({
+			workedMinutes,
+			expectedWorkMinutes,
+			status
+		});
+
 		return {
 			date,
 			dayOfMonth: Number(date.slice(8, 10)),
@@ -113,7 +136,11 @@ export function buildEmployeeMonthCalendar(input: {
 			status,
 			recordId: record?.id ?? null,
 			holidayName: record?.holidayName ?? holiday?.name ?? null,
-			holidayPayPercent
+			holidayPayPercent,
+			isLocked: Boolean(record?.lockedByRunId) || Boolean(input.lockedDates?.has(date)),
+			workedMinutes,
+			expectedWorkMinutes,
+			undertimeMinutes
 		};
 	});
 }
@@ -177,4 +204,87 @@ export function computeWorkedMinutes(
 	);
 
 	return Math.max(0, grossMinutes - breakMinutes);
+}
+
+export type DtrDayTimePunchesInput = {
+	timeIn?: string | null;
+	timeOut?: string | null;
+	morningTimeIn?: string | null;
+	morningTimeOut?: string | null;
+	afternoonTimeIn?: string | null;
+	afternoonTimeOut?: string | null;
+};
+
+export function hasSplitDtrTimePunches(input: DtrDayTimePunchesInput): boolean {
+	return Boolean(
+		input.morningTimeIn ||
+			input.morningTimeOut ||
+			input.afternoonTimeIn ||
+			input.afternoonTimeOut
+	);
+}
+
+export function collapseDtrTimePunches(input: DtrDayTimePunchesInput): {
+	timeIn: string | null;
+	timeOut: string | null;
+} {
+	if (!hasSplitDtrTimePunches(input)) {
+		return {
+			timeIn: input.timeIn ?? null,
+			timeOut: input.timeOut ?? null
+		};
+	}
+
+	let earliestIn: string | null = null;
+	let earliestInMinutes = Number.POSITIVE_INFINITY;
+	let latestOut: string | null = null;
+	let latestOutMinutes = Number.NEGATIVE_INFINITY;
+
+	const segments = [
+		{ timeIn: input.morningTimeIn, timeOut: input.morningTimeOut },
+		{ timeIn: input.afternoonTimeIn, timeOut: input.afternoonTimeOut }
+	];
+
+	for (const segment of segments) {
+		if (segment.timeIn) {
+			const minutes = parseTimeToMinutes(segment.timeIn);
+
+			if (minutes < earliestInMinutes) {
+				earliestInMinutes = minutes;
+				earliestIn = segment.timeIn;
+			}
+		}
+
+		if (segment.timeOut) {
+			const minutes = parseTimeToMinutes(segment.timeOut);
+
+			if (minutes > latestOutMinutes) {
+				latestOutMinutes = minutes;
+				latestOut = segment.timeOut;
+			}
+		}
+	}
+
+	return { timeIn: earliestIn, timeOut: latestOut };
+}
+
+export function computeDtrDayWorkedMinutes(
+	input: DtrDayTimePunchesInput,
+	lunchBreak?: DtrLunchBreakWindow | null
+): number {
+	if (hasSplitDtrTimePunches(input)) {
+		let total = 0;
+
+		if (input.morningTimeIn && input.morningTimeOut) {
+			total += computeWorkedMinutes(input.morningTimeIn, input.morningTimeOut);
+		}
+
+		if (input.afternoonTimeIn && input.afternoonTimeOut) {
+			total += computeWorkedMinutes(input.afternoonTimeIn, input.afternoonTimeOut);
+		}
+
+		return total;
+	}
+
+	return computeWorkedMinutes(input.timeIn ?? null, input.timeOut ?? null, lunchBreak);
 }

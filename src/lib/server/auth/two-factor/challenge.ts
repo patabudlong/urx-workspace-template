@@ -27,6 +27,11 @@ import {
 	type TwoFactorOtpPurpose
 } from '$lib/server/repositories/two-factor-otp-tokens';
 import {
+	consumeTwoFactorOtpSend,
+	getTwoFactorOtpSendRetryAfterSeconds,
+	isTwoFactorOtpSendThrottled
+} from '$lib/server/security/two-factor-otp-rate-limit';
+import {
 	addTrustedDevice,
 	consumeBackupCode,
 	getEnabledTwoFactorMethods,
@@ -116,9 +121,19 @@ export async function sendTwoFactorLoginCode(input: {
 	userId: string;
 	method: 'sms' | 'email';
 	origin: string;
+	clientIp?: string;
 }): Promise<
 	| { ok: true }
-	| { ok: false; reason: 'USER_NOT_FOUND' | 'METHOD_NOT_ENABLED' | 'SMS_NOT_CONFIGURED' | 'SEND_FAILED' }
+	| {
+			ok: false;
+			reason:
+				| 'USER_NOT_FOUND'
+				| 'METHOD_NOT_ENABLED'
+				| 'SMS_NOT_CONFIGURED'
+				| 'SEND_FAILED'
+				| 'THROTTLED';
+			retryAfterSeconds?: number;
+	  }
 > {
 	await ensureTwoFactorOtpTokenIndexes();
 
@@ -142,6 +157,26 @@ export async function sendTwoFactorLoginCode(input: {
 		return { ok: false, reason: 'METHOD_NOT_ENABLED' };
 	}
 
+	if (
+		isTwoFactorOtpSendThrottled({
+			userId: input.userId,
+			method: input.method,
+			phoneNumber: input.method === 'sms' ? user.phoneNumber ?? undefined : undefined,
+			clientIp: input.clientIp
+		})
+	) {
+		return {
+			ok: false,
+			reason: 'THROTTLED',
+			retryAfterSeconds: getTwoFactorOtpSendRetryAfterSeconds({
+				userId: input.userId,
+				method: input.method,
+				phoneNumber: input.method === 'sms' ? user.phoneNumber ?? undefined : undefined,
+				clientIp: input.clientIp
+			})
+		};
+	}
+
 	const code = createOtpCode();
 	const purpose: TwoFactorOtpPurpose =
 		input.method === 'sms' ? TWO_FACTOR_OTP_PURPOSES.LOGIN_SMS : TWO_FACTOR_OTP_PURPOSES.LOGIN_EMAIL;
@@ -152,6 +187,21 @@ export async function sendTwoFactorLoginCode(input: {
 		tokenHash: hashOtpCode(code),
 		expiresAt: new Date(Date.now() + OTP_TTL_MS)
 	});
+
+	const rateLimit = consumeTwoFactorOtpSend({
+		userId: input.userId,
+		method: input.method,
+		phoneNumber: input.method === 'sms' ? user.phoneNumber ?? undefined : undefined,
+		clientIp: input.clientIp
+	});
+
+	if (!rateLimit.ok) {
+		return {
+			ok: false,
+			reason: 'THROTTLED',
+			retryAfterSeconds: rateLimit.retryAfterSeconds
+		};
+	}
 
 	try {
 		if (input.method === 'sms') {

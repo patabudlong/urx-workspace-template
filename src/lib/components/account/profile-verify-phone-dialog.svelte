@@ -15,6 +15,7 @@
 		PHONE_VERIFIED_MESSAGE
 	} from '$lib/shared/account-messages';
 	import { isAuthRateLimitMessage } from '$lib/shared/auth-messages';
+	import { createVerificationResendCooldown } from '$lib/auth/verification-resend-cooldown.svelte';
 	import { verifyPhoneSchema } from '$lib/shared/schemas/account';
 	import type { PageData } from '../../../routes/(app)/(settings)/account/$types';
 	import { cn } from '$lib/utils.js';
@@ -29,11 +30,13 @@
 	let {
 		open = $bindable(false),
 		data,
-		phoneNumber
+		phoneNumber,
+		codeSentOnOpen = $bindable(false)
 	}: {
 		open?: boolean;
 		data: PageData;
 		phoneNumber: string | null;
+		codeSentOnOpen?: boolean;
 	} = $props();
 
 	let verifyingCode = $state(false);
@@ -41,6 +44,7 @@
 	let verifySuccess = $state(false);
 	let verifyFormRateLimited = $state(false);
 	let resendFormRateLimited = $state(false);
+	const resendCooldown = createVerificationResendCooldown({ idleLabel: 'Resend code' });
 
 	const verifySuperform = superForm(untrack(() => data.verifyPhoneForm), {
 		id: 'verifyPhoneForm',
@@ -117,9 +121,33 @@
 	);
 
 	const resendSent = $derived($resendFormMessage === PHONE_VERIFICATION_SENT_MESSAGE);
+
+	$effect(() => {
+		if (resendSent) {
+			resendCooldown.start();
+		}
+	});
+
+	$effect(() => {
+		if (resendRateLimitMessage) {
+			resendCooldown.start(resendRateLimitMessage.retryAfterSeconds);
+		}
+	});
+
 	const formBusy = $derived(
-		verifyingCode || resendingCode || verifyFormRateLimited || resendFormRateLimited
+		verifyingCode ||
+			resendingCode ||
+			verifyFormRateLimited ||
+			resendFormRateLimited ||
+			resendCooldown.active
 	);
+
+	$effect(() => {
+		if (open && codeSentOnOpen) {
+			resendCooldown.start();
+			codeSentOnOpen = false;
+		}
+	});
 
 	function resetDialogState() {
 		resetSuperformDialogState({ reset: resetVerifyForm, errors: verifyErrors });
@@ -129,6 +157,7 @@
 		verifySuccess = false;
 		verifyFormRateLimited = false;
 		resendFormRateLimited = false;
+		resendCooldown.reset();
 	}
 
 	function closeDialog() {
@@ -255,7 +284,7 @@
 								<Loader2Icon class="size-4 animate-spin" aria-hidden="true" />
 								Sending…
 							{:else}
-								Resend code
+								{resendCooldown.label}
 							{/if}
 						</Button>
 					</form>

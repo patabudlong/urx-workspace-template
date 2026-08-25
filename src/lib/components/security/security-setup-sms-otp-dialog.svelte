@@ -1,7 +1,7 @@
 <script lang="ts">
 	import SecuritySetupOtpDialogBase from '$lib/components/security/security-setup-otp-dialog-base.svelte';
 	import { twoFactorSetupOtpConfirmSchema } from '$lib/shared/schemas/security';
-	import type { PageData } from '../../../routes/(app)/(settings)/security/$types';
+	import type { PageData } from '../../../routes/(app)/(settings)/security/two-factor/$types';
 	import { invalidateAll } from '$app/navigation';
 	import { untrack } from 'svelte';
 	import { formFieldProxy, superForm } from 'sveltekit-superforms';

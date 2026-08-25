@@ -1,27 +1,25 @@
 <script lang="ts">
+	import AppIcon from '$lib/components/app-icon.svelte';
 	import SecurityBackupCodesDialog from '$lib/components/security/security-backup-codes-dialog.svelte';
 	import SecurityDisable2faDialog from '$lib/components/security/security-disable-2fa-dialog.svelte';
 	import SecurityRegenerateBackupCodesDialog from '$lib/components/security/security-regenerate-backup-codes-dialog.svelte';
 	import SecuritySetupEmailOtpDialog from '$lib/components/security/security-setup-email-otp-dialog.svelte';
+	import SecuritySetupOptionCard from '$lib/components/security/security-setup-option-card.svelte';
 	import SecuritySetupSmsOtpDialog from '$lib/components/security/security-setup-sms-otp-dialog.svelte';
 	import SecuritySetupTotpDialog from '$lib/components/security/security-setup-totp-dialog.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
+	import { SOLAR } from '$lib/icons/solar-icons';
 	import type { SecurityProfile } from '$lib/shared/schemas/security';
 	import {
 		TWO_FACTOR_PHONE_REQUIRED_MESSAGE,
 		TWO_FACTOR_SETUP_FAILED_MESSAGE
 	} from '$lib/shared/security-messages';
-	import type { PageData } from '../../../routes/(app)/(settings)/security/$types';
+	import { cn } from '$lib/utils.js';
+	import type { PageData } from '../../../routes/(app)/(settings)/security/two-factor/$types';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
-	import MailIcon from '@lucide/svelte/icons/mail';
-	import PhoneIcon from '@lucide/svelte/icons/phone';
-	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
-	import ShieldOffIcon from '@lucide/svelte/icons/shield-off';
-	import SmartphoneIcon from '@lucide/svelte/icons/smartphone';
-	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import { invalidateAll } from '$app/navigation';
 	import { deserialize } from '$app/forms';
 
@@ -42,6 +40,48 @@
 	let revokingDeviceId = $state<string | null>(null);
 
 	const twoFactor = $derived(security.twoFactor);
+
+	const setupOptions = $derived([
+		{
+			id: 'totp',
+			icon: SOLAR.totp,
+			iconClass: 'text-violet-600 dark:text-violet-400',
+			title: 'Authenticator app',
+			description: 'Google Authenticator or another TOTP app on your phone.',
+			enabled: twoFactor.totpEnabled,
+			unavailableMessage: null as string | null,
+			actionBusy: startingTotp,
+			onAction: startTotp
+		},
+		{
+			id: 'sms',
+			icon: SOLAR.sms,
+			iconClass: 'text-sky-600 dark:text-sky-400',
+			title: 'SMS verification',
+			description: 'Receive a one-time code by text message.',
+			enabled: twoFactor.smsEnabled,
+			unavailableMessage: twoFactor.smsAvailable ? null : TWO_FACTOR_PHONE_REQUIRED_MESSAGE,
+			actionBusy: false,
+			onAction: () => {
+				smsCodeSent = false;
+				smsDialogOpen = true;
+			}
+		},
+		{
+			id: 'email',
+			icon: SOLAR.twoFactorEmail,
+			iconClass: 'text-rose-600 dark:text-rose-400',
+			title: 'Email verification',
+			description: 'Receive a one-time code at your account email.',
+			enabled: twoFactor.emailEnabled,
+			unavailableMessage: twoFactor.emailAvailable ? null : 'Verify your email to enable this method.',
+			actionBusy: false,
+			onAction: () => {
+				emailCodeSent = false;
+				emailDialogOpen = true;
+			}
+		}
+	]);
 
 	function showBackupCodes(codes: string[]) {
 		backupCodes = codes;
@@ -116,32 +156,45 @@
 	</Card.Header>
 	<Card.Content class="space-y-6">
 		<div
-			class="flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between {twoFactor.enabled
-				? 'border-emerald-500/20 bg-emerald-500/5'
-				: 'bg-muted/40'}"
+			class={cn(
+				'flex flex-col gap-4 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between',
+				twoFactor.enabled
+					? 'border-emerald-500/20 bg-emerald-500/5'
+					: 'bg-muted/40'
+			)}
 		>
-			<div class="min-w-0 space-y-2">
-				<div class="flex flex-wrap items-center gap-2">
-					<p class="text-sm font-medium">Status</p>
-					<Badge variant={twoFactor.enabled ? 'secondary' : 'outline'} class="gap-1">
-						{#if twoFactor.enabled}
-							<ShieldCheckIcon class="size-3" aria-hidden="true" />
-							Enabled
-						{:else}
-							<ShieldOffIcon class="size-3" aria-hidden="true" />
-							Disabled
-						{/if}
-					</Badge>
+			<div class="flex min-w-0 items-start gap-3">
+				<div
+					class={cn(
+						'flex size-10 shrink-0 items-center justify-center rounded-lg',
+						twoFactor.enabled
+							? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+							: 'bg-muted text-muted-foreground'
+					)}
+					aria-hidden="true"
+				>
+					<AppIcon
+						icon={twoFactor.enabled ? SOLAR.security : SOLAR.shieldDisabled}
+						size="md"
+					/>
 				</div>
-				<p class="text-muted-foreground text-sm">
-					{#if twoFactor.enabled}
-						{twoFactor.methods.length} verification {twoFactor.methods.length === 1
-							? 'method'
-							: 'methods'} active.
-					{:else}
-						Two-factor authentication is not enabled for your account.
-					{/if}
-				</p>
+				<div class="min-w-0 space-y-2">
+					<div class="flex flex-wrap items-center gap-2">
+						<p class="text-sm font-medium">Status</p>
+						<Badge variant={twoFactor.enabled ? 'secondary' : 'outline'}>
+							{twoFactor.enabled ? 'Enabled' : 'Disabled'}
+						</Badge>
+					</div>
+					<p class="text-muted-foreground text-sm leading-relaxed">
+						{#if twoFactor.enabled}
+							{twoFactor.methods.length} verification {twoFactor.methods.length === 1
+								? 'method'
+								: 'methods'} active.
+						{:else}
+							Two-factor authentication is not enabled for your account.
+						{/if}
+					</p>
+				</div>
 			</div>
 			{#if twoFactor.enabled}
 				<Button
@@ -162,76 +215,18 @@
 		<div class="space-y-3">
 			<p class="text-sm font-medium">Setup options</p>
 			<div class="grid gap-3 md:grid-cols-3">
-				<div class="space-y-3 rounded-lg border p-4">
-					<div class="flex items-center gap-2">
-						<SmartphoneIcon class="size-4" aria-hidden="true" />
-						<p class="text-sm font-medium">Authenticator app</p>
-					</div>
-					<p class="text-muted-foreground text-sm">Google Authenticator or similar TOTP apps.</p>
-					{#if twoFactor.totpEnabled}
-						<Badge variant="secondary" class="w-fit">Enabled</Badge>
-					{:else}
-						<Button
-							type="button"
-							class="h-10 w-full"
-							disabled={startingTotp}
-							onclick={startTotp}
-						>
-							{#if startingTotp}
-								<Loader2Icon class="size-4 animate-spin" aria-hidden="true" />
-							{/if}
-							Set up
-						</Button>
-					{/if}
-				</div>
-
-				<div class="space-y-3 rounded-lg border p-4">
-					<div class="flex items-center gap-2">
-						<PhoneIcon class="size-4" aria-hidden="true" />
-						<p class="text-sm font-medium">SMS verification</p>
-					</div>
-					<p class="text-muted-foreground text-sm">Receive codes via text message.</p>
-					{#if twoFactor.smsEnabled}
-						<Badge variant="secondary" class="w-fit">Enabled</Badge>
-					{:else if !twoFactor.smsAvailable}
-						<p class="text-muted-foreground text-xs">{TWO_FACTOR_PHONE_REQUIRED_MESSAGE}</p>
-					{:else}
-						<Button
-							type="button"
-							class="h-10 w-full"
-							onclick={() => {
-								smsCodeSent = false;
-								smsDialogOpen = true;
-							}}
-						>
-							Set up
-						</Button>
-					{/if}
-				</div>
-
-				<div class="space-y-3 rounded-lg border p-4">
-					<div class="flex items-center gap-2">
-						<MailIcon class="size-4" aria-hidden="true" />
-						<p class="text-sm font-medium">Email verification</p>
-					</div>
-					<p class="text-muted-foreground text-sm">Receive codes to your account email.</p>
-					{#if twoFactor.emailEnabled}
-						<Badge variant="secondary" class="w-fit">Enabled</Badge>
-					{:else if !twoFactor.emailAvailable}
-						<p class="text-muted-foreground text-xs">Verify your email to enable this method.</p>
-					{:else}
-						<Button
-							type="button"
-							class="h-10 w-full"
-							onclick={() => {
-								emailCodeSent = false;
-								emailDialogOpen = true;
-							}}
-						>
-							Set up
-						</Button>
-					{/if}
-				</div>
+				{#each setupOptions as option (option.id)}
+					<SecuritySetupOptionCard
+						icon={option.icon}
+						iconClass={option.iconClass}
+						title={option.title}
+						description={option.description}
+						enabled={option.enabled}
+						unavailableMessage={option.unavailableMessage}
+						actionBusy={option.actionBusy}
+						onAction={option.onAction}
+					/>
+				{/each}
 			</div>
 		</div>
 
@@ -239,53 +234,75 @@
 			<div class="space-y-3">
 				<p class="text-sm font-medium">Backup codes</p>
 				<div
-					class="bg-muted/40 flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between"
+					class="bg-card flex flex-col gap-4 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between"
 				>
-					<div class="space-y-1">
-						<p class="text-sm">
-							{twoFactor.backupCodesRemaining} unused backup
-							{twoFactor.backupCodesRemaining === 1 ? 'code' : 'codes'}
-						</p>
-						<p class="text-muted-foreground text-sm">
-							Use backup codes when you cannot access your verification methods.
-						</p>
-					</div>
-					<div class="flex shrink-0 flex-wrap gap-2">
-						<Button
-							type="button"
-							variant="outline"
-							class="h-10"
-							onclick={() => (regenerateDialogOpen = true)}
+					<div class="flex min-w-0 items-start gap-3">
+						<div
+							class="bg-amber-500/10 text-amber-600 dark:text-amber-400 flex size-10 shrink-0 items-center justify-center rounded-lg"
+							aria-hidden="true"
 						>
-							Regenerate
-						</Button>
+							<AppIcon icon={SOLAR.backupCodes} size="md" />
+						</div>
+						<div class="space-y-1">
+							<p class="text-sm font-medium">
+								{twoFactor.backupCodesRemaining} unused backup
+								{twoFactor.backupCodesRemaining === 1 ? 'code' : 'codes'}
+							</p>
+							<p class="text-muted-foreground text-sm leading-relaxed">
+								Use backup codes when you cannot access your verification methods.
+							</p>
+						</div>
 					</div>
+					<Button
+						type="button"
+						variant="outline"
+						class="h-10 shrink-0"
+						onclick={() => (regenerateDialogOpen = true)}
+					>
+						Regenerate
+					</Button>
 				</div>
 			</div>
 
 			<div class="space-y-3">
 				<p class="text-sm font-medium">Trusted devices</p>
-				<p class="text-muted-foreground text-sm">
+				<p class="text-muted-foreground text-sm leading-relaxed">
 					Devices you chose to remember skip two-factor authentication for 30 days.
 				</p>
 				{#if twoFactor.trustedDevices.length === 0}
-					<div class="bg-muted/40 rounded-lg border p-4 text-sm text-muted-foreground">
-						No trusted devices yet. Choose “Remember this device” when signing in with 2FA.
+					<div
+						class="bg-muted/40 text-muted-foreground flex items-start gap-3 rounded-xl border p-4 text-sm leading-relaxed"
+					>
+						<div
+							class="bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-lg"
+							aria-hidden="true"
+						>
+							<AppIcon icon={SOLAR.trustedDevices} size="md" />
+						</div>
+						<p>No trusted devices yet. Choose “Remember this device” when signing in with 2FA.</p>
 					</div>
 				{:else}
 					<ul class="space-y-2">
 						{#each twoFactor.trustedDevices as device (device.id)}
 							<li
-								class="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between"
+								class="bg-card flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between"
 							>
-								<div class="min-w-0 space-y-1">
-									<p class="text-sm font-medium">
-										{device.label ?? 'Trusted device'}
-									</p>
-									<p class="text-muted-foreground text-xs">
-										Added {formatDeviceDate(device.createdAt)} · Expires
-										{formatDeviceDate(device.expiresAt)}
-									</p>
+								<div class="flex min-w-0 items-start gap-3">
+									<div
+										class="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-lg"
+										aria-hidden="true"
+									>
+										<AppIcon icon={SOLAR.trustedDevices} size="md" />
+									</div>
+									<div class="min-w-0 space-y-1">
+										<p class="text-sm font-medium">
+											{device.label ?? 'Trusted device'}
+										</p>
+										<p class="text-muted-foreground text-xs">
+											Added {formatDeviceDate(device.createdAt)} · Expires
+											{formatDeviceDate(device.expiresAt)}
+										</p>
+									</div>
 								</div>
 								<Button
 									type="button"
@@ -297,7 +314,7 @@
 									{#if revokingDeviceId === device.id}
 										<Loader2Icon class="size-4 animate-spin" aria-hidden="true" />
 									{:else}
-										<Trash2Icon class="size-4" aria-hidden="true" />
+										<AppIcon icon={SOLAR.trash} size="sm" aria-hidden="true" />
 									{/if}
 									Remove
 								</Button>

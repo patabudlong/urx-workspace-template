@@ -5,6 +5,8 @@ import { isMailConfigured } from '$lib/server/mail/index';
 import { sendWorkspaceApprovedEmail } from '$lib/server/mail/workspace-approved';
 import { WORKSPACE_MEMBER_ROLES } from '$lib/shared/models/workspace-member';
 import type { WorkspacePackageId } from '$lib/shared/workspace-packages';
+import { recordPlatformSecurityEvent } from '$lib/server/security/record-security-event';
+import { SECURITY_EVENT_ACTIONS } from '$lib/shared/models/security-event';
 
 export async function approveWorkspaceOwnerRequest(input: {
 	workspaceId: string;
@@ -44,6 +46,17 @@ export async function approveWorkspaceOwnerRequest(input: {
 		}
 	}
 
+	await recordPlatformSecurityEvent({
+		actorUserId: input.reviewedByUserId,
+		action: SECURITY_EVENT_ACTIONS.WORKSPACE_APPROVED,
+		workspaceId: workspace._id.toString(),
+		metadata: {
+			detail: `Approved workspace "${workspace.name}".`,
+			workspaceName: workspace.name,
+			workspaceSlug: workspace.slug
+		}
+	});
+
 	return { ok: true };
 }
 
@@ -57,6 +70,17 @@ export async function rejectWorkspaceOwnerRequest(input: {
 	if (!workspace) {
 		return { ok: false, reason: 'NOT_FOUND' };
 	}
+
+	await recordPlatformSecurityEvent({
+		actorUserId: input.reviewedByUserId,
+		action: SECURITY_EVENT_ACTIONS.WORKSPACE_REJECTED,
+		workspaceId: workspace._id.toString(),
+		metadata: {
+			detail: `Rejected workspace "${workspace.name}".`,
+			workspaceName: workspace.name,
+			rejectionReason: input.rejectionReason
+		}
+	});
 
 	return { ok: true };
 }

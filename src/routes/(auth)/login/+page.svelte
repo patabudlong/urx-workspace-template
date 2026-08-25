@@ -8,7 +8,7 @@
 	import RecaptchaNotice from '$lib/components/auth/recaptcha-notice.svelte';
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
 	import PasswordInput from '$lib/components/password-input.svelte';
-	import { Button } from '$lib/components/ui/button/index.js';
+	import GradientButton from '$lib/components/gradient-button.svelte';
 	import * as Form from '$lib/components/ui/form/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
@@ -17,7 +17,7 @@
 	import { CONSENT_CONTEXTS } from '$lib/shared/models/consent-event';
 	import { APP_NAME } from '$lib/shared/site-meta';
 	import { warmRecaptcha } from '$lib/recaptcha/client';
-	import { AUTH_ACTION_BUTTON_CLASS, AUTH_INLINE_LINK_CLASS } from '$lib/auth/ui';
+	import { AUTH_ACTION_BUTTON_CLASS, AUTH_FIELD_CONTROL_CLASS, AUTH_INLINE_LINK_CLASS } from '$lib/auth/ui';
 	import { cn } from '$lib/utils.js';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import { get } from 'svelte/store';
@@ -159,7 +159,7 @@
 								autocomplete="email"
 								disabled={submitDisabled}
 								readonly={Boolean(data.lockedEmail)}
-								class={cn(data.lockedEmail && 'bg-muted/40')}
+								class={cn(AUTH_FIELD_CONTROL_CLASS, data.lockedEmail && 'bg-muted/40')}
 								bind:value={$form.email}
 							/>
 						{/snippet}
@@ -173,6 +173,7 @@
 							<Form.Label required>Password</Form.Label>
 							<PasswordInput
 								{...props}
+								groupClass={AUTH_FIELD_CONTROL_CLASS}
 								disabled={submitDisabled}
 								bind:value={$form.password}
 								autocomplete="current-password"
@@ -184,13 +185,14 @@
 			</div>
 
 			<div class="flex items-center justify-end">
-				<a href="/forgot-password" class="text-primary text-sm font-medium hover:underline">
+				<a href="/forgot-password" class={AUTH_INLINE_LINK_CLASS}>
 					Forgot password?
 				</a>
 			</div>
 
-			<Button
+			<GradientButton
 				type="submit"
+				tone="primary"
 				class={cn(
 					AUTH_ACTION_BUTTON_CLASS,
 					submitDisabled && 'pointer-events-none cursor-wait'
@@ -204,7 +206,7 @@
 				{:else}
 					Sign in
 				{/if}
-			</Button>
+			</GradientButton>
 			<RecaptchaNotice />
 		</form>
 
@@ -216,11 +218,11 @@
 
 	{#snippet footer()}
 		<p class="text-center text-sm">
-			<a href="/verify/resend" class="hover:text-foreground hover:underline">
+			<a href="/verify/resend" class="hover:text-foreground">
 				Resend verification email
 			</a>
 			<span class="text-muted-foreground px-2" aria-hidden="true">|</span>
-			<a href="/forgot-password" class="hover:text-foreground hover:underline">
+			<a href="/forgot-password" class="hover:text-foreground">
 				Can't sign in?
 			</a>
 		</p>

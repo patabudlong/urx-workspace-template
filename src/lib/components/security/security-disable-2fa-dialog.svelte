@@ -21,7 +21,7 @@
 		TWO_FACTOR_DISABLED_MESSAGE,
 		TWO_FACTOR_INVALID_CODE_MESSAGE
 	} from '$lib/shared/security-messages';
-	import type { PageData } from '../../../routes/(app)/(settings)/security/$types';
+	import type { PageData } from '../../../routes/(app)/(settings)/security/two-factor/$types';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import ShieldOffIcon from '@lucide/svelte/icons/shield-off';
 	import { invalidateAll } from '$app/navigation';

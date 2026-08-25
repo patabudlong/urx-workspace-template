@@ -7,6 +7,9 @@
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import { page } from '$app/state';
 
+	const navActiveClass =
+		'bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-[inset_0_0_0_1px_var(--sidebar-border)]';
+
 	let settingsOpen = $state(false);
 
 	const isSettingsActive = $derived(page.url.pathname.startsWith('/dtr/settings'));
@@ -19,14 +22,14 @@
 </script>
 
 <div>
-	<p class="text-muted-foreground px-3 py-1.5 text-xs font-medium">Configuration</p>
+	<p class="text-muted-foreground px-3 py-1.5 text-sm font-medium">Configuration</p>
 	<div class="px-1">
 		<button
 			type="button"
 			class={cn(
 				'flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors',
 				isSettingsActive
-					? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+					? navActiveClass
 					: 'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
 			)}
 			aria-expanded={settingsOpen}
@@ -51,7 +54,7 @@
 						class={cn(
 							'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
 							active
-								? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+								? navActiveClass
 								: 'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
 						)}
 						aria-current={active ? 'page' : undefined}

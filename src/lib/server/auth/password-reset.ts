@@ -5,7 +5,6 @@ import { matchesStoredPassword } from '$lib/server/auth/password-history';
 import { isForgotPasswordEmailThrottled } from '$lib/server/security/auth-rate-limit';
 import { isMailConfigured } from '$lib/server/mail/index';
 import { sendPasswordResetEmail } from '$lib/server/mail/password-reset-email';
-import { sendPasswordSuccessEmail } from '$lib/server/mail/password-success-email';
 import { buildPlatformWorkspaceUrl, resolvePlatformWorkspaceOrigin } from '$lib/server/mail/platform-origin';
 import {
 	createPasswordResetToken,
@@ -15,6 +14,10 @@ import {
 } from '$lib/server/repositories/password-reset-tokens';
 import { ensureUserIndexes, findUserByEmail, findUserById, rotateUserPassword } from '$lib/server/repositories/users';
 import { isPasswordStrong } from '$lib/shared/password-policy';
+import {
+	recordPasswordResetCompleted,
+	recordPasswordResetRequested
+} from '$lib/server/security/record-security-event';
 
 /** 16 bytes → base64url (~22 chars). Keeps email HTML href lines under 76 chars (7bit-safe). */
 const TOKEN_BYTES = 16;
@@ -43,6 +46,8 @@ export type PreparePasswordResetEmailResult =
 export async function preparePasswordResetEmail(input: {
 	email: string;
 	origin: string;
+	ipAddress?: string;
+	userAgent?: string;
 }): Promise<PreparePasswordResetEmailResult> {
 	await Promise.all([ensureUserIndexes(), ensurePasswordResetTokenIndexes()]);
 
@@ -67,6 +72,13 @@ export async function preparePasswordResetEmail(input: {
 		userId: user._id.toString(),
 		tokenHash: hashResetToken(rawToken),
 		expiresAt
+	});
+
+	await recordPasswordResetRequested({
+		userId: user._id.toString(),
+		email: user.email,
+		ipAddress: input.ipAddress,
+		userAgent: input.userAgent
 	});
 
 	const platformOrigin = resolvePlatformWorkspaceOrigin(input.origin);
@@ -103,6 +115,8 @@ export async function queuePasswordResetEmailForWeb(
 	input: {
 		email: string;
 		origin: string;
+		ipAddress?: string;
+		userAgent?: string;
 	}
 ): Promise<
 	| { ok: true }
@@ -125,6 +139,8 @@ export async function queuePasswordResetEmailForWeb(
 export async function requestPasswordReset(input: {
 	email: string;
 	origin: string;
+	ipAddress?: string;
+	userAgent?: string;
 }): Promise<
 	| { ok: true }
 	| { ok: false; reason: 'MAIL_NOT_CONFIGURED' }
@@ -158,6 +174,8 @@ export async function resetPasswordWithToken(input: {
 	token: string;
 	password: string;
 	origin?: string;
+	ipAddress?: string;
+	userAgent?: string;
 }): Promise<
 	| { ok: true }
 	| { ok: false; reason: 'INVALID_TOKEN' }
@@ -206,18 +224,12 @@ export async function resetPasswordWithToken(input: {
 
 	await markPasswordResetTokenUsed(record._id.toString());
 
-	if (input.origin && (await isMailConfigured())) {
-		try {
-			await sendPasswordSuccessEmail({
-				to: user.email,
-				firstName: user.firstName,
-				changedAt: new Date(),
-				origin: input.origin
-			});
-		} catch (error) {
-			console.error('Failed to send password success email', error);
-		}
-	}
+	await recordPasswordResetCompleted({
+		userId: record.userId.toString(),
+		ipAddress: input.ipAddress,
+		userAgent: input.userAgent,
+		origin: input.origin
+	});
 
 	return { ok: true };
 }

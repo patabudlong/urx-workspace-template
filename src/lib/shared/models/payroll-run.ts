@@ -19,6 +19,7 @@ export type PayrollRunDto = {
 	periodStart: string;
 	periodEnd: string;
 	status: PayrollRunStatus;
+	payslipCount?: number;
 	createdAt: string;
 	updatedAt: string;
 };

@@ -4,9 +4,11 @@ import {
 	type S3Client
 } from '@aws-sdk/client-s3';
 import type { LinodeObjectStorageConfig } from '$lib/server/storage/linode-config';
+import { PH_DEDUCTION_ICON_PREFIX } from '$lib/shared/payroll/deduction-icon-names';
 
 export const EMAIL_ASSETS_POLICY_SID = 'PublicReadEmailAssets';
 export const WORKSPACE_BRAND_LOGO_POLICY_SID = 'PublicReadWorkspaceBrandLogos';
+export const PAYROLL_DEDUCTION_ICONS_POLICY_SID = 'PublicReadPayrollDeductionIcons';
 
 type BucketPolicyDocument = {
 	Version: string;
@@ -103,4 +105,16 @@ export async function ensurePublicWorkspaceBrandLogoPolicy(
 	config: LinodeObjectStorageConfig
 ): Promise<void> {
 	return ensurePublicObjectPrefixPolicy(client, config, 'workspaces', WORKSPACE_BRAND_LOGO_POLICY_SID);
+}
+
+export async function ensurePublicPayrollDeductionIconsPolicy(
+	client: S3Client,
+	config: LinodeObjectStorageConfig
+): Promise<void> {
+	return ensurePublicObjectPrefixPolicy(
+		client,
+		config,
+		PH_DEDUCTION_ICON_PREFIX,
+		PAYROLL_DEDUCTION_ICONS_POLICY_SID
+	);
 }

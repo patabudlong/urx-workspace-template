@@ -5,7 +5,7 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { PASSWORD_CHANGE_NOT_AVAILABLE_MESSAGE } from '$lib/shared/security-messages';
 	import type { SecurityProfile } from '$lib/shared/schemas/security';
-	import type { PageData } from '../../../routes/(app)/(settings)/security/$types';
+	import type { PageData } from '../../../routes/(app)/(settings)/security/password/$types';
 	import KeyRoundIcon from '@lucide/svelte/icons/key-round';
 
 	let { data, security }: { data: PageData; security: SecurityProfile } = $props();

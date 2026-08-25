@@ -25,6 +25,7 @@ import {
 	TEAM_MEMBER_UPDATED_MESSAGE
 } from '$lib/shared/team/member-messages';
 import { canRemoveWorkspaceMembers } from '$lib/shared/team/member-management';
+import { buildSecurityEventRequestContext } from '$lib/server/security/record-security-event';
 import { ObjectId } from 'mongodb';
 
 export const load: PageServerLoad = async ({ parent, isDataRequest }) => {
@@ -45,7 +46,8 @@ export const load: PageServerLoad = async ({ parent, isDataRequest }) => {
 };
 
 export const actions: Actions = {
-	remove: async ({ request, url, locals }) => {
+	remove: async (event) => {
+		const { request, url, locals, getClientAddress } = event;
 		const form = await superValidate(request, zod4(removeTeamMemberSchema));
 
 		if (!locals.user) {
@@ -76,7 +78,9 @@ export const actions: Actions = {
 		const result = await removeWorkspaceMemberForWeb({
 			workspaceId: workspace.workspaceId,
 			actorRole: workspace.role,
-			memberId: form.data.memberId
+			actorUserId: locals.user.id,
+			memberId: form.data.memberId,
+			security: buildSecurityEventRequestContext(event)
 		});
 
 		if (!result.ok) {
@@ -106,7 +110,8 @@ export const actions: Actions = {
 		};
 	},
 
-	update: async ({ request, url, locals }) => {
+	update: async (event) => {
+		const { request, url, locals } = event;
 		const form = await superValidate(request, zod4(updateTeamMemberSchema));
 
 		if (!locals.user) {
@@ -139,7 +144,8 @@ export const actions: Actions = {
 			actorRole: workspace.role,
 			actorUserId: locals.user.id,
 			memberId: form.data.memberId,
-			role: form.data.role
+			role: form.data.role,
+			security: buildSecurityEventRequestContext(event)
 		});
 
 		if (!result.ok) {

@@ -5,7 +5,9 @@ import { getPayrollEmployeesCollection } from '$lib/server/db/collections';
 import { getDtrSettingsForWorkspace } from '$lib/server/repositories/dtr-settings';
 import { getDtrWorkScheduleForWorkspace } from '$lib/server/repositories/dtr-work-schedules';
 import { upsertDtrDayForWorkspace } from '$lib/server/repositories/dtr-days';
+import { isDtrDayLockedError } from '$lib/server/dtr/errors';
 import type { PayrollEmployeeDocument } from '$lib/shared/models/payroll-employee';
+import { formatPayrollEmployeeFullName } from '$lib/shared/payroll/employee-name';
 import type { DtrWorkScheduleDto } from '$lib/shared/models/dtr-work-schedule';
 import {
 	buildNgTimecardImportRow,
@@ -90,6 +92,7 @@ async function loadEmployeesByCode(workspaceId: string): Promise<Map<string, Emp
 			{
 				projection: {
 					firstName: 1,
+					initialName: 1,
 					lastName: 1,
 					employeeCode: 1,
 					workScheduleId: 1
@@ -109,7 +112,11 @@ async function loadEmployeesByCode(workspaceId: string): Promise<Map<string, Emp
 
 		byCode.set(code, {
 			id: employee._id.toString(),
-			displayName: `${employee.firstName} ${employee.lastName}`.trim(),
+			displayName: formatPayrollEmployeeFullName({
+				firstName: employee.firstName,
+				initialName: employee.initialName,
+				lastName: employee.lastName
+			}),
 			workScheduleId: employee.workScheduleId?.toString() ?? null
 		});
 	}
@@ -224,6 +231,10 @@ export async function buildDtrNgImportPreview(input: {
 				status: importRow.status,
 				timeIn: importRow.timeIn,
 				timeOut: importRow.timeOut,
+				morningTimeIn: importRow.morningTimeIn,
+				morningTimeOut: importRow.morningTimeOut,
+				afternoonTimeIn: importRow.afternoonTimeIn,
+				afternoonTimeOut: importRow.afternoonTimeOut,
 				notes: importRow.notes
 			});
 		}
@@ -251,19 +262,31 @@ export async function importDtrNgPreviewRows(input: {
 	let imported = 0;
 
 	for (const row of input.rows) {
-		await upsertDtrDayForWorkspace({
-			workspaceId: input.workspaceId,
-			data: {
-				employeeId: row.employeeId,
-				date: row.date,
-				status: row.status,
-				timeIn: row.timeIn ?? '',
-				timeOut: row.timeOut ?? '',
-				source: 'biometric',
-				notes: row.notes ?? ''
+		try {
+			await upsertDtrDayForWorkspace({
+				workspaceId: input.workspaceId,
+				data: {
+					employeeId: row.employeeId,
+					date: row.date,
+					status: row.status,
+					timeIn: row.timeIn ?? '',
+					timeOut: row.timeOut ?? '',
+					morningTimeIn: row.morningTimeIn ?? '',
+					morningTimeOut: row.morningTimeOut ?? '',
+					afternoonTimeIn: row.afternoonTimeIn ?? '',
+					afternoonTimeOut: row.afternoonTimeOut ?? '',
+					source: 'biometric',
+					notes: row.notes ?? ''
+				}
+			});
+			imported += 1;
+		} catch (error) {
+			if (isDtrDayLockedError(error)) {
+				continue;
 			}
-		});
-		imported += 1;
+
+			throw error;
+		}
 	}
 
 	return imported;

@@ -18,7 +18,10 @@
 	const pathname = $derived(normalizePathname(page.url.pathname));
 	const isTeamSection = $derived(pathname === '/team' || pathname.startsWith('/team/'));
 	const isSettingsSection = $derived(
-		pathname === '/account' || pathname === '/security' || pathname === '/billing'
+		pathname === '/account' ||
+			pathname === '/security' ||
+			pathname.startsWith('/security/') ||
+			pathname === '/billing'
 	);
 	// urixoft-workspace-mailbox:layout:start
 	const isMailboxSection = $derived(pathname === '/mailbox' || pathname.startsWith('/mailbox/'));

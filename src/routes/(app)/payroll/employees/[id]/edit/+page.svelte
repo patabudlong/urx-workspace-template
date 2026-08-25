@@ -85,6 +85,7 @@
 				workSchedules={data.workSchedules}
 				jobTitles={data.jobTitles}
 				payrollCurrency={data.payrollCurrency}
+				phDeductionIconUrls={data.phDeductionIconUrls}
 				currentPhotoUrl={data.employeePhotoUrl}
 				formAction="?/update"
 				successMessage={PAYROLL_EMPLOYEE_UPDATED_MESSAGE}

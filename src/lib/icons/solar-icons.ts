@@ -16,7 +16,9 @@ export const SOLAR = {
 	settings: 'solar:settings-linear',
 	employees: 'solar:user-id-linear',
 	payRuns: 'solar:calendar-linear',
+	payslips: 'solar:document-text-linear',
 	timeRecords: 'solar:history-linear',
+	fingerprint: 'lucide:fingerprint',
 	upload: 'solar:upload-linear',
 	paySchedule: 'solar:calendar-linear',
 	jobTitles: 'solar:case-linear',
@@ -31,8 +33,17 @@ export const SOLAR = {
 	layers: 'solar:layers-linear',
 	inviteUser: 'solar:user-plus-linear',
 	activity: 'solar:pulse-2-linear',
+	securityLog: 'solar:shield-user-linear',
 	arrowRight: 'solar:arrow-right-linear',
-	search: 'solar:magnifer-linear'
+	search: 'solar:magnifer-linear',
+	totp: 'lucide:fingerprint',
+	sms: 'solar:chat-round-call-linear',
+	twoFactorEmail: 'solar:letter-linear',
+	backupCodes: 'solar:key-linear',
+	trustedDevices: 'solar:devices-linear',
+	shieldDisabled: 'solar:shield-cross-linear',
+	qrCode: 'solar:qr-code-linear',
+	trash: 'solar:trash-bin-trash-linear'
 } as const;
 
 export type SolarIconId = (typeof SOLAR)[keyof typeof SOLAR];

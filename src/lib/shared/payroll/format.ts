@@ -12,7 +12,11 @@ export function formatPayRateCents(
 		maximumFractionDigits: currency === 'JPY' ? 0 : 2
 	}).format(cents / 100);
 
-	return payType === 'hourly' ? `${amount}/hr` : `${amount}/mo`;
+	return payType === 'hourly'
+		? `${amount}/hr`
+		: payType === 'daily'
+			? `${amount}/day`
+			: `${amount}/mo`;
 }
 
 export function dollarsToCents(value: number, currency: PayrollCurrency): number {

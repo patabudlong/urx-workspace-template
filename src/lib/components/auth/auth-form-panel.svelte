@@ -1,4 +1,5 @@
 <script lang="ts">
+	import GradientText from '$lib/components/gradient-text.svelte';
 	import SiteBrandMark from '$lib/components/site-brand-mark.svelte';
 	import ThemeToggle from '$lib/components/theme-toggle.svelte';
 	import type { Snippet } from 'svelte';
@@ -27,11 +28,13 @@
 		<div class="flex flex-1 flex-col justify-center px-6 py-8 lg:px-10 lg:py-10">
 			<div class="w-full space-y-6">
 				<div class="mb-2">
-					<SiteBrandMark href="/" nameFormat="combined" />
+					<SiteBrandMark href="/" nameFormat="stacked" gradientProduct />
 				</div>
 
 				<div class="space-y-1">
-					<h2 class="text-xl font-bold tracking-tight">{title}</h2>
+					<GradientText tone="primary" as="h2" class="text-xl font-bold tracking-tight">
+						{title}
+					</GradientText>
 					{#if description}
 						<p class="text-muted-foreground text-sm font-medium">{description}</p>
 					{/if}

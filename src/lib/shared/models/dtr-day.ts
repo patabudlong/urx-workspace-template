@@ -16,7 +16,13 @@ export type DtrDayDocument = {
 	status: DtrDayStatus;
 	timeIn: string | null;
 	timeOut: string | null;
+	morningTimeIn: string | null;
+	morningTimeOut: string | null;
+	afternoonTimeIn: string | null;
+	afternoonTimeOut: string | null;
 	workedMinutes: number;
+	overtimeMinutes: number;
+	nightShiftMinutes: number;
 	source: DtrDaySource;
 	approvalStatus: DtrApprovalStatus;
 	notes: string | null;
@@ -24,6 +30,7 @@ export type DtrDayDocument = {
 	holidayName: string | null;
 	holidayWorked: boolean | null;
 	holidayPayPercent: number | null;
+	lockedByRunId: ObjectId | null;
 	createdAt: Date;
 	updatedAt: Date;
 };
@@ -36,7 +43,13 @@ export type DtrDayDto = {
 	status: DtrDayStatus;
 	timeIn: string | null;
 	timeOut: string | null;
+	morningTimeIn: string | null;
+	morningTimeOut: string | null;
+	afternoonTimeIn: string | null;
+	afternoonTimeOut: string | null;
 	workedMinutes: number;
+	overtimeMinutes: number;
+	nightShiftMinutes: number;
 	source: DtrDaySource;
 	approvalStatus: DtrApprovalStatus;
 	notes: string | null;
@@ -44,6 +57,7 @@ export type DtrDayDto = {
 	holidayName: string | null;
 	holidayWorked: boolean | null;
 	holidayPayPercent: number | null;
+	lockedByRunId: string | null;
 	createdAt: string;
 	updatedAt: string;
 };

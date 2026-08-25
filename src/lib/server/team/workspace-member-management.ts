@@ -4,8 +4,13 @@ import {
 	removeWorkspaceMember,
 	updateWorkspaceMemberRole
 } from '$lib/server/repositories/workspace-members';
+import { findUserById } from '$lib/server/repositories/users';
+import type { SecurityEventRequestContext } from '$lib/server/security/record-security-event';
+import { recordWorkspaceSecurityEvent } from '$lib/server/security/record-security-event';
+import { SECURITY_EVENT_ACTIONS } from '$lib/shared/models/security-event';
 import { WORKSPACE_MEMBER_ROLES } from '$lib/shared/models/workspace-member';
 import type { TeamInviteRole } from '$lib/shared/team/invite-roles';
+import { findTeamInviteRoleOption } from '$lib/shared/team/invite-roles';
 import {
 	canRemoveWorkspaceMember,
 	canRemoveWorkspaceMembers,
@@ -15,7 +20,9 @@ import {
 export async function removeWorkspaceMemberForWeb(input: {
 	workspaceId: string;
 	actorRole: string;
+	actorUserId: string;
 	memberId: string;
+	security?: SecurityEventRequestContext;
 }): Promise<
 	| { ok: true }
 	| { ok: false; reason: 'FORBIDDEN' }
@@ -57,6 +64,23 @@ export async function removeWorkspaceMemberForWeb(input: {
 		return { ok: false, reason: 'NOT_FOUND' };
 	}
 
+	const targetUser = await findUserById(member.userId.toString());
+
+	await recordWorkspaceSecurityEvent({
+		workspaceId: input.workspaceId,
+		actorUserId: input.actorUserId,
+		action: SECURITY_EVENT_ACTIONS.MEMBER_REMOVED,
+		targetUserId: member.userId.toString(),
+		ipAddress: input.security?.ipAddress,
+		userAgent: input.security?.userAgent,
+		metadata: {
+			detail: targetUser
+				? `Removed ${targetUser.firstName} ${targetUser.lastName} (${targetUser.email}) from the workspace.`
+				: 'A workspace member was removed.',
+			previousRole: member.role
+		}
+	});
+
 	return { ok: true };
 }
 
@@ -66,6 +90,7 @@ export async function updateWorkspaceMemberRoleForWeb(input: {
 	actorUserId: string;
 	memberId: string;
 	role: TeamInviteRole;
+	security?: SecurityEventRequestContext;
 }): Promise<
 	| { ok: true; changed: boolean }
 	| { ok: false; reason: 'FORBIDDEN' }
@@ -120,6 +145,26 @@ export async function updateWorkspaceMemberRoleForWeb(input: {
 	if (!updated) {
 		return { ok: false, reason: 'NOT_FOUND' };
 	}
+
+	const targetUser = await findUserById(member.userId.toString());
+	const roleLabel = findTeamInviteRoleOption(input.role)?.label ?? input.role;
+	const previousRoleLabel = findTeamInviteRoleOption(member.role)?.label ?? member.role;
+
+	await recordWorkspaceSecurityEvent({
+		workspaceId: input.workspaceId,
+		actorUserId: input.actorUserId,
+		action: SECURITY_EVENT_ACTIONS.MEMBER_ROLE_CHANGED,
+		targetUserId: member.userId.toString(),
+		ipAddress: input.security?.ipAddress,
+		userAgent: input.security?.userAgent,
+		metadata: {
+			detail: targetUser
+				? `Changed ${targetUser.firstName} ${targetUser.lastName}'s role from ${previousRoleLabel} to ${roleLabel}.`
+				: `Changed a member role from ${previousRoleLabel} to ${roleLabel}.`,
+			previousRole: member.role,
+			newRole: input.role
+		}
+	});
 
 	return { ok: true, changed: true };
 }

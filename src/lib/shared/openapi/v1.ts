@@ -3115,7 +3115,7 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 					properties: {
 						id: { type: 'string' },
 						name: { type: 'string', maxLength: 120 },
-						payType: { type: 'string', enum: ['hourly', 'monthly'] },
+						payType: { type: 'string', enum: ['hourly', 'daily', 'monthly'] },
 						payRateCents: { type: 'integer', minimum: 0 },
 						isActive: { type: 'boolean' }
 					}
@@ -3133,7 +3133,7 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 								properties: {
 									id: { type: 'string', maxLength: 64 },
 									name: { type: 'string', maxLength: 120 },
-									payType: { type: 'string', enum: ['hourly', 'monthly'] },
+									payType: { type: 'string', enum: ['hourly', 'daily', 'monthly'] },
 									payRate: { type: 'number', minimum: 0 },
 									isActive: { type: 'boolean' }
 								}
@@ -3498,13 +3498,14 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						id: { type: 'string' },
 						workspaceId: { type: 'string' },
 						firstName: { type: 'string' },
+						initialName: { type: 'string', nullable: true },
 						lastName: { type: 'string' },
 						fullName: { type: 'string' },
 						email: { type: 'string', format: 'email', nullable: true },
 						jobTitle: { type: 'string', nullable: true },
 						employeeCode: { type: 'string', nullable: true },
 						photoUrl: { type: 'string', format: 'uri', nullable: true },
-						payType: { type: 'string', enum: ['hourly', 'monthly'] },
+						payType: { type: 'string', enum: ['hourly', 'daily', 'monthly'] },
 						payRateCents: { type: 'integer', minimum: 0 },
 						isActive: { type: 'boolean' },
 						createdAt: { type: 'string', format: 'date-time' },
@@ -3516,10 +3517,11 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 					required: ['firstName', 'lastName', 'payType', 'payRate'],
 					properties: {
 						firstName: { type: 'string', maxLength: 80 },
+						initialName: { type: 'string', maxLength: 80 },
 						lastName: { type: 'string', maxLength: 80 },
 						email: { type: 'string', format: 'email' },
 						jobTitle: { type: 'string', maxLength: 120 },
-						payType: { type: 'string', enum: ['hourly', 'monthly'] },
+						payType: { type: 'string', enum: ['hourly', 'daily', 'monthly'] },
 						payRate: { type: 'number', minimum: 0 }
 					}
 				},

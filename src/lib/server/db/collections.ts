@@ -12,12 +12,14 @@ export const CollectionNames = {
 	workspaceMembers: 'workspace_members',
 	workspaceInvitations: 'workspace_invitations',
 	twoFactorOtpTokens: 'two_factor_otp_tokens',
+	securityEvents: 'security_events',
 // urixoft-workspace-mailbox:collections:start
 	userMailboxCredentials: 'user_mailbox_credentials',
 // urixoft-workspace-mailbox:collections:end
 // urixoft-workspace-payroll:collections:start
 	payrollRuns: 'payroll_runs',
 	payrollEmployees: 'payroll_employees',
+	payrollPayslips: 'payroll_payslips',
 	payrollSettings: 'payroll_settings',
 // urixoft-workspace-payroll:collections:end
 // urixoft-workspace-dtr:collections:start
@@ -86,6 +88,12 @@ export async function getTwoFactorOtpTokensCollection<T extends Document = Docum
 > {
 	return getCollection<T>('twoFactorOtpTokens');
 }
+
+export async function getSecurityEventsCollection<T extends Document = Document>(): Promise<
+	Collection<T>
+> {
+	return getCollection<T>('securityEvents');
+}
 // urixoft-workspace-mailbox:getter:start
 export async function getUserMailboxCredentialsCollection<T extends Document = Document>(): Promise<Collection<T>> {
 	return getCollection<T>('userMailboxCredentials');
@@ -98,6 +106,10 @@ export async function getPayrollRunsCollection<T extends Document = Document>():
 
 export async function getPayrollEmployeesCollection<T extends Document = Document>(): Promise<Collection<T>> {
 	return getCollection<T>('payrollEmployees');
+}
+
+export async function getPayrollPayslipsCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('payrollPayslips');
 }
 
 export async function getPayrollSettingsCollection<T extends Document = Document>(): Promise<Collection<T>> {

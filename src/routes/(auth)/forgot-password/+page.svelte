@@ -5,7 +5,7 @@
 	import AuthFormPanel from '$lib/components/auth/auth-form-panel.svelte';
 	import RecaptchaNotice from '$lib/components/auth/recaptcha-notice.svelte';
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
-	import { Button } from '$lib/components/ui/button/index.js';
+	import GradientButton from '$lib/components/gradient-button.svelte';
 	import * as Form from '$lib/components/ui/form/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { FORGOT_PASSWORD_SUCCESS_MESSAGE } from '$lib/shared/auth-messages';
@@ -15,7 +15,11 @@
 	} from '$lib/shared/schemas/auth';
 	import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 	import { warmRecaptcha } from '$lib/recaptcha/client';
-	import { AUTH_ACTION_BUTTON_CLASS } from '$lib/auth/ui';
+	import {
+		AUTH_ACTION_BUTTON_CLASS,
+		AUTH_FIELD_CONTROL_CLASS,
+		AUTH_INLINE_LINK_CLASS
+	} from '$lib/auth/ui';
 	import { cn } from '$lib/utils.js';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import { get } from 'svelte/store';
@@ -106,6 +110,7 @@
 									type="email"
 									autocomplete="email"
 									disabled={submitDisabled}
+									class={AUTH_FIELD_CONTROL_CLASS}
 									bind:value={$form.email}
 								/>
 							{/snippet}
@@ -113,8 +118,9 @@
 						<SingleFieldErrors />
 					</Form.Field>
 
-					<Button
+					<GradientButton
 						type="submit"
+						tone="primary"
 						class={cn(
 							AUTH_ACTION_BUTTON_CLASS,
 							submitDisabled && 'pointer-events-none cursor-wait'
@@ -128,7 +134,7 @@
 						{:else}
 							Send reset link
 						{/if}
-					</Button>
+					</GradientButton>
 					<RecaptchaNotice />
 				</div>
 			</form>
@@ -138,16 +144,16 @@
 	{#snippet footer()}
 		{#if submitted}
 			<p class="text-center text-sm">
-				<a href="/login" class="hover:text-foreground hover:underline">Back to sign in</a>
+				<a href="/login" class={AUTH_INLINE_LINK_CLASS}>Back to sign in</a>
 				<span class="text-muted-foreground px-2" aria-hidden="true">|</span>
-				<a href="/verify/resend" class="hover:text-foreground hover:underline">
+				<a href="/verify/resend" class="hover:text-foreground">
 					Resend verification email
 				</a>
 			</p>
 		{:else}
 			<p class="text-center text-sm">
 				Remember your password?
-				<a href="/login" class="hover:text-foreground hover:underline">Sign in</a>
+				<a href="/login" class={AUTH_INLINE_LINK_CLASS}>Sign in</a>
 			</p>
 		{/if}
 	{/snippet}

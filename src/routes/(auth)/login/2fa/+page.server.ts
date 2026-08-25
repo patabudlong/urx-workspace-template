@@ -18,10 +18,15 @@ import {
 import { getSessionCookieOptions, SESSION_COOKIE_NAME } from '$lib/server/auth/session';
 import { findUserById } from '$lib/server/repositories/users';
 import { getEnabledTwoFactorMethods } from '$lib/server/repositories/user-two-factor';
-import { INVALID_VERIFICATION_CODE_MESSAGE } from '$lib/shared/auth-messages';
+import { INVALID_VERIFICATION_CODE_MESSAGE, createAuthRateLimitMessage } from '$lib/shared/auth-messages';
 import { TWO_FACTOR_METHODS } from '$lib/shared/models/two-factor';
 import { twoFactorLoginChallengeSchema } from '$lib/shared/schemas/security';
-import { TWO_FACTOR_CODE_SENT_MESSAGE, TWO_FACTOR_SEND_FAILED_MESSAGE } from '$lib/shared/security-messages';
+import { TWO_FACTOR_SEND_FAILED_MESSAGE } from '$lib/shared/security-messages';
+import { resolveWorkspaceIdBySlug } from '$lib/server/security/request-workspace-context';
+import {
+	recordTwoFactorFailedInBackground,
+	recordTwoFactorSuccessInBackground
+} from '$lib/server/security/record-security-event';
 
 const sendTwoFactorCodeSchema = z.object({
 	method: z.enum([TWO_FACTOR_METHODS.SMS, TWO_FACTOR_METHODS.EMAIL])
@@ -59,7 +64,8 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
 };
 
 export const actions: Actions = {
-	verify: async ({ request, cookies, url }) => {
+	verify: async (event) => {
+		const { request, cookies, url, getClientAddress } = event;
 		const form = await superValidate(request, zod4(twoFactorLoginChallengeSchema), {
 			id: 'twoFactorLoginForm'
 		});
@@ -83,6 +89,11 @@ export const actions: Actions = {
 		});
 
 		if (!result.ok) {
+			recordTwoFactorFailedInBackground(event, {
+				userId: payload.sub,
+				ipAddress: getClientAddress(),
+				userAgent: request.headers.get('user-agent') ?? undefined
+			});
 			return message(form, INVALID_VERIFICATION_CODE_MESSAGE, { status: 400 });
 		}
 
@@ -93,6 +104,16 @@ export const actions: Actions = {
 			setTrustedDeviceCookie(cookies, result.trustedDevice);
 		}
 
+		const workspaceId = await resolveWorkspaceIdBySlug(result.session.user.id, url);
+		recordTwoFactorSuccessInBackground(event, {
+			userId: result.session.user.id,
+			ipAddress: getClientAddress(),
+			userAgent: request.headers.get('user-agent') ?? undefined,
+			method: form.data.method,
+			workspaceId,
+			origin: url.origin
+		});
+
 		redirect(
 			303,
 			await resolveAuthenticatedLandingPath(result.session.user.id, {
@@ -101,7 +122,7 @@ export const actions: Actions = {
 			})
 		);
 	},
-	sendCode: async ({ request, cookies, url }) => {
+	sendCode: async ({ request, cookies, url, getClientAddress }) => {
 		const form = await superValidate(request, zod4(sendTwoFactorCodeSchema), {
 			id: 'twoFactorSendCodeForm'
 		});
@@ -120,13 +141,20 @@ export const actions: Actions = {
 		const sent = await sendTwoFactorLoginCode({
 			userId: payload.sub,
 			method: form.data.method as 'sms' | 'email',
-			origin: url.origin
+			origin: url.origin,
+			clientIp: getClientAddress()
 		});
 
 		if (!sent.ok) {
-			return message(form, TWO_FACTOR_SEND_FAILED_MESSAGE, { status: 500 });
+			if (sent.reason === 'THROTTLED') {
+				return fail(429, {
+					rateLimit: createAuthRateLimitMessage(sent.retryAfterSeconds ?? 60)
+				});
+			}
+
+			return fail(500, { error: TWO_FACTOR_SEND_FAILED_MESSAGE });
 		}
 
-		return message(form, TWO_FACTOR_CODE_SENT_MESSAGE);
+		return { sent: true };
 	}
 };

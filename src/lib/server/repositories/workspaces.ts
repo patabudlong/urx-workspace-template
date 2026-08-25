@@ -208,6 +208,34 @@ export async function updateWorkspaceEnabledPackages(input: {
 	return result ?? null;
 }
 
+export async function updateWorkspaceName(input: {
+	workspaceId: string;
+	name: string;
+}): Promise<WorkspaceDocument | null> {
+	if (!ObjectId.isValid(input.workspaceId)) {
+		return null;
+	}
+
+	const workspaces = await getWorkspacesCollection<WorkspaceDocument>();
+	const trimmed = input.name.trim();
+
+	const result = await workspaces.findOneAndUpdate(
+		{
+			_id: new ObjectId(input.workspaceId),
+			status: WORKSPACE_STATUSES.ACTIVE
+		},
+		{
+			$set: {
+				name: trimmed,
+				updatedAt: new Date()
+			}
+		},
+		{ returnDocument: 'after', projection: workspaceProjection }
+	);
+
+	return result ?? null;
+}
+
 export async function updateWorkspaceBrandLogoUrl(input: {
 	workspaceId: string;
 	brandLogoUrl: string | null;

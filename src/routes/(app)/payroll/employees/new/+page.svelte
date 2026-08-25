@@ -63,6 +63,7 @@
 					workSchedules={data.workSchedules}
 					jobTitles={data.jobTitles}
 					payrollCurrency={data.payrollCurrency}
+					phDeductionIconUrls={data.phDeductionIconUrls}
 					resetForm={true}
 					successMessage={PAYROLL_EMPLOYEE_CREATED_MESSAGE}
 					onSuccess={async () => {

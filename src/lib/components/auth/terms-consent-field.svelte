@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { AUTH_INLINE_LINK_CLASS } from '$lib/auth/ui';
 	import { Checkbox } from '$lib/components/ui/checkbox/index.js';
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
 	import * as Form from '$lib/components/ui/form/index.js';
@@ -35,7 +36,7 @@
 						href={LEGAL_ROUTES.termsOfService}
 						target="_blank"
 						rel="noopener noreferrer"
-						class="text-primary font-medium hover:underline"
+						class={AUTH_INLINE_LINK_CLASS}
 					>
 						Terms of Service
 					</a>
@@ -44,7 +45,7 @@
 						href={LEGAL_ROUTES.privacyNotice}
 						target="_blank"
 						rel="noopener noreferrer"
-						class="text-primary font-medium hover:underline"
+						class={AUTH_INLINE_LINK_CLASS}
 					>
 						Privacy Notice
 					</a>.

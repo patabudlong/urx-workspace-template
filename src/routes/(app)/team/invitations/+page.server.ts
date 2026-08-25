@@ -4,6 +4,7 @@ import { zod4 } from 'sveltekit-superforms/adapters';
 import type { Actions, PageServerLoad } from './$types';
 import {
 	ensureWorkspaceInvitationIndexes,
+	findWorkspaceInvitationById,
 	listPendingWorkspaceInvitations,
 	revokeWorkspaceInvitation
 } from '$lib/server/repositories/workspace-invitations';
@@ -38,6 +39,8 @@ import {
 	} from '$lib/shared/team/invitation-messages';
 import { canInviteWorkspaceMembers } from '$lib/shared/team/member-management';
 import { findTeamInviteRoleOption } from '$lib/shared/team/invite-roles';
+import { buildSecurityEventRequestContext, recordWorkspaceSecurityEvent } from '$lib/server/security/record-security-event';
+import { SECURITY_EVENT_ACTIONS } from '$lib/shared/models/security-event';
 import { ObjectId } from 'mongodb';
 
 export const load: PageServerLoad = async ({ parent }) => {
@@ -81,7 +84,8 @@ export const load: PageServerLoad = async ({ parent }) => {
 };
 
 export const actions: Actions = {
-	send: async ({ request, url, locals, getClientAddress }) => {
+	send: async (event) => {
+		const { request, url, locals, getClientAddress } = event;
 		const form = await superValidate(request, zod4(teamInvitationSchema));
 
 		if (!locals.user) {
@@ -114,17 +118,15 @@ export const actions: Actions = {
 
 		const inviterName = userDisplay.fullName.trim() || 'A teammate';
 
-		const result = await queueTeamInvitationForWeb(
-			{ platform: undefined },
-			{
-				workspaceId: workspace.workspaceId,
-				invitedByUserId: locals.user!.id,
-				inviterName,
-				inviterEmail: locals.user!.email,
-				data: form.data,
-				origin: url.origin
-			}
-		);
+		const result = await queueTeamInvitationForWeb(event, {
+			workspaceId: workspace.workspaceId,
+			invitedByUserId: locals.user!.id,
+			inviterName,
+			inviterEmail: locals.user!.email,
+			data: form.data,
+			origin: url.origin,
+			security: buildSecurityEventRequestContext(event)
+		});
 
 		if (!result.ok) {
 			if (result.reason === 'MAIL_NOT_CONFIGURED') {
@@ -213,7 +215,8 @@ export const actions: Actions = {
 			resendMessage: TEAM_INVITATION_RESENT_MESSAGE
 		};
 	},
-	cancel: async ({ request, url, locals }) => {
+	cancel: async (event) => {
+		const { request, url, locals } = event;
 		const form = await superValidate(request, zod4(cancelTeamInvitationSchema));
 
 		if (!locals.user) {
@@ -250,6 +253,11 @@ export const actions: Actions = {
 
 		await ensureWorkspaceInvitationIndexes();
 
+		const invitation = await findWorkspaceInvitationById({
+			invitationId: form.data.invitationId,
+			workspaceId: workspace.workspaceId
+		});
+
 		const revoked = await revokeWorkspaceInvitation({
 			invitationId: form.data.invitationId,
 			workspaceId: workspace.workspaceId
@@ -259,6 +267,21 @@ export const actions: Actions = {
 			return fail(404, {
 				cancelForm: form,
 				cancelMessage: TEAM_INVITATION_CANCEL_FAILED_MESSAGE
+			});
+		}
+
+		if (invitation) {
+			await recordWorkspaceSecurityEvent({
+				workspaceId: workspace.workspaceId,
+				actorUserId: locals.user.id,
+				action: SECURITY_EVENT_ACTIONS.INVITATION_REVOKED,
+				ipAddress: buildSecurityEventRequestContext(event).ipAddress,
+				userAgent: buildSecurityEventRequestContext(event).userAgent,
+				metadata: {
+					detail: `Revoked the invitation sent to ${invitation.invitedEmail}.`,
+					invitedEmail: invitation.invitedEmail,
+					role: invitation.role
+				}
 			});
 		}
 

@@ -4,6 +4,7 @@
 	import MailboxSidebarSkeleton from '$lib/components/mailbox/mailbox-sidebar-skeleton.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { APP_SECONDARY_SIDEBAR_CLASS } from '$lib/components/ui/sidebar/constants.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import type { MailboxFolder } from '$lib/shared/mailbox/schemas';
 	import { decodeMailboxFolder } from '$lib/mailbox/utils';
@@ -87,11 +88,7 @@
 {/snippet}
 
 <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden lg:flex-row">
-	<aside
-		class={cn(
-			'bg-sidebar text-sidebar-foreground border-sidebar-border hidden w-(--team-secondary-sidebar-width) shrink-0 lg:sticky lg:top-0 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:self-stretch lg:border-r lg:py-2'
-		)}
-	>
+	<aside class={cn(APP_SECONDARY_SIDEBAR_CLASS, 'lg:self-stretch')}>
 		{#if sidebarFolders === null}
 			<MailboxSidebarSkeleton />
 		{:else}

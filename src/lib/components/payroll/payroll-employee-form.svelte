@@ -1,6 +1,8 @@
 <script lang="ts">
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
+	import PayrollDeductionTypeIcon from '$lib/components/payroll/payroll-deduction-type-icon.svelte';
 	import PayrollEmployeePhotoUpload from '$lib/components/payroll/payroll-employee-photo-upload.svelte';
+	import PayrollMoneyInput from '$lib/components/payroll/payroll-money-input.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import * as Form from '$lib/components/ui/form/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -16,6 +18,7 @@
 		createPayrollEmployeeSchema,
 		type CreatePayrollEmployeeInput
 	} from '$lib/shared/payroll/schemas';
+	import type { PhDeductionIconKey } from '$lib/shared/payroll/deduction-icon-names';
 	import type { PayrollJobTitleOption } from '$lib/shared/payroll/job-titles';
 	import { dollarsToCents, formatPayRateCents } from '$lib/shared/payroll/format';
 	import type { Snippet } from 'svelte';
@@ -37,6 +40,7 @@
 		workSchedules,
 		jobTitles = [],
 		payrollCurrency,
+		phDeductionIconUrls = {},
 		currentPhotoUrl = null,
 		formAction,
 		resetForm = false,
@@ -49,6 +53,7 @@
 		workSchedules: WorkScheduleOption[];
 		jobTitles?: PayrollJobTitleOption[];
 		payrollCurrency: PayrollCurrency;
+		phDeductionIconUrls?: Partial<Record<PhDeductionIconKey, string>>;
 		currentPhotoUrl?: string | null;
 		formAction?: string;
 		resetForm?: boolean;
@@ -143,7 +148,10 @@
 	);
 
 	const currencyLabel = $derived(getPayrollCurrencyLabel(payrollCurrency));
-	const payRateStep = $derived(payrollCurrency === 'JPY' ? '1' : '0.01');
+
+	const showPhDeductionIcons = $derived(
+		payrollCurrency === 'PHP' && Object.keys(phDeductionIconUrls).length > 0
+	);
 
 	const formError = $derived(
 		$posted &&
@@ -263,12 +271,24 @@
 		</p>
 	</div>
 
-	<div class="grid gap-5 sm:grid-cols-2">
+	<div class="grid gap-5 sm:grid-cols-3">
 		<Form.Field form={superform} name="firstName">
 			<Form.Control>
 				{#snippet children({ props })}
 					<Form.Label required>First name</Form.Label>
 					<Input {...props} bind:value={$form.firstName} autocomplete="given-name" />
+				{/snippet}
+			</Form.Control>
+			<SingleFieldErrors />
+		</Form.Field>
+
+		<Form.Field form={superform} name="initialName">
+			<Form.Control>
+				{#snippet children({ props })}
+					<Form.Label>
+						Initial name <span class="text-muted-foreground">(optional)</span>
+					</Form.Label>
+					<Input {...props} bind:value={$form.initialName} autocomplete="additional-name" />
 				{/snippet}
 			</Form.Control>
 			<SingleFieldErrors />
@@ -373,14 +393,36 @@
 		<Form.Control>
 			{#snippet children({ props })}
 				<Form.Label>
-					Employee code
-					<span class="text-muted-foreground">(optional, for biometrics)</span>
+					Employee number
+					<span class="text-muted-foreground">(optional)</span>
 				</Form.Label>
 				<Input {...props} bind:value={$form.employeeCode} autocomplete="off" />
 			{/snippet}
 		</Form.Control>
 		<SingleFieldErrors />
 	</Form.Field>
+
+	<div class="grid gap-5 sm:grid-cols-2">
+		<Form.Field form={superform} name="department">
+			<Form.Control>
+				{#snippet children({ props })}
+					<Form.Label>Department <span class="text-muted-foreground">(optional)</span></Form.Label>
+					<Input {...props} bind:value={$form.department} autocomplete="organization" />
+				{/snippet}
+			</Form.Control>
+			<SingleFieldErrors />
+		</Form.Field>
+
+		<Form.Field form={superform} name="tin">
+			<Form.Control>
+				{#snippet children({ props })}
+					<Form.Label>TIN <span class="text-muted-foreground">(optional)</span></Form.Label>
+					<Input {...props} bind:value={$form.tin} autocomplete="off" />
+				{/snippet}
+			</Form.Control>
+			<SingleFieldErrors />
+		</Form.Field>
+	</div>
 
 	<Form.Field form={superform} name="workScheduleId">
 		<Form.Control>
@@ -452,16 +494,17 @@
 						<Form.Label required>
 							Pay rate ({currencyLabel})
 							<span class="text-muted-foreground font-normal">
-								{$form.payType === 'hourly' ? 'per hour' : 'per month'}
+								{$form.payType === 'hourly'
+									? 'per hour'
+									: $form.payType === 'daily'
+										? 'per day'
+										: 'per month'}
 							</span>
 						</Form.Label>
-						<Input
+						<PayrollMoneyInput
 							{...props}
 							bind:value={$form.payRate}
-							type="number"
-							min="0"
-							step={payRateStep}
-							inputmode="decimal"
+							payrollCurrency={payrollCurrency}
 						/>
 					{/snippet}
 				</Form.Control>
@@ -475,7 +518,8 @@
 			<div>
 				<p class="text-sm font-medium">Deductions</p>
 				<p class="text-muted-foreground text-sm">
-					Enable workspace deduction types and set amounts for this employee.
+					Enable workspace deduction types and set amounts for this employee. Fixed amounts are monthly
+					totals — semi-monthly payroll deducts half per cutoff.
 				</p>
 			</div>
 
@@ -487,6 +531,13 @@
 							<div class="flex flex-col gap-4 sm:flex-row sm:items-end">
 								<label class="flex flex-1 items-center gap-3 text-sm">
 									<input type="checkbox" bind:checked={$form.deductions[index].enabled} />
+									{#if showPhDeductionIcons}
+										<PayrollDeductionTypeIcon
+											name={deductionType.name}
+											iconUrls={phDeductionIconUrls}
+											class="size-7 shrink-0 rounded-md object-contain bg-muted/40 p-0.5"
+										/>
+									{/if}
 									<span class="font-medium">{deductionType.name}</span>
 									<span class="text-muted-foreground">
 										({deductionType.kind === 'fixed' ? 'fixed' : 'percentage'})
@@ -495,11 +546,9 @@
 
 								{#if deductionType.kind === 'fixed'}
 									<div class="sm:w-48">
-										<Input
-											type="number"
-											min="0"
-											step={payRateStep}
+										<PayrollMoneyInput
 											bind:value={$form.deductions[index].amount}
+											payrollCurrency={payrollCurrency}
 											disabled={!$form.deductions[index].enabled}
 											aria-label="{deductionType.name} amount"
 										/>

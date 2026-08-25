@@ -13,6 +13,8 @@ import {
 } from '$lib/server/workspace-context';
 import { getWorkspaceHostSuffix } from '$lib/server/workspace-host';
 import { canManagePayroll } from '$lib/shared/payroll/access';
+import { PAY_FREQUENCY_LABELS } from '$lib/shared/payroll/frequency';
+import { buildPhDeductionIconUrlMap } from '$lib/server/payroll/deduction-icons';
 import {
 	PAYROLL_DEDUCTION_TYPES_SAVED_MESSAGE,
 	PAYROLL_DEDUCTION_TYPES_SAVE_FAILED_MESSAGE
@@ -22,7 +24,7 @@ import {
 	payrollDeductionTypesSchema
 } from '$lib/shared/payroll/schemas';
 
-export const load: PageServerLoad = async ({ parent }) => {
+export const load: PageServerLoad = async ({ parent, url }) => {
 	const { workspace, canManagePayroll: canManage } = await parent();
 
 	if (!workspace || !canManage) {
@@ -30,7 +32,10 @@ export const load: PageServerLoad = async ({ parent }) => {
 			form: await superValidate(zod4(payrollDeductionTypesSchema), {
 				defaults: { types: [] }
 			}),
-			payrollCurrency: 'PHP' as const
+			payrollCurrency: 'PHP' as const,
+			payFrequency: 'semi-monthly' as const,
+			payFrequencyLabel: PAY_FREQUENCY_LABELS['semi-monthly'],
+			phDeductionIconUrls: {}
 		};
 	}
 
@@ -40,9 +45,15 @@ export const load: PageServerLoad = async ({ parent }) => {
 		zod4(payrollDeductionTypesSchema)
 	);
 
+	const phDeductionIconUrls =
+		settings.currency === 'PHP' ? buildPhDeductionIconUrlMap(url.origin) : {};
+
 	return {
 		form,
-		payrollCurrency: settings.currency
+		payrollCurrency: settings.currency,
+		payFrequency: settings.payFrequency,
+		payFrequencyLabel: PAY_FREQUENCY_LABELS[settings.payFrequency],
+		phDeductionIconUrls
 	};
 };
 

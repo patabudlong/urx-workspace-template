@@ -10,6 +10,7 @@ export type HttpErrorPresentation = {
 	description: string;
 	primaryAction: HttpErrorAction;
 	secondaryAction?: HttpErrorAction;
+	hint?: string;
 };
 
 function isAdminPath(pathname: string): boolean {
@@ -54,6 +55,18 @@ export function getHttpErrorPresentation(
 			title: 'Page not found',
 			description: message ?? "The page you're looking for doesn't exist or was moved.",
 			primaryAction: { label: 'Go to dashboard', href: '/' }
+		};
+	}
+
+	if (status >= 500) {
+		return {
+			title: "We couldn't complete your request",
+			description:
+				message ??
+				'A temporary issue prevented us from loading this page. Your data is safe — please try again in a moment.',
+			primaryAction: { label: 'Go to dashboard', href: '/' },
+			secondaryAction: { label: 'Try again', href: pathname || '/' },
+			hint: 'If this keeps happening, contact your workspace administrator.'
 		};
 	}
 

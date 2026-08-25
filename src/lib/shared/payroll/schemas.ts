@@ -44,6 +44,7 @@ export type PayrollEmployeesQuery = z.infer<typeof payrollEmployeesQuerySchema>;
 
 export const createPayrollEmployeeSchema = z.object({
 	firstName: z.string().trim().min(1, 'First name is required.').max(80),
+	initialName: z.string().trim().max(80).optional().or(z.literal('')),
 	lastName: z.string().trim().min(1, 'Last name is required.').max(80),
 	email: z
 		.string()
@@ -52,6 +53,13 @@ export const createPayrollEmployeeSchema = z.object({
 		.optional()
 		.or(z.literal('')),
 	jobTitle: z.string().trim().max(120).optional().or(z.literal('')),
+	department: z.string().trim().max(120).optional().or(z.literal('')),
+	tin: z
+		.string()
+		.trim()
+		.max(20, 'TIN must be 20 characters or fewer.')
+		.optional()
+		.or(z.literal('')),
 	employeeCode: z
 		.string()
 		.trim()
@@ -91,11 +99,34 @@ export const payrollEmployeeIdParamSchema = z.object({
 		.refine(isValidObjectIdString, 'Invalid employee id.')
 });
 
+export const payrollRunIdParamSchema = z.object({
+	id: z
+		.string()
+		.trim()
+		.min(1, 'Pay run id is required.')
+		.refine(isValidObjectIdString, 'Invalid pay run id.')
+});
+
+export const payrollPayslipIdParamSchema = z.object({
+	id: z
+		.string()
+		.trim()
+		.min(1, 'Payslip id is required.')
+		.refine(isValidObjectIdString, 'Invalid payslip id.')
+});
+
+export const payrollPayslipsQuerySchema = payrollRunsQuerySchema;
+
+export type PayrollPayslipsQuery = z.infer<typeof payrollPayslipsQuerySchema>;
+
 export const createPayrollEmployeeDefaults: CreatePayrollEmployeeInput = {
 	firstName: '',
+	initialName: '',
 	lastName: '',
 	email: '',
 	jobTitle: '',
+	department: '',
+	tin: '',
 	employeeCode: '',
 	payType: 'monthly',
 	payRate: 0,
@@ -128,7 +159,9 @@ export const payrollSettingsSchema = z
 		timezone: z.enum(PAYROLL_TIMEZONE_VALUES),
 		currency: z.enum(PAYROLL_CURRENCY_VALUES),
 		weekStartDay: z.enum(WEEK_START_DAYS).optional().or(z.literal('')),
-		periodAnchorDate: payrollDateInputSchema.optional().or(z.literal(''))
+		periodAnchorDate: payrollDateInputSchema.optional().or(z.literal('')),
+		registeredCompanyName: z.string().trim().max(160).optional().or(z.literal('')),
+		showYtdTotals: z.coerce.boolean().default(false)
 	})
 	.superRefine((data, ctx) => {
 		if (!requiresPeriodAnchor(data.payFrequency)) {
@@ -163,7 +196,9 @@ export function createPayrollSettingsDefaults(input: {
 		timezone: resolvePayrollTimezone(input.timezone),
 		currency: resolvePayrollCurrency(input.currency),
 		weekStartDay: 'monday' satisfies WeekStartDay,
-		periodAnchorDate: ''
+		periodAnchorDate: '',
+		registeredCompanyName: '',
+		showYtdTotals: false
 	};
 }
 

@@ -1,16 +1,25 @@
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
+	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
 	import WorkspaceBrandLogoUpload from '$lib/components/onboarding/workspace-brand-logo-upload.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
+	import * as Form from '$lib/components/ui/form/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
 	import {
 		WORKSPACE_LOGO_REMOVED_MESSAGE,
-		WORKSPACE_LOGO_UPDATED_MESSAGE
+		WORKSPACE_LOGO_UPDATED_MESSAGE,
+		WORKSPACE_NAME_UPDATED_MESSAGE,
+		WORKSPACE_NAME_UPDATE_FAILED_MESSAGE
 	} from '$lib/shared/team/workspace-settings-messages';
+	import { updateWorkspaceNameSchema } from '$lib/shared/schemas/workspace-settings';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import { enhance } from '$app/forms';
+	import { untrack } from 'svelte';
+	import { superForm } from 'sveltekit-superforms';
+	import { zod4Client } from 'sveltekit-superforms/adapters';
 
 	let { data, form } = $props();
 
@@ -18,7 +27,44 @@
 	let brandLogoPreview = $state<string | null>(null);
 	let removeLogo = $state(false);
 	let logoError = $state<string | null>(null);
-	let submitting = $state(false);
+	let logoSubmitting = $state(false);
+	let nameSubmitting = $state(false);
+	let nameShowSuccess = $state(false);
+
+	const nameSuperform = superForm(untrack(() => data.nameForm), {
+		id: 'workspaceNameForm',
+		validators: zod4Client(updateWorkspaceNameSchema),
+		resetForm: false,
+		onSubmit: () => {
+			nameSubmitting = true;
+			nameShowSuccess = false;
+		},
+		onUpdated: async ({ form: updatedForm }) => {
+			nameSubmitting = false;
+
+			if (updatedForm.message === WORKSPACE_NAME_UPDATED_MESSAGE) {
+				nameShowSuccess = true;
+				await invalidateAll();
+			}
+		},
+		onError: () => {
+			nameSubmitting = false;
+		}
+	});
+
+	const {
+		enhance: nameEnhance,
+		form: nameForm,
+		message: nameFormMessage
+	} = nameSuperform;
+
+	const nameFormError = $derived(
+		typeof $nameFormMessage === 'string' &&
+			$nameFormMessage.length > 0 &&
+			$nameFormMessage !== WORKSPACE_NAME_UPDATED_MESSAGE
+			? $nameFormMessage
+			: null
+	);
 
 	const currentBrandLogoUrl = $derived(
 		form?.brandLogoUrl !== undefined ? form.brandLogoUrl : data.brandLogoUrl
@@ -28,17 +74,17 @@
 		removeLogo ? null : (brandLogoPreview ?? currentBrandLogoUrl)
 	);
 
-	const hasPendingChanges = $derived(Boolean(brandLogoFile) || removeLogo);
+	const hasPendingLogoChanges = $derived(Boolean(brandLogoFile) || removeLogo);
 
-	const showSuccess = $derived(
+	const showLogoSuccess = $derived(
 		form?.message === WORKSPACE_LOGO_UPDATED_MESSAGE ||
 			form?.message === WORKSPACE_LOGO_REMOVED_MESSAGE
 	);
 
-	const showError = $derived(
+	const showLogoError = $derived(
 		typeof form?.message === 'string' &&
 			form.message.length > 0 &&
-			!showSuccess
+			!showLogoSuccess
 	);
 
 	function setBrandLogo(file: File | null) {
@@ -75,7 +121,7 @@
 		logoError = message;
 	}
 
-	function cancelPendingChanges() {
+	function cancelPendingLogoChanges() {
 		logoError = null;
 
 		if (brandLogoPreview) {
@@ -92,10 +138,63 @@
 	<PageHeader
 		eyebrow="Team"
 		title="Workspace settings"
-		description="Manage how your workspace appears to teammates — including the logo shown in the header and during onboarding."
+		description="Manage your workspace name and how it appears to teammates — including the logo shown in the header and during onboarding."
 	/>
 
 	<Card.Root>
+		<Card.Header>
+			<Card.Title>Workspace name</Card.Title>
+			<Card.Description>
+				Shown in the workspace switcher, invitations, and across your team experience.
+			</Card.Description>
+		</Card.Header>
+		<Card.Content>
+			<form method="POST" action="?/updateName" use:nameEnhance class="max-w-xl space-y-5">
+				{#if nameShowSuccess}
+					<StatusAlert
+						variant="success"
+						title="Workspace name updated"
+						description="Your workspace name has been saved."
+					/>
+				{:else if nameFormError}
+					<StatusAlert
+						variant="danger"
+						title={nameFormError === WORKSPACE_NAME_UPDATE_FAILED_MESSAGE
+							? 'Update failed'
+							: 'Could not save workspace name'}
+						description={nameFormError}
+					/>
+				{/if}
+
+				<Form.Field form={nameSuperform} name="name">
+					<Form.Control>
+						{#snippet children({ props })}
+							<Form.Label required>Workspace name</Form.Label>
+							<Input
+								{...props}
+								type="text"
+								autocomplete="organization"
+								disabled={nameSubmitting}
+								bind:value={$nameForm.name}
+							/>
+						{/snippet}
+					</Form.Control>
+					<SingleFieldErrors />
+				</Form.Field>
+
+				<Button type="submit" class="h-10" disabled={nameSubmitting}>
+					{#if nameSubmitting}
+						<Loader2Icon class="size-4 animate-spin" aria-hidden="true" />
+						Saving name...
+					{:else}
+						Save name
+					{/if}
+				</Button>
+			</form>
+		</Card.Content>
+	</Card.Root>
+
+	<Card.Root class="max-w-xl">
 		<Card.Header>
 			<Card.Title>Workspace logo</Card.Title>
 			<Card.Description>
@@ -104,7 +203,7 @@
 			</Card.Description>
 		</Card.Header>
 		<Card.Content>
-			{#if showSuccess}
+			{#if showLogoSuccess}
 				<StatusAlert
 					variant="success"
 					title={form?.message === WORKSPACE_LOGO_REMOVED_MESSAGE
@@ -113,7 +212,7 @@
 					description={form?.message ?? ''}
 					class="mb-6"
 				/>
-			{:else if showError}
+			{:else if showLogoError}
 				<StatusAlert
 					variant="danger"
 					title="Could not update logo"
@@ -134,7 +233,7 @@
 				action="?/updateLogo"
 				enctype="multipart/form-data"
 				use:enhance={({ formData }) => {
-					submitting = true;
+					logoSubmitting = true;
 					logoError = null;
 
 					if (brandLogoFile) {
@@ -142,7 +241,7 @@
 					}
 
 					return async ({ result, update }) => {
-						submitting = false;
+						logoSubmitting = false;
 
 						if (result.type === 'success') {
 							if (brandLogoPreview) {
@@ -178,10 +277,10 @@
 					</p>
 				</div>
 
-				{#if hasPendingChanges}
+				{#if hasPendingLogoChanges}
 					<div class="flex flex-wrap items-center gap-3">
-						<Button type="submit" class="h-10" disabled={submitting}>
-							{#if submitting}
+						<Button type="submit" class="h-10" disabled={logoSubmitting}>
+							{#if logoSubmitting}
 								<Loader2Icon class="size-4 animate-spin" aria-hidden="true" />
 								Saving logo...
 							{:else}
@@ -192,8 +291,8 @@
 							type="button"
 							variant="outline"
 							class="h-10"
-							disabled={submitting}
-							onclick={cancelPendingChanges}
+							disabled={logoSubmitting}
+							onclick={cancelPendingLogoChanges}
 						>
 							Cancel
 						</Button>

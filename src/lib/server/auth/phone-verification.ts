@@ -19,6 +19,7 @@ import {
 	getVerificationSmsRetryAfterSeconds,
 	isVerificationSmsThrottled
 } from '$lib/server/security/phone-sms-rate-limit';
+import { buildTwoFactorOtpSmsBody } from '$lib/shared/two-factor-otp-message';
 
 const CODE_TTL_MS = 15 * 60 * 1000;
 
@@ -28,10 +29,6 @@ function hashVerificationCode(code: string): string {
 
 function createVerificationCode(): string {
 	return randomInt(0, 1_000_000).toString().padStart(6, '0');
-}
-
-function buildVerificationSmsBody(code: string): string {
-	return `Your Urixoft verification code is ${code}. It expires in 15 minutes.`;
 }
 
 export type PreparePhoneVerificationSmsResult =
@@ -98,7 +95,7 @@ async function preparePhoneVerificationSms(input: {
 		ok: true,
 		status: 'send_pending',
 		to: input.phoneNumber,
-		body: buildVerificationSmsBody(code)
+		body: buildTwoFactorOtpSmsBody(code)
 	};
 }
 

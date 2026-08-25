@@ -3,15 +3,16 @@
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
 	import VerificationCodeInput from '$lib/components/auth/verification-code-input.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
+	import AppIcon from '$lib/components/app-icon.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as Form from '$lib/components/ui/form/index.js';
+	import { SOLAR } from '$lib/icons/solar-icons';
 	import { isAuthRateLimitMessage } from '$lib/shared/auth-messages';
 	import { twoFactorSetupTotpConfirmSchema } from '$lib/shared/schemas/security';
 	import { TWO_FACTOR_INVALID_CODE_MESSAGE } from '$lib/shared/security-messages';
-	import type { PageData } from '../../../routes/(app)/(settings)/security/$types';
+	import type { PageData } from '../../../routes/(app)/(settings)/security/two-factor/$types';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
-	import SmartphoneIcon from '@lucide/svelte/icons/smartphone';
 	import { browser } from '$app/environment';
 	import { invalidateAll } from '$app/navigation';
 	import { resetSuperformDialogState, whenDialogCloses } from '$lib/forms/superform-dialog';
@@ -141,9 +142,9 @@
 	>
 		<div class="bg-primary/5 border-primary/10 border-b px-6 pt-8 pb-6 text-center">
 			<div
-				class="bg-primary/10 mx-auto mb-4 flex size-14 items-center justify-center rounded-full"
+				class="bg-violet-500/10 text-violet-600 dark:text-violet-400 mx-auto mb-4 flex size-14 items-center justify-center rounded-full"
 			>
-				<SmartphoneIcon class="text-primary size-7" aria-hidden="true" />
+				<AppIcon icon={SOLAR.totp} size="lg" aria-hidden="true" />
 			</div>
 			<Dialog.Header class="space-y-2 text-center sm:text-center">
 				<Dialog.Title class="text-xl">Authenticator app</Dialog.Title>
@@ -160,7 +161,7 @@
 					<img
 						src={totpSetup.qrDataUrl}
 						alt="QR code for authenticator setup"
-						class="rounded-lg border bg-white p-2"
+						class="rounded-xl border bg-white p-3 shadow-sm"
 						width="200"
 						height="200"
 					/>

@@ -76,7 +76,7 @@ export async function sendTwoFactorStatusEmail(input: {
 
 	const greeting = input.firstName.trim() || 'there';
 	const assets = resolveTwoFactorEmailAssets(origin, 'status');
-	const secureAccountUrl = buildAuthenticatedAppPathUrl(origin, '/security');
+	const secureAccountUrl = buildAuthenticatedAppPathUrl(origin, '/security/password');
 	const content = {
 		greeting,
 		change: input.change,

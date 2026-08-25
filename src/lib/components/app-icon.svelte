@@ -4,7 +4,8 @@
 	const sizePx = {
 		sm: 16,
 		md: 20,
-		lg: 24
+		lg: 24,
+		xl: 48
 	} as const;
 
 	type AppIconSize = keyof typeof sizePx;

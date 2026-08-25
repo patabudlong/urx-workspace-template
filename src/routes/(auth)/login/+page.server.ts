@@ -26,6 +26,13 @@ import { safeEmailPrefill } from '$lib/shared/auth-prefill';
 import { getInvitationFlowLockedEmail } from '$lib/shared/team/invitation-flow';
 import { TEAM_INVITATION_EMAIL_LOCKED_MISMATCH_MESSAGE } from '$lib/shared/team/invitation-messages';
 import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
+import { findUserByEmail } from '$lib/server/repositories/users';
+import { resolveWorkspaceIdBySlug } from '$lib/server/security/request-workspace-context';
+import {
+	recordLoginFailedInBackground,
+	recordLoginSuccessInBackground,
+	recordTwoFactorChallengeInBackground
+} from '$lib/server/security/record-security-event';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	if (locals.user) {
@@ -114,13 +121,35 @@ export const actions: Actions = {
 			}
 
 			if (result.reason === 'EMAIL_NOT_VERIFIED') {
+				recordLoginFailedInBackground(event, {
+					email: form.data.email,
+					ipAddress: getClientAddress(),
+					userAgent: request.headers.get('user-agent') ?? undefined,
+					reason: 'email_not_verified'
+				});
 				return message(form, EMAIL_NOT_VERIFIED_MESSAGE, { status: 403 });
 			}
 
+			recordLoginFailedInBackground(event, {
+				email: form.data.email,
+				ipAddress: getClientAddress(),
+				userAgent: request.headers.get('user-agent') ?? undefined,
+				reason: 'invalid_credentials'
+			});
 			return message(form, INVALID_CREDENTIALS_MESSAGE, { status: 401 });
 		}
 
 		if ('twoFactorRequired' in result && result.twoFactorRequired) {
+			const pendingUser = await findUserByEmail(form.data.email);
+
+			if (pendingUser) {
+				recordTwoFactorChallengeInBackground(event, {
+					userId: pendingUser._id.toString(),
+					ipAddress: getClientAddress(),
+					userAgent: request.headers.get('user-agent') ?? undefined
+				});
+			}
+
 			cookies.set(
 				TWO_FACTOR_PENDING_COOKIE_NAME,
 				result.pendingToken,
@@ -136,8 +165,19 @@ export const actions: Actions = {
 			redirect(303, twoFactorUrl);
 		}
 
-		const session = result as { accessToken: string; user: { id: string } };
+		const session = result as { accessToken: string; user: { id: string; email: string } };
 		cookies.set(SESSION_COOKIE_NAME, session.accessToken, getSessionCookieOptions());
+
+		const workspaceId = await resolveWorkspaceIdBySlug(session.user.id, url);
+		recordLoginSuccessInBackground(event, {
+			userId: session.user.id,
+			email: session.user.email,
+			ipAddress: getClientAddress(),
+			userAgent: request.headers.get('user-agent') ?? undefined,
+			method: 'password',
+			workspaceId,
+			origin: url.origin
+		});
 
 		redirect(
 			303,
