@@ -1,10 +1,13 @@
 <script lang="ts">
 	import AppIcon from '$lib/components/app-icon.svelte';
+	import SecuritySettingsSidebarMenu from '$lib/components/security/security-settings-sidebar-menu.svelte';
 	import { page } from '$app/state';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { isAppNavActive, type AppNavItem } from '$lib/navigation/app-nav';
 
 	let { items }: { items: AppNavItem[] } = $props();
+
+	const isSecurityItem = (item: AppNavItem) => item.href === '/security' || item.href.startsWith('/security/');
 </script>
 
 <Sidebar.Header class="border-sidebar-border shrink-0 gap-1 border-b p-4">
@@ -19,19 +22,23 @@
 		<Sidebar.GroupLabel>Settings</Sidebar.GroupLabel>
 		<Sidebar.Menu>
 			{#each items as item (item.href)}
-				<Sidebar.MenuItem>
-					<Sidebar.MenuButton
-						isActive={isAppNavActive(page.url.pathname, item)}
-						tooltipContent={item.title}
-					>
-						{#snippet child({ props })}
-							<a href={item.href} {...props}>
-								<AppIcon icon={item.icon} />
-								<span>{item.title}</span>
-							</a>
-						{/snippet}
-					</Sidebar.MenuButton>
-				</Sidebar.MenuItem>
+				{#if isSecurityItem(item)}
+					<SecuritySettingsSidebarMenu />
+				{:else}
+					<Sidebar.MenuItem>
+						<Sidebar.MenuButton
+							isActive={isAppNavActive(page.url.pathname, item)}
+							tooltipContent={item.title}
+						>
+							{#snippet child({ props })}
+								<a href={item.href} {...props}>
+									<AppIcon icon={item.icon} />
+									<span>{item.title}</span>
+								</a>
+							{/snippet}
+						</Sidebar.MenuButton>
+					</Sidebar.MenuItem>
+				{/if}
 			{/each}
 		</Sidebar.Menu>
 	</Sidebar.Group>

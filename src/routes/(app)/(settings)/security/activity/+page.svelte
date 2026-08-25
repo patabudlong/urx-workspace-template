@@ -12,13 +12,9 @@
 <div class="flex w-full min-w-0 flex-col gap-8">
 	<PageHeader
 		eyebrow="Settings"
-		title="Security activity"
+		title="Recent activity"
 		description="Review sign-ins, password changes, and other security events for your account."
-	>
-		{#snippet actions()}
-			<Button href="/security" variant="outline" class="h-10">Back to security</Button>
-		{/snippet}
-	</PageHeader>
+	/>
 
 	<Card.Root>
 		<Card.Header>

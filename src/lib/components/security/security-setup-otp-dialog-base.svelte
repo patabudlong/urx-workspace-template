@@ -3,9 +3,11 @@
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
 	import VerificationCodeInput from '$lib/components/auth/verification-code-input.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
+	import AppIcon from '$lib/components/app-icon.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as Form from '$lib/components/ui/form/index.js';
+	import { SOLAR } from '$lib/icons/solar-icons';
 	import { isAuthRateLimitMessage, type AuthRateLimitMessage } from '$lib/shared/auth-messages';
 	import {
 		TWO_FACTOR_CODE_SENT_MESSAGE,
@@ -14,8 +16,6 @@
 	} from '$lib/shared/security-messages';
 	import { createVerificationResendCooldown } from '$lib/auth/verification-resend-cooldown.svelte';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
-	import MailIcon from '@lucide/svelte/icons/mail';
-	import PhoneIcon from '@lucide/svelte/icons/phone';
 	import { browser } from '$app/environment';
 	import { deserialize } from '$app/forms';
 	import { resetSuperformDialogState, whenDialogCloses } from '$lib/forms/superform-dialog';
@@ -51,6 +51,13 @@
 	let formRateLimited = $state(false);
 	let codeInput = $state<{ focus: () => void; typeDigit: (digit: string) => void } | null>(null);
 	const resendCooldown = createVerificationResendCooldown({ idleLabel: 'Resend code' });
+
+	const headerIcon = $derived(method === 'sms' ? SOLAR.sms : SOLAR.twoFactorEmail);
+	const headerIconClass = $derived(
+		method === 'sms'
+			? 'bg-sky-500/10 text-sky-600 dark:text-sky-400'
+			: 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+	);
 
 	const { enhance, message: formMessage, errors, reset } = (() => superform)();
 
@@ -190,13 +197,9 @@
 	>
 		<div class="bg-primary/5 border-primary/10 border-b px-6 pt-8 pb-6 text-center">
 			<div
-				class="bg-primary/10 mx-auto mb-4 flex size-14 items-center justify-center rounded-full"
+				class="{headerIconClass} mx-auto mb-4 flex size-14 items-center justify-center rounded-full"
 			>
-				{#if method === 'sms'}
-					<PhoneIcon class="text-primary size-7" aria-hidden="true" />
-				{:else}
-					<MailIcon class="text-primary size-7" aria-hidden="true" />
-				{/if}
+				<AppIcon icon={headerIcon} size="lg" aria-hidden="true" />
 			</div>
 			<Dialog.Header class="space-y-2 text-center sm:text-center">
 				<Dialog.Title class="text-xl">

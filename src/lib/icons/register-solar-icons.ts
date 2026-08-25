@@ -8,7 +8,9 @@ import calendarDateLinear from '@iconify-icons/solar/calendar-date-linear';
 import calendarMarkLinear from '@iconify-icons/solar/calendar-mark-linear';
 import cardLinear from '@iconify-icons/solar/card-linear';
 import caseLinear from '@iconify-icons/solar/case-linear';
+import chatRoundCallLinear from '@iconify-icons/solar/chat-round-call-linear';
 import clockCircleLinear from '@iconify-icons/solar/clock-circle-linear';
+import devicesLinear from '@iconify-icons/solar/devices-linear';
 import fingerprintLinear from '@iconify-icons/lucide/fingerprint';
 import historyLinear from '@iconify-icons/solar/history-linear';
 import homeSmileLinear from '@iconify-icons/solar/home-smile-linear';
@@ -19,9 +21,13 @@ import mailboxLinear from '@iconify-icons/solar/mailbox-linear';
 import magniferLinear from '@iconify-icons/solar/magnifer-linear';
 import minusCircleLinear from '@iconify-icons/solar/minus-circle-linear';
 import penLinear from '@iconify-icons/solar/pen-linear';
+import qrCodeLinear from '@iconify-icons/solar/qr-code-linear';
 import recordCircleLinear from '@iconify-icons/solar/record-circle-linear';
 import settingsLinear from '@iconify-icons/solar/settings-linear';
 import shieldCheckLinear from '@iconify-icons/solar/shield-check-linear';
+import shieldCrossLinear from '@iconify-icons/solar/shield-cross-linear';
+import shieldUserLinear from '@iconify-icons/solar/shield-user-linear';
+import trashBinTrashLinear from '@iconify-icons/solar/trash-bin-trash-linear';
 import uploadLinear from '@iconify-icons/solar/upload-linear';
 import userCircleLinear from '@iconify-icons/solar/user-circle-linear';
 import userIdLinear from '@iconify-icons/solar/user-id-linear';
@@ -42,6 +48,12 @@ const registry: [string, typeof widget2Linear][] = [
 	['solar:pulse-2-linear', activityLinear],
 	['solar:user-circle-linear', userCircleLinear],
 	['solar:shield-check-linear', shieldCheckLinear],
+	['solar:shield-cross-linear', shieldCrossLinear],
+	['solar:shield-user-linear', shieldUserLinear],
+	['solar:chat-round-call-linear', chatRoundCallLinear],
+	['solar:devices-linear', devicesLinear],
+	['solar:qr-code-linear', qrCodeLinear],
+	['solar:trash-bin-trash-linear', trashBinTrashLinear],
 	['solar:card-linear', cardLinear],
 	['solar:home-smile-linear', homeSmileLinear],
 	['solar:mailbox-linear', mailboxLinear],

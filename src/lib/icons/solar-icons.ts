@@ -35,7 +35,15 @@ export const SOLAR = {
 	activity: 'solar:pulse-2-linear',
 	securityLog: 'solar:shield-user-linear',
 	arrowRight: 'solar:arrow-right-linear',
-	search: 'solar:magnifer-linear'
+	search: 'solar:magnifer-linear',
+	totp: 'lucide:fingerprint',
+	sms: 'solar:chat-round-call-linear',
+	twoFactorEmail: 'solar:letter-linear',
+	backupCodes: 'solar:key-linear',
+	trustedDevices: 'solar:devices-linear',
+	shieldDisabled: 'solar:shield-cross-linear',
+	qrCode: 'solar:qr-code-linear',
+	trash: 'solar:trash-bin-trash-linear'
 } as const;
 
 export type SolarIconId = (typeof SOLAR)[keyof typeof SOLAR];

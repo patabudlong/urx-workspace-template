@@ -13,7 +13,7 @@
 		PASSWORD_CHANGE_FAILED_MESSAGE,
 		PASSWORD_CHANGED_MESSAGE
 	} from '$lib/shared/security-messages';
-	import type { PageData } from '../../../routes/(app)/(settings)/security/$types';
+	import type { PageData } from '../../../routes/(app)/(settings)/security/password/$types';
 	import KeyRoundIcon from '@lucide/svelte/icons/key-round';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import { invalidateAll } from '$app/navigation';

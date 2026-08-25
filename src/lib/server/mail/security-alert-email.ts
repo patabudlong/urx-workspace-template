@@ -61,7 +61,7 @@ export async function sendSecurityAlertEmail(input: SecurityAlertEmailInput): Pr
 	const copy = resolveSecurityEmailCopy({ level: input.level, kind: input.kind });
 	const secureAccountUrl = buildAuthenticatedAppPathUrl(
 		origin,
-		input.kind === SECURITY_EMAIL_KINDS.UNUSUAL_LOGIN ? '/security/activity' : '/security'
+		input.kind === SECURITY_EMAIL_KINDS.UNUSUAL_LOGIN ? '/security/activity' : '/security/password'
 	);
 
 	const content = {

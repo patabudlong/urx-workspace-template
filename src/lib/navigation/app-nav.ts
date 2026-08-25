@@ -124,9 +124,10 @@ export const USER_PROFILE_NAV_ITEMS: AppNavItem[] = [
 	},
 	{
 		title: 'Security',
-		href: '/security',
+		href: '/security/password',
 		icon: SOLAR.security,
-		match: 'exact'
+		match: 'prefix',
+		activeHref: '/security'
 	}
 ];
 

@@ -26,7 +26,7 @@ export const load: PageServerLoad = async ({ parent, locals, url }) => {
 		total,
 		unusualOnly,
 		meta: {
-			title: 'Security activity'
+			title: 'Recent activity'
 		}
 	};
 };

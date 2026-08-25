@@ -19,7 +19,7 @@
 		TWO_FACTOR_REGENERATE_GOOGLE_DESCRIPTION,
 		TWO_FACTOR_REGENERATE_PASSWORD_DESCRIPTION
 	} from '$lib/shared/security-messages';
-	import type { PageData } from '../../../routes/(app)/(settings)/security/$types';
+	import type { PageData } from '../../../routes/(app)/(settings)/security/two-factor/$types';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import KeyRoundIcon from '@lucide/svelte/icons/key-round';
 	import { invalidateAll } from '$app/navigation';
