@@ -26,6 +26,16 @@ export function formatPayslipPeriod(payslip: PayrollPayslipDto): string {
 	return `${start} – ${end}`;
 }
 
+export function formatPayslipGeneratedAt(date: Date = new Date()): string {
+	return new Intl.DateTimeFormat(undefined, {
+		year: 'numeric',
+		month: 'short',
+		day: 'numeric',
+		hour: 'numeric',
+		minute: '2-digit'
+	}).format(date);
+}
+
 export function formatWorkedHours(minutes: number): string {
 	const hours = Math.floor(minutes / 60);
 	const remainder = minutes % 60;

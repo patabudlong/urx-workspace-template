@@ -4,10 +4,12 @@ import type { PayrollPayslipDto } from '$lib/shared/models/payroll-payslip';
 import { formatPayRateCents } from '$lib/shared/payroll/format';
 import { PAYROLL_PAY_TYPE_LABELS } from '$lib/shared/payroll/pay-rate';
 import {
+	formatPayslipGeneratedAt,
 	formatPayslipMoney,
 	formatPayslipPeriod,
 	formatWorkedHours
 } from '$lib/shared/payroll/payslip-format';
+import { PAYSLIP_PRINT_MARGINS } from '$lib/shared/payroll/payslip-print';
 
 function buildPayslipPdfFilename(payslip: PayrollPayslipDto): string {
 	const safeTitle = payslip.runTitle.replace(/[^\w.-]+/g, '-').replace(/-+/g, '-');
@@ -23,7 +25,15 @@ export function generatePayslipPdfBuffer(
 	currency: PayrollCurrency
 ): Promise<Buffer> {
 	return new Promise((resolve, reject) => {
-		const doc = new PDFDocument({ margin: 48, size: 'A4' });
+		const doc = new PDFDocument({
+			size: 'A4',
+			margins: {
+				top: PAYSLIP_PRINT_MARGINS.topPt,
+				right: PAYSLIP_PRINT_MARGINS.rightPt,
+				bottom: PAYSLIP_PRINT_MARGINS.bottomPt,
+				left: PAYSLIP_PRINT_MARGINS.leftPt
+			}
+		});
 		const chunks: Buffer[] = [];
 
 		doc.on('data', (chunk: Buffer) => chunks.push(chunk));
@@ -54,7 +64,7 @@ export function generatePayslipPdfBuffer(
 		doc.font('Helvetica').text(
 			`${formatPayRateCents(payslip.payRateCents, payslip.payType, currency)} (${PAYROLL_PAY_TYPE_LABELS[payslip.payType]})`
 		);
-		doc.text(`Time worked: ${formatWorkedHours(payslip.workedMinutes)} (${payslip.workDays} day(s))`);
+		doc.text(`Actual Hours Logged: ${formatWorkedHours(payslip.workedMinutes)} (${payslip.workDays} day(s))`);
 
 		doc.moveDown(1);
 		doc.font('Helvetica-Bold').fontSize(14).text('Earnings');
@@ -101,6 +111,23 @@ export function generatePayslipPdfBuffer(
 		doc.font('Helvetica-Bold').fontSize(16).text(formatPayslipMoney(payslip.netCents, currency), {
 			align: 'right'
 		});
+
+		const right = doc.page.width - doc.page.margins.right;
+
+		doc.moveDown(2);
+		doc.strokeColor('#e4e4e7')
+			.lineWidth(0.5)
+			.moveTo(left, doc.y)
+			.lineTo(right, doc.y)
+			.stroke();
+		doc.moveDown(0.5);
+		doc.font('Helvetica')
+			.fontSize(9)
+			.fillColor('#71717a')
+			.text(`Date and time generated: ${formatPayslipGeneratedAt(new Date())}`, left, doc.y, {
+				align: 'center',
+				width: right - left
+			});
 
 		doc.end();
 	});

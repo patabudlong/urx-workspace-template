@@ -18,3 +18,13 @@ export const WORKSPACE_LOGO_STORAGE_NOT_CONFIGURED_MESSAGE =
 	'Logo uploads are not available right now. Try again later or contact support.';
 
 export const WORKSPACE_LOGO_NO_CHANGES_MESSAGE = 'No logo changes to save.';
+
+export const WORKSPACE_NAME_UPDATED_MESSAGE = 'Workspace name updated.';
+
+export const WORKSPACE_NAME_UPDATE_FAILED_MESSAGE =
+	'We could not update your workspace name. Refresh the page and try again.';
+
+export const WORKSPACE_NAME_TAKEN_MESSAGE =
+	'This workspace name is already taken. Choose a different name.';
+
+export const WORKSPACE_NAME_NO_CHANGES_MESSAGE = 'No name changes to save.';

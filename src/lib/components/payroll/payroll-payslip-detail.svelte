@@ -103,7 +103,7 @@
 			<p class="text-muted-foreground text-xs">{PAYROLL_PAY_TYPE_LABELS[payslip.payType]}</p>
 		</div>
 		<div>
-			<p class="text-muted-foreground text-sm">Time worked</p>
+			<p class="text-muted-foreground text-sm">Actual Hours Logged</p>
 			<p class="font-medium">{formatWorkedHours(payslip.workedMinutes)}</p>
 			<p class="text-muted-foreground text-xs">{payslip.workDays} day(s) with time</p>
 		</div>

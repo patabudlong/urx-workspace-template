@@ -7,11 +7,31 @@ import {
 import { formatPayRateCents } from '$lib/shared/payroll/format';
 import { PAYROLL_PAY_TYPE_LABELS } from '$lib/shared/payroll/pay-rate';
 import {
+	formatPayslipGeneratedAt,
 	formatPayslipMoney,
 	formatPayslipPeriod,
 	formatWorkedHours
 } from '$lib/shared/payroll/payslip-format';
 import { getWorkspaceInitials } from '$lib/shared/workspace-context';
+
+/** 1 cm ≈ 28.35 pt (PDFKit). */
+const CM_TO_PT = 72 / 2.54;
+
+const topCm = 1;
+const rightCm = 2;
+const bottomCm = 2.5;
+const leftCm = 2;
+
+export const PAYSLIP_PRINT_MARGINS = {
+	topCm,
+	rightCm,
+	bottomCm,
+	leftCm,
+	topPt: Math.round(topCm * CM_TO_PT),
+	rightPt: Math.round(rightCm * CM_TO_PT),
+	bottomPt: Math.round(bottomCm * CM_TO_PT),
+	leftPt: Math.round(leftCm * CM_TO_PT)
+} as const;
 
 export const PAYSLIP_PRINT_DOCUMENT_CSS = `
 	.pd-root {
@@ -164,11 +184,25 @@ export const PAYSLIP_PRINT_DOCUMENT_CSS = `
 	.pd-total {
 		font-weight: 700;
 	}
+
+	.pd-footer {
+		border-top: 1px solid #e4e4e7;
+		color: #71717a;
+		font-size: 11px;
+		margin-top: 32px;
+		padding-top: 12px;
+		text-align: center;
+	}
+
+	.pd-footer p {
+		margin: 0;
+	}
 `;
 
 export const PAYSLIP_PRINT_PAGE_CSS = `
 	@page {
-		margin: 1.5cm;
+		margin: 0;
+		size: A4;
 	}
 
 	* {
@@ -177,7 +211,7 @@ export const PAYSLIP_PRINT_PAGE_CSS = `
 
 	body {
 		margin: 0;
-		padding: 0;
+		padding: ${PAYSLIP_PRINT_MARGINS.topCm}cm ${PAYSLIP_PRINT_MARGINS.rightCm}cm ${PAYSLIP_PRINT_MARGINS.bottomCm}cm ${PAYSLIP_PRINT_MARGINS.leftCm}cm;
 		color: #111;
 		font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 		font-size: 14px;
@@ -326,7 +360,7 @@ export function buildPayslipPrintDocumentHtml(input: PayslipPrintDocumentInput):
 					<p class="pd-meta-hint">${escapeHtml(PAYROLL_PAY_TYPE_LABELS[payslip.payType])}</p>
 				</div>
 				<div>
-					<p class="pd-meta-label">Time worked</p>
+					<p class="pd-meta-label">Actual Hours Logged</p>
 					<p class="pd-meta-value">${escapeHtml(formatWorkedHours(payslip.workedMinutes))}</p>
 					<p class="pd-meta-hint">${payslip.workDays} day(s) with time</p>
 				</div>
@@ -354,6 +388,10 @@ export function buildPayslipPrintDocumentHtml(input: PayslipPrintDocumentInput):
 			</section>
 
 			${deductionsSection}
+
+			<footer class="pd-footer">
+				<p>Date and time generated: ${escapeHtml(formatPayslipGeneratedAt(new Date()))}</p>
+			</footer>
 		</article>
 	`;
 

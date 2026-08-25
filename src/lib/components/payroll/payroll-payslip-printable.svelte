@@ -9,6 +9,7 @@
 	import { formatPayRateCents } from '$lib/shared/payroll/format';
 	import { PAYROLL_PAY_TYPE_LABELS } from '$lib/shared/payroll/pay-rate';
 	import {
+		formatPayslipGeneratedAt,
 		formatPayslipMoney,
 		formatPayslipPeriod,
 		formatWorkedHours
@@ -37,6 +38,8 @@
 	const displayTotalDeductionsCents = $derived(
 		payslip.deductionLines.reduce((sum, line) => sum + line.amountCents, 0)
 	);
+
+	const generatedAt = new Date();
 
 	const PAYSLIP_PRINT_STYLE_ID = 'payslip-print-document-css';
 
@@ -89,7 +92,7 @@
 			<p class="pd-meta-hint">{PAYROLL_PAY_TYPE_LABELS[payslip.payType]}</p>
 		</div>
 		<div>
-			<p class="pd-meta-label">Time worked</p>
+			<p class="pd-meta-label">Actual Hours Logged</p>
 			<p class="pd-meta-value">{formatWorkedHours(payslip.workedMinutes)}</p>
 			<p class="pd-meta-hint">{payslip.workDays} day(s) with time</p>
 		</div>
@@ -153,4 +156,8 @@
 			</table>
 		</section>
 	{/if}
+
+	<footer class="pd-footer">
+		<p>Date and time generated: {formatPayslipGeneratedAt(generatedAt)}</p>
+	</footer>
 </article>

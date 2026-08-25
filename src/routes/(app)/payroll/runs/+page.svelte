@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
+	import FormDatePicker from '$lib/components/form/form-date-picker.svelte';
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
 	import ListSearchInput from '$lib/components/list/list-search-input.svelte';
 	import PayrollRunsTipsPanel from '$lib/components/payroll/payroll-runs-tips-panel.svelte';
@@ -20,6 +21,7 @@
 	} from '$lib/shared/payroll/messages';
 	import { createPayrollRunSchema } from '$lib/shared/payroll/schemas';
 	import { cn } from '$lib/utils.js';
+	import { parseDate } from '@internationalized/date';
 	import CalendarPlusIcon from '@lucide/svelte/icons/calendar-plus';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import CircleCheckIcon from '@lucide/svelte/icons/circle-check';
@@ -107,6 +109,10 @@
 	);
 
 	const isSearching = $derived(searchQuery.trim().length > 0);
+
+	const periodEndMinValue = $derived(
+		/^\d{4}-\d{2}-\d{2}$/.test($form.periodStart) ? parseDate($form.periodStart) : undefined
+	);
 
 	function formatDate(value: string): string {
 		return new Intl.DateTimeFormat(undefined, {
@@ -213,7 +219,13 @@
 							<Form.Control>
 								{#snippet children({ props })}
 									<Form.Label required>Period start</Form.Label>
-									<Input {...props} bind:value={$form.periodStart} type="date" />
+									<FormDatePicker
+										id={props.id}
+										name={props.name}
+										aria-invalid={props['aria-invalid']}
+										aria-describedby={props['aria-describedby']}
+										bind:value={$form.periodStart}
+									/>
 								{/snippet}
 							</Form.Control>
 							<SingleFieldErrors />
@@ -223,7 +235,14 @@
 							<Form.Control>
 								{#snippet children({ props })}
 									<Form.Label required>Period end</Form.Label>
-									<Input {...props} bind:value={$form.periodEnd} type="date" />
+									<FormDatePicker
+										id={props.id}
+										name={props.name}
+										aria-invalid={props['aria-invalid']}
+										aria-describedby={props['aria-describedby']}
+										bind:value={$form.periodEnd}
+										minValue={periodEndMinValue}
+									/>
 								{/snippet}
 							</Form.Control>
 							<SingleFieldErrors />

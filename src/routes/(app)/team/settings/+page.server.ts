@@ -1,12 +1,18 @@
 import { error, fail } from '@sveltejs/kit';
+import { message, superValidate } from 'sveltekit-superforms';
+import { zod4 } from 'sveltekit-superforms/adapters';
 import type { Actions, PageServerLoad } from './$types';
-import { updateWorkspaceBrandLogoForWeb } from '$lib/server/team/workspace-settings';
+import {
+	updateWorkspaceBrandLogoForWeb,
+	updateWorkspaceNameForWeb
+} from '$lib/server/team/workspace-settings';
 import {
 	listUserWorkspaceContexts,
 	resolveActiveWorkspaceContext
 } from '$lib/server/workspace-context';
 import { getWorkspaceHostSuffix } from '$lib/server/workspace-host';
 import { canEditTeamSettings } from '$lib/shared/team/member-management';
+import { updateWorkspaceNameSchema } from '$lib/shared/schemas/workspace-settings';
 import { buildWorkspaceBrandLogoDisplayUrl } from '$lib/shared/workspace-branding';
 import {
 	WORKSPACE_LOGO_INVALID_TYPE_MESSAGE,
@@ -16,7 +22,11 @@ import {
 	WORKSPACE_LOGO_TOO_LARGE_MESSAGE,
 	WORKSPACE_LOGO_UPDATE_FAILED_MESSAGE,
 	WORKSPACE_LOGO_UPDATE_FORBIDDEN_MESSAGE,
-	WORKSPACE_LOGO_UPDATED_MESSAGE
+	WORKSPACE_LOGO_UPDATED_MESSAGE,
+	WORKSPACE_NAME_NO_CHANGES_MESSAGE,
+	WORKSPACE_NAME_TAKEN_MESSAGE,
+	WORKSPACE_NAME_UPDATE_FAILED_MESSAGE,
+	WORKSPACE_NAME_UPDATED_MESSAGE
 } from '$lib/shared/team/workspace-settings-messages';
 
 export const load: PageServerLoad = async ({ parent }) => {
@@ -26,9 +36,16 @@ export const load: PageServerLoad = async ({ parent }) => {
 		error(403, 'You do not have permission to manage workspace settings.');
 	}
 
+	const nameForm = await superValidate(
+		{ name: workspace?.workspaceName ?? '' },
+		zod4(updateWorkspaceNameSchema),
+		{ id: 'workspaceNameForm' }
+	);
+
 	return {
 		brandLogoUrl: workspace?.brandLogoUrl ?? null,
 		workspaceName: workspace?.workspaceName ?? '',
+		nameForm,
 		meta: {
 			title: 'Workspace settings'
 		}
@@ -36,6 +53,55 @@ export const load: PageServerLoad = async ({ parent }) => {
 };
 
 export const actions: Actions = {
+	updateName: async ({ request, url, locals }) => {
+		const form = await superValidate(request, zod4(updateWorkspaceNameSchema), {
+			id: 'workspaceNameForm'
+		});
+
+		if (!locals.user) {
+			return fail(401, { nameForm: form });
+		}
+
+		if (!form.valid) {
+			return fail(400, { nameForm: form });
+		}
+
+		const workspaces = await listUserWorkspaceContexts(locals.user.id);
+		const workspace = resolveActiveWorkspaceContext(workspaces, url, getWorkspaceHostSuffix());
+
+		if (!workspace) {
+			return message(form, WORKSPACE_NAME_UPDATE_FAILED_MESSAGE, { status: 400 });
+		}
+
+		if (!canEditTeamSettings(workspace.role)) {
+			return message(form, WORKSPACE_LOGO_UPDATE_FORBIDDEN_MESSAGE, { status: 403 });
+		}
+
+		const result = await updateWorkspaceNameForWeb({
+			workspaceId: workspace.workspaceId,
+			actorRole: workspace.role,
+			name: form.data.name
+		});
+
+		if (!result.ok) {
+			if (result.reason === 'FORBIDDEN') {
+				return message(form, WORKSPACE_LOGO_UPDATE_FORBIDDEN_MESSAGE, { status: 403 });
+			}
+
+			if (result.reason === 'NO_CHANGES') {
+				return message(form, WORKSPACE_NAME_NO_CHANGES_MESSAGE, { status: 400 });
+			}
+
+			if (result.reason === 'NAME_TAKEN') {
+				return message(form, WORKSPACE_NAME_TAKEN_MESSAGE, { status: 400 });
+			}
+
+			return message(form, WORKSPACE_NAME_UPDATE_FAILED_MESSAGE, { status: 500 });
+		}
+
+		return message(form, WORKSPACE_NAME_UPDATED_MESSAGE);
+	},
+
 	updateLogo: async ({ request, url, locals }) => {
 		if (!locals.user) {
 			return fail(401);
