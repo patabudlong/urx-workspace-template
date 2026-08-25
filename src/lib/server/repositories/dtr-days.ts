@@ -159,6 +159,37 @@ export async function listDtrDaysForWorkspace(input: {
 	});
 }
 
+export async function getDtrDayForWorkspace(input: {
+	workspaceId: string;
+	employeeId: string;
+	date: string;
+}): Promise<DtrDayDto | null> {
+	await ensureDtrDayIndexes();
+
+	const collection = await getDtrDaysCollection<DtrDayDocument>();
+	const doc = await collection.findOne(
+		{
+			workspaceId: new ObjectId(input.workspaceId),
+			employeeId: new ObjectId(input.employeeId),
+			date: input.date
+		},
+		{ projection: DTR_DAY_PROJECTION }
+	);
+
+	if (!doc) {
+		return null;
+	}
+
+	const dto = toDtrDayDto(doc);
+	const year = Number(dto.date.slice(0, 4));
+	const holidayContext = await loadDtrHolidayContextForWorkspace({
+		workspaceId: input.workspaceId,
+		year
+	});
+
+	return enrichDtrDayDto(dto, holidayContext);
+}
+
 function parseDtrCalendarDate(value: string): Date {
 	const [year, month, day] = value.split('-').map(Number);
 	return new Date(Date.UTC(year, month - 1, day));

@@ -1,9 +1,14 @@
+import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { getDtrSettingsForWorkspace } from '$lib/server/repositories/dtr-settings';
 import { countPayrollEmployeesForWorkspace } from '$lib/server/repositories/payroll-employees';
 
 export const load: PageServerLoad = async ({ parent, isDataRequest }) => {
-	const { workspace, canManageDtr } = await parent();
+	const { workspace, canManageDtr, hasLinkedPayrollEmployee } = await parent();
+
+	if (!canManageDtr && hasLinkedPayrollEmployee) {
+		redirect(302, '/dtr/clock');
+	}
 
 	if (!workspace || !canManageDtr) {
 		return {

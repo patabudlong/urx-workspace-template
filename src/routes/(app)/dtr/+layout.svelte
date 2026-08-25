@@ -8,8 +8,10 @@
 
 	let { children } = $props();
 
-	const dtrNavItems = $derived(getDtrNavItems(page.data.workspace?.role));
-	const canManage = $derived(dtrNavItems.length > 0);
+	const dtrNavItems = $derived(
+		getDtrNavItems(page.data.workspace?.role, page.data.hasLinkedPayrollEmployee)
+	);
+	const canAccess = $derived(dtrNavItems.length > 0);
 </script>
 
 <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-auto overflow-y-auto lg:flex-row">
@@ -26,11 +28,11 @@
 			<DtrSectionSidebar items={dtrNavItems} />
 		</div>
 
-		{#if !canManage}
+		{#if !canAccess}
 			<StatusAlert
 				variant="warning"
 				title="DTR access required"
-				description="Only workspace owners and admins can view or manage daily time records."
+				description="Only workspace owners and admins can manage daily time records. Employees can clock in and out when their login email matches a payroll employee record."
 			/>
 		{:else}
 			{@render children()}

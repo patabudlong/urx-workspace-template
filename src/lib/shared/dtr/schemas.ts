@@ -336,3 +336,9 @@ export const dtrHolidayCalendarQuerySchema = z.object({
 });
 
 export type DtrHolidayCalendarQuery = z.infer<typeof dtrHolidayCalendarQuerySchema>;
+
+export const dtrPunchSchema = z.object({
+	date: dtrDateSchema.optional()
+});
+
+export type DtrPunchInput = z.infer<typeof dtrPunchSchema>;
