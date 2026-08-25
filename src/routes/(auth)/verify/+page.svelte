@@ -7,7 +7,7 @@
 	import RecaptchaNotice from '$lib/components/auth/recaptcha-notice.svelte';
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
 	import VerificationCodeInput from '$lib/components/auth/verification-code-input.svelte';
-	import { Button } from '$lib/components/ui/button/index.js';
+	import GradientButton from '$lib/components/gradient-button.svelte';
 	import * as Form from '$lib/components/ui/form/index.js';
 	import { verifyEmailClientSchema, type VerifyEmailInput } from '$lib/shared/schemas/auth';
 	import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
@@ -122,9 +122,9 @@
 					? 'Sign in to accept your workspace invitation.'
 					: 'Sign in to continue to Urixoft Workspace.'}
 			/>
-			<Button href={loginHref} class={AUTH_ACTION_BUTTON_CLASS}>
+			<GradientButton href={loginHref} tone="primary" class={AUTH_ACTION_BUTTON_CLASS}>
 				{data.isInvitationFlow ? 'Sign in to accept invitation' : 'Sign in'}
-			</Button>
+			</GradientButton>
 		{:else}
 			{#if recaptchaError}
 				<AuthFormMessageAlert message={recaptchaError} />
@@ -159,8 +159,9 @@
 						<SingleFieldErrors />
 					</Form.Field>
 
-					<Button
+					<GradientButton
 						type="submit"
+						tone="primary"
 						class={cn(
 							AUTH_ACTION_BUTTON_CLASS,
 							submitDisabled && 'pointer-events-none cursor-wait'
@@ -174,7 +175,7 @@
 						{:else}
 							Verify email
 						{/if}
-					</Button>
+					</GradientButton>
 					<RecaptchaNotice />
 				</div>
 			</form>
@@ -188,7 +189,7 @@
 					{data.isInvitationFlow ? 'Sign in to accept invitation' : 'Back to sign in'}
 				</a>
 				<span class="text-muted-foreground px-2" aria-hidden="true">|</span>
-				<a href={resendHref} class="hover:text-foreground hover:underline">
+				<a href={resendHref} class="hover:text-foreground">
 					Resend verification email
 				</a>
 			</p>
@@ -196,11 +197,11 @@
 			<div class="space-y-3 text-center">
 				<p class="text-sm">Didn't get a code?</p>
 				<p class="text-sm">
-					<a href={resendHref} class="hover:text-foreground hover:underline">
+					<a href={resendHref} class="hover:text-foreground">
 						Resend verification email
 					</a>
 					<span class="px-2" aria-hidden="true">|</span>
-					<a href="/verify/resend" class="hover:text-foreground hover:underline">
+					<a href="/verify/resend" class="hover:text-foreground">
 						Use a different email
 					</a>
 				</p>

@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { AUTH_ACTION_BUTTON_CLASS, AUTH_OAUTH_COMPACT_CLASS } from '$lib/auth/ui';
+	import { AUTH_ACTION_BUTTON_CLASS } from '$lib/auth/ui';
 	import { getPlatformAuthOriginFromWindow } from '$lib/auth/platform-origin';
-	import { Button } from '$lib/components/ui/button/index.js';
+	import GradientButton from '$lib/components/gradient-button.svelte';
 	import { cn } from '$lib/utils.js';
 	import type { ConsentContext } from '$lib/shared/models/consent-event';
 
@@ -26,11 +26,12 @@
 	}
 </script>
 
-<Button
+<GradientButton
 	type="button"
-	variant="outline"
+	appearance="outline"
+	tone="primary"
 	class={cn(
-		variant === 'compact' ? AUTH_OAUTH_COMPACT_CLASS : cn(AUTH_ACTION_BUTTON_CLASS, 'gap-2')
+		variant === 'compact' ? 'h-10 w-full gap-2' : cn(AUTH_ACTION_BUTTON_CLASS, 'gap-2')
 	)}
 	{disabled}
 	onclick={handleClick}
@@ -58,4 +59,4 @@
 		/>
 	</svg>
 	{variant === 'compact' ? 'Google' : 'Continue with Google'}
-</Button>
+</GradientButton>

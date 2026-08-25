@@ -8,7 +8,7 @@
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
 	import TermsConsentField from '$lib/components/auth/terms-consent-field.svelte';
 	import PasswordInput from '$lib/components/password-input.svelte';
-	import { Button } from '$lib/components/ui/button/index.js';
+	import GradientButton from '$lib/components/gradient-button.svelte';
 	import * as Form from '$lib/components/ui/form/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
@@ -16,7 +16,7 @@
 	import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 	import { CONSENT_CONTEXTS } from '$lib/shared/models/consent-event';
 	import { warmRecaptcha } from '$lib/recaptcha/client';
-	import { AUTH_ACTION_BUTTON_CLASS, AUTH_INLINE_LINK_CLASS } from '$lib/auth/ui';
+	import { AUTH_ACTION_BUTTON_CLASS, AUTH_FIELD_CONTROL_CLASS, AUTH_INLINE_LINK_CLASS } from '$lib/auth/ui';
 	import { cn } from '$lib/utils.js';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import { get } from 'svelte/store';
@@ -140,6 +140,7 @@
 										type="text"
 										autocomplete="given-name"
 										disabled={submitDisabled}
+										class={AUTH_FIELD_CONTROL_CLASS}
 										bind:value={$form.firstName}
 									/>
 								{/snippet}
@@ -156,6 +157,7 @@
 										type="text"
 										autocomplete="family-name"
 										disabled={submitDisabled}
+										class={AUTH_FIELD_CONTROL_CLASS}
 										bind:value={$form.lastName}
 									/>
 								{/snippet}
@@ -174,7 +176,7 @@
 									autocomplete="email"
 									disabled={submitDisabled}
 									readonly={Boolean(data.lockedEmail)}
-									class={cn(data.lockedEmail && 'bg-muted/40')}
+									class={cn(AUTH_FIELD_CONTROL_CLASS, data.lockedEmail && 'bg-muted/40')}
 									bind:value={$form.email}
 								/>
 							{/snippet}
@@ -188,6 +190,7 @@
 								<Form.Label>Password</Form.Label>
 								<PasswordInput
 									{...props}
+									groupClass={AUTH_FIELD_CONTROL_CLASS}
 									disabled={submitDisabled}
 									bind:value={$form.password}
 									showStrength
@@ -201,8 +204,9 @@
 
 				<TermsConsentField {superform} formStore={form} disabled={submitDisabled} />
 
-				<Button
+				<GradientButton
 					type="submit"
+					tone="primary"
 					class={cn(
 						AUTH_ACTION_BUTTON_CLASS,
 						(!$form.acceptedTerms || submitDisabled) && 'pointer-events-none',
@@ -217,7 +221,7 @@
 					{:else}
 						{data.lockedEmail ? 'Create account & join' : 'Create account'}
 					{/if}
-				</Button>
+				</GradientButton>
 				<RecaptchaNotice />
 			</div>
 		</form>

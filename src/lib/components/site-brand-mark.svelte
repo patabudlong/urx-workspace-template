@@ -1,4 +1,5 @@
 <script lang="ts">
+	import GradientText from '$lib/components/gradient-text.svelte';
 	import UrixoftLogo from '$lib/components/urixoft-logo.svelte';
 	import { APP_NAME, BRAND_NAME, PRODUCT_NAME } from '$lib/shared/site-meta';
 	import { cn } from '$lib/utils.js';
@@ -9,6 +10,7 @@
 		iconOnly = false,
 		/** `stacked` shows brand + product on two lines; `combined` shows full app name. */
 		nameFormat = 'stacked',
+		gradientProduct = false,
 		logoClass = 'size-8 shrink-0 rounded-sm',
 		class: className,
 		...rest
@@ -17,6 +19,7 @@
 		adaptiveLogo?: boolean;
 		iconOnly?: boolean;
 		nameFormat?: 'stacked' | 'combined';
+		gradientProduct?: boolean;
 		logoClass?: string;
 		class?: string;
 	} & Record<string, unknown> = $props();
@@ -37,7 +40,13 @@
 				<p class="truncate font-semibold">{APP_NAME}</p>
 			{:else}
 				<p class="truncate font-semibold">{BRAND_NAME}</p>
-				<p class="text-muted-foreground truncate text-xs">{PRODUCT_NAME}</p>
+				{#if gradientProduct}
+					<GradientText tone="primary" as="p" class="truncate text-xs font-medium">
+						{PRODUCT_NAME}
+					</GradientText>
+				{:else}
+					<p class="text-muted-foreground truncate text-xs">{PRODUCT_NAME}</p>
+				{/if}
 			{/if}
 		</div>
 	{/if}

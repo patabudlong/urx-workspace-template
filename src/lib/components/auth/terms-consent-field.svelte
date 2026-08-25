@@ -35,7 +35,7 @@
 						href={LEGAL_ROUTES.termsOfService}
 						target="_blank"
 						rel="noopener noreferrer"
-						class="text-primary font-medium hover:underline"
+						class="text-primary font-medium"
 					>
 						Terms of Service
 					</a>
@@ -44,7 +44,7 @@
 						href={LEGAL_ROUTES.privacyNotice}
 						target="_blank"
 						rel="noopener noreferrer"
-						class="text-primary font-medium hover:underline"
+						class="text-primary font-medium"
 					>
 						Privacy Notice
 					</a>.

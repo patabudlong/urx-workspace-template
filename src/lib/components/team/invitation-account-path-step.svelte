@@ -1,6 +1,6 @@
 <script lang="ts">
 	import InvitationWorkspaceSummary from '$lib/components/team/invitation-workspace-summary.svelte';
-	import { Button } from '$lib/components/ui/button/index.js';
+	import GradientButton from '$lib/components/gradient-button.svelte';
 	import { AUTH_ACTION_BUTTON_CLASS } from '$lib/auth/ui';
 	import { cn } from '$lib/utils.js';
 	import {
@@ -99,8 +99,8 @@
 	</div>
 
 	{#if activePath}
-		<Button href={activePath.href} class={AUTH_ACTION_BUTTON_CLASS}>
+		<GradientButton href={activePath.href} tone="primary" class={AUTH_ACTION_BUTTON_CLASS}>
 			{activePath.cta}
-		</Button>
+		</GradientButton>
 	{/if}
 </div>

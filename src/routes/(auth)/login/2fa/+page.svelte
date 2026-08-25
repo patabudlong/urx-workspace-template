@@ -4,6 +4,7 @@
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
 	import VerificationCodeInput from '$lib/components/auth/verification-code-input.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
+	import GradientButton from '$lib/components/gradient-button.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Form from '$lib/components/ui/form/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
@@ -275,8 +276,9 @@
 				/>
 			</div>
 
-			<Button
+			<GradientButton
 				type="submit"
+				tone="primary"
 				class={AUTH_ACTION_BUTTON_CLASS}
 				disabled={submitting || formRateLimited}
 				aria-busy={submitting}
@@ -288,14 +290,14 @@
 					<ShieldCheckIcon class="size-4" aria-hidden="true" />
 					Verify and sign in
 				{/if}
-			</Button>
+			</GradientButton>
 		</form>
 
 		<p class="text-muted-foreground text-center text-sm">
 			{#if useBackupCode}
 				<button
 					type="button"
-					class="text-primary font-medium hover:underline"
+					class="text-primary font-medium"
 					onclick={() => {
 						useBackupCode = false;
 						$form.method = data.methods[0] ?? TWO_FACTOR_METHODS.TOTP;
@@ -306,7 +308,7 @@
 			{:else}
 				<button
 					type="button"
-					class="text-primary font-medium hover:underline"
+					class="text-primary font-medium"
 					onclick={() => {
 						useBackupCode = true;
 						$form.code = '';

@@ -26,6 +26,11 @@
 	class={cn(
 		gradientButtonClasses(tone, appearance),
 		'hover:bg-transparent active:bg-transparent dark:hover:bg-transparent',
+		appearance === 'filled'
+			? tone === 'warning'
+				? 'hover:text-[var(--brand-deep)]'
+				: 'hover:text-white'
+			: 'hover:text-foreground',
 		className
 	)}
 >

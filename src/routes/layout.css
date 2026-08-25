@@ -183,6 +183,23 @@
 		color: transparent;
 	}
 
+	.gradient-link {
+		background-image: linear-gradient(
+			90deg,
+			var(--gradient-primary-from),
+			var(--gradient-primary-to)
+		);
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
+		font-weight: 500;
+		transition: filter 150ms ease;
+	}
+
+	.gradient-link:hover {
+		filter: brightness(1.12);
+	}
+
 	.gradient-button {
 		border-color: transparent;
 		background-color: transparent;
@@ -218,9 +235,19 @@
 		color: #ffffff;
 	}
 
+	.gradient-button-primary:hover,
+	.gradient-button-primary:active {
+		color: #ffffff;
+	}
+
 	.gradient-button-secondary {
 		--gradient-from: var(--gradient-secondary-from);
 		--gradient-to: var(--gradient-secondary-to);
+		color: #ffffff;
+	}
+
+	.gradient-button-secondary:hover,
+	.gradient-button-secondary:active {
 		color: #ffffff;
 	}
 
@@ -230,9 +257,19 @@
 		color: #ffffff;
 	}
 
+	.gradient-button-destructive:hover,
+	.gradient-button-destructive:active {
+		color: #ffffff;
+	}
+
 	.gradient-button-warning {
 		--gradient-from: var(--gradient-warning-from);
 		--gradient-to: var(--gradient-warning-to);
+		color: var(--brand-deep);
+	}
+
+	.gradient-button-warning:hover,
+	.gradient-button-warning:active {
 		color: var(--brand-deep);
 	}
 
@@ -247,10 +284,11 @@
 		color: var(--foreground);
 		transition:
 			background-color 150ms ease,
-			color 150ms ease;
+			background-image 150ms ease;
 	}
 
-	.gradient-button-outline:hover {
+	.gradient-button-outline:hover,
+	.gradient-button-outline:active {
 		background-image:
 			linear-gradient(
 				color-mix(in srgb, var(--muted) 55%, var(--background)),

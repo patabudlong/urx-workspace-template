@@ -5,7 +5,7 @@
 	import InvitationAcceptPanel from '$lib/components/team/invitation-accept-panel.svelte';
 	import InvitationAccountPathStep from '$lib/components/team/invitation-account-path-step.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
-	import { Button } from '$lib/components/ui/button/index.js';
+	import GradientButton from '$lib/components/gradient-button.svelte';
 	import { AUTH_ACTION_BUTTON_CLASS } from '$lib/auth/ui';
 	import { enhance as formEnhance } from '$app/forms';
 	import type { SubmitFunction } from '@sveltejs/kit';
@@ -94,13 +94,13 @@
 			title="Invitation declined"
 			description={TEAM_INVITATION_DECLINED_MESSAGE}
 		/>
-		<Button href="/login" class={AUTH_ACTION_BUTTON_CLASS}>Sign in</Button>
+		<GradientButton href="/login" tone="primary" class={AUTH_ACTION_BUTTON_CLASS}>Sign in</GradientButton>
 	{:else if !data.tokenValid}
 		<FormAlert
 			title="Invitation unavailable"
 			description="This invitation link is invalid or has expired. Ask your workspace admin to send a new invite."
 		/>
-		<Button href="/login" class={AUTH_ACTION_BUTTON_CLASS}>Sign in</Button>
+		<GradientButton href="/login" tone="primary" class={AUTH_ACTION_BUTTON_CLASS}>Sign in</GradientButton>
 	{:else if !data.isAuthenticated}
 		<InvitationAccountPathStep
 			{invitedEmail}
@@ -150,7 +150,7 @@
 				<p class="text-center text-sm">
 					<button
 						type="submit"
-						class="text-muted-foreground hover:text-foreground hover:underline disabled:pointer-events-none disabled:opacity-60"
+						class="text-muted-foreground hover:text-foreground disabled:pointer-events-none disabled:opacity-60"
 						disabled={declining || submitting}
 					>
 						{#if declining}
