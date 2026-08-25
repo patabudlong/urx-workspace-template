@@ -9,6 +9,7 @@ import calendarMarkLinear from '@iconify-icons/solar/calendar-mark-linear';
 import cardLinear from '@iconify-icons/solar/card-linear';
 import caseLinear from '@iconify-icons/solar/case-linear';
 import clockCircleLinear from '@iconify-icons/solar/clock-circle-linear';
+import fingerprintLinear from '@iconify-icons/lucide/fingerprint';
 import historyLinear from '@iconify-icons/solar/history-linear';
 import homeSmileLinear from '@iconify-icons/solar/home-smile-linear';
 import keyLinear from '@iconify-icons/solar/key-linear';
@@ -36,6 +37,7 @@ const registry: [string, typeof widget2Linear][] = [
 	['solar:letter-linear', letterLinear],
 	['solar:wallet-money-linear', walletMoneyLinear],
 	['solar:clock-circle-linear', clockCircleLinear],
+	['lucide:fingerprint', fingerprintLinear],
 	['solar:book-bookmark-linear', bookBookmarkLinear],
 	['solar:pulse-2-linear', activityLinear],
 	['solar:user-circle-linear', userCircleLinear],

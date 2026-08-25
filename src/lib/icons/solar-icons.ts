@@ -18,6 +18,7 @@ export const SOLAR = {
 	payRuns: 'solar:calendar-linear',
 	payslips: 'solar:document-text-linear',
 	timeRecords: 'solar:history-linear',
+	fingerprint: 'lucide:fingerprint',
 	upload: 'solar:upload-linear',
 	paySchedule: 'solar:calendar-linear',
 	jobTitles: 'solar:case-linear',

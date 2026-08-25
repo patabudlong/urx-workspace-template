@@ -17,6 +17,9 @@ importers:
       '@iconify-icon/react':
         specifier: ^3.0.3
         version: 3.0.3(react@19.2.8)
+      '@iconify-icons/lucide':
+        specifier: ^2.0.2
+        version: 2.0.2
       '@iconify-icons/solar':
         specifier: ^2.0.1
         version: 2.0.1
@@ -419,6 +422,9 @@ packages:
     resolution: {integrity: sha512-i4N/J0+UZWQu5Ty9Z+SxsNsuNdY7w2TnSuI65Qw9UrWudvnRodKfTUMvyg0hvxSZolqAE1YJVZu1HqgfpgPX9w==}
     peerDependencies:
       react: '>=18.0.0'
+
+  '@iconify-icons/lucide@2.0.2':
+    resolution: {integrity: sha512-kd/hD3lS7ymnV7J9U4cltdyRS7WY2zVQy6kCZ/WdWuL84YdleYjibHUlbehInJeS/3rGFxILDYDLqVClC2GkLg==}
 
   '@iconify-icons/solar@2.0.1':
     resolution: {integrity: sha512-qNGYTS9atZJAPxsD0tlctgWrouL+LUYzRKzaJ+l0Y4AmnqmqALb/bM+WrVv7RVjj9sjp8fVx1XmpGsZlN8tfXw==}
@@ -2429,6 +2435,10 @@ snapshots:
     dependencies:
       iconify-icon: 3.0.2
       react: 19.2.8
+
+  '@iconify-icons/lucide@2.0.2':
+    dependencies:
+      '@iconify/types': 2.0.0
 
   '@iconify-icons/solar@2.0.1':
     dependencies:

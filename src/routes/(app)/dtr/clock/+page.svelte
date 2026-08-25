@@ -4,7 +4,6 @@
 	import DtrStatusLegend from '$lib/components/dtr/dtr-status-legend.svelte';
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
-	import { Badge } from '$lib/components/ui/badge/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import {
@@ -21,8 +20,8 @@
 	import {
 		DTR_PUNCH_SLOT_LABELS,
 		formatDtrCalendarDate,
-		formatDtrClockTime,
 		formatDtrDisplayTime,
+		formatDtrLiveClockDisplay,
 		getTodayDtrDate,
 		resolveDtrPunchState,
 		summarizeDtrDayTimes,
@@ -41,7 +40,7 @@
 	let punching = $state(false);
 	let punchError = $state<string | null>(null);
 	let punchSuccess = $state(false);
-	let liveTime = $state(formatDtrClockTime());
+	let liveTime = $state(formatDtrLiveClockDisplay());
 
 	const isAdmin = $derived(page.data.canManageDtr);
 	const today = $derived(getTodayDtrDate());
@@ -74,7 +73,7 @@
 
 	onMount(() => {
 		const interval = window.setInterval(() => {
-			liveTime = formatDtrClockTime();
+			liveTime = formatDtrLiveClockDisplay();
 		}, 1000);
 
 		return () => window.clearInterval(interval);
@@ -139,15 +138,7 @@
 		description={isAdmin
 			? 'Emulate a biometric scanner to record your own login and logout times. Select a day on the calendar to review punches.'
 			: 'Tap the scanner to clock in or out. Your monthly login and logout times appear on the calendar below.'}
-	>
-		{#snippet actions()}
-			{#if data.employee?.employeeCode}
-				<Badge variant="secondary" class="h-10 px-3 text-sm font-medium">
-					ID {data.employee.employeeCode}
-				</Badge>
-			{/if}
-		{/snippet}
-	</PageHeader>
+	/>
 
 	{#if data.needsEmployeeLink}
 		<StatusAlert
@@ -195,6 +186,7 @@
 				<Card.Content class="flex flex-col gap-6 py-8">
 					<DtrBiometricPunchButton
 						label={punchLabel}
+						employeeId={data.employee?.employeeCode}
 						action={punchState.nextAction ?? 'in'}
 						disabled={!isViewingToday || data.isTodayLocked}
 						loading={punching}

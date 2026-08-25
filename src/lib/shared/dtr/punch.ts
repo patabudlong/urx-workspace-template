@@ -33,6 +33,15 @@ export function formatDtrClockTime(date = new Date()): string {
 	return `${hours}:${minutes}`;
 }
 
+/** 12-hour clock for live UI display (e.g. 6:17 PM). */
+export function formatDtrLiveClockDisplay(date = new Date()): string {
+	return new Intl.DateTimeFormat(undefined, {
+		hour: 'numeric',
+		minute: '2-digit',
+		hour12: true
+	}).format(date);
+}
+
 export function formatDtrDisplayTime(time: string | null | undefined): string {
 	if (!time) {
 		return '—';

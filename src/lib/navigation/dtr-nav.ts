@@ -34,7 +34,7 @@ export const DTR_EMPLOYEE_NAV_ITEMS: AppNavItem[] = [
 	{
 		title: 'My time',
 		href: '/dtr/clock',
-		icon: SOLAR.timeRecords,
+		icon: SOLAR.fingerprint,
 		match: 'exact'
 	}
 ];
@@ -52,7 +52,7 @@ export function getDtrNavItems(
 			{
 				title: 'Clock in/out',
 				href: '/dtr/clock',
-				icon: SOLAR.timeRecords,
+				icon: SOLAR.fingerprint,
 				match: 'exact'
 			}
 		];
