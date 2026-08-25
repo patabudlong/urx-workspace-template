@@ -44,6 +44,7 @@ export type PayrollEmployeesQuery = z.infer<typeof payrollEmployeesQuerySchema>;
 
 export const createPayrollEmployeeSchema = z.object({
 	firstName: z.string().trim().min(1, 'First name is required.').max(80),
+	initialName: z.string().trim().max(80).optional().or(z.literal('')),
 	lastName: z.string().trim().min(1, 'Last name is required.').max(80),
 	email: z
 		.string()
@@ -113,6 +114,7 @@ export type PayrollPayslipsQuery = z.infer<typeof payrollPayslipsQuerySchema>;
 
 export const createPayrollEmployeeDefaults: CreatePayrollEmployeeInput = {
 	firstName: '',
+	initialName: '',
 	lastName: '',
 	email: '',
 	jobTitle: '',

@@ -14,6 +14,7 @@ export function filterPayrollEmployees(
 		const haystack = [
 			employee.fullName,
 			employee.firstName,
+			employee.initialName,
 			employee.lastName,
 			employee.email,
 			employee.jobTitle,

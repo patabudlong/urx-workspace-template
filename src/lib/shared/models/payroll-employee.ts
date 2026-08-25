@@ -6,6 +6,7 @@ export type PayrollEmployeeDocument = {
 	_id: ObjectId;
 	workspaceId: ObjectId;
 	firstName: string;
+	initialName?: string | null;
 	lastName: string;
 	email: string | null;
 	userId: ObjectId | null;
@@ -25,6 +26,7 @@ export type PayrollEmployeeDto = {
 	id: string;
 	workspaceId: string;
 	firstName: string;
+	initialName: string | null;
 	lastName: string;
 	fullName: string;
 	email: string | null;

@@ -106,6 +106,7 @@ export async function processPayrollRunForWorkspace(input: {
 				periodStart: run.periodStart,
 				periodEnd: run.periodEnd,
 				employeeFirstName: employee.firstName,
+				employeeInitialName: employee.initialName ?? null,
 				employeeLastName: employee.lastName,
 				employeeCode: employee.employeeCode ?? null,
 				jobTitle: employee.jobTitle ?? null,

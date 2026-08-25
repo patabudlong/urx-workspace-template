@@ -7,6 +7,7 @@ import { getDtrWorkScheduleForWorkspace } from '$lib/server/repositories/dtr-wor
 import { upsertDtrDayForWorkspace } from '$lib/server/repositories/dtr-days';
 import { isDtrDayLockedError } from '$lib/server/dtr/errors';
 import type { PayrollEmployeeDocument } from '$lib/shared/models/payroll-employee';
+import { formatPayrollEmployeeFullName } from '$lib/shared/payroll/employee-name';
 import type { DtrWorkScheduleDto } from '$lib/shared/models/dtr-work-schedule';
 import {
 	buildNgTimecardImportRow,
@@ -91,6 +92,7 @@ async function loadEmployeesByCode(workspaceId: string): Promise<Map<string, Emp
 			{
 				projection: {
 					firstName: 1,
+					initialName: 1,
 					lastName: 1,
 					employeeCode: 1,
 					workScheduleId: 1
@@ -110,7 +112,11 @@ async function loadEmployeesByCode(workspaceId: string): Promise<Map<string, Emp
 
 		byCode.set(code, {
 			id: employee._id.toString(),
-			displayName: `${employee.firstName} ${employee.lastName}`.trim(),
+			displayName: formatPayrollEmployeeFullName({
+				firstName: employee.firstName,
+				initialName: employee.initialName,
+				lastName: employee.lastName
+			}),
 			workScheduleId: employee.workScheduleId?.toString() ?? null
 		});
 	}

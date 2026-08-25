@@ -18,6 +18,7 @@ export type PayrollPayslipDocument = {
 	periodStart: Date;
 	periodEnd: Date;
 	employeeFirstName: string;
+	employeeInitialName?: string | null;
 	employeeLastName: string;
 	employeeCode: string | null;
 	jobTitle: string | null;
@@ -44,6 +45,7 @@ export type PayrollPayslipDto = {
 	periodStart: string;
 	periodEnd: string;
 	employeeFirstName: string;
+	employeeInitialName?: string | null;
 	employeeLastName: string;
 	employeeFullName: string;
 	employeeCode: string | null;

@@ -8,6 +8,7 @@ import { getDtrWorkScheduleForWorkspace } from '$lib/server/repositories/dtr-wor
 import type { PayrollEmployeeDeduction } from '$lib/shared/payroll/deductions';
 import { percentToBasisPoints } from '$lib/shared/payroll/deductions';
 import { dollarsToCents } from '$lib/shared/payroll/format';
+import { formatPayrollEmployeeFullName } from '$lib/shared/payroll/employee-name';
 import type { CreatePayrollEmployeeInput } from '$lib/shared/payroll/schemas';
 import { normalizePayrollPayType } from '$lib/shared/payroll/pay-rate';
 import { MongoServerError, ObjectId } from 'mongodb';
@@ -16,6 +17,7 @@ let payrollEmployeeIndexesPromise: Promise<void> | null = null;
 
 const PAYROLL_EMPLOYEE_PROJECTION = {
 	firstName: 1,
+	initialName: 1,
 	lastName: 1,
 	workspaceId: 1,
 	email: 1,
@@ -54,11 +56,13 @@ function buildEmployeeWriteFields(
 	workScheduleId: ObjectId | null
 ) {
 	const email = data.email?.trim() ? data.email.trim().toLowerCase() : null;
+	const initialName = data.initialName?.trim() ? data.initialName.trim() : null;
 	const jobTitle = data.jobTitle?.trim() ? data.jobTitle.trim() : null;
 	const employeeCode = data.employeeCode?.trim() ? data.employeeCode.trim() : null;
 
 	return {
 		firstName: data.firstName.trim(),
+		initialName,
 		lastName: data.lastName.trim(),
 		email,
 		jobTitle,
@@ -82,8 +86,13 @@ function toPayrollEmployeeDto(
 		id: doc._id.toString(),
 		workspaceId: doc.workspaceId.toString(),
 		firstName: doc.firstName,
+		initialName: doc.initialName ?? null,
 		lastName: doc.lastName,
-		fullName: `${doc.firstName} ${doc.lastName}`.trim(),
+		fullName: formatPayrollEmployeeFullName({
+			firstName: doc.firstName,
+			initialName: doc.initialName,
+			lastName: doc.lastName
+		}),
 		email: doc.email,
 		userId: doc.userId?.toString() ?? null,
 		jobTitle: doc.jobTitle,

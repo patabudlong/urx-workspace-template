@@ -3,6 +3,7 @@ import type {
 	PayrollPayslipDto
 } from '$lib/shared/models/payroll-payslip';
 import { getPayrollPayslipsCollection } from '$lib/server/db/collections';
+import { formatPayrollEmployeeFullName } from '$lib/shared/payroll/employee-name';
 import { ObjectId } from 'mongodb';
 
 let payrollPayslipIndexesPromise: Promise<void> | null = null;
@@ -15,6 +16,7 @@ const PAYROLL_PAYSLIP_PROJECTION = {
 	periodStart: 1,
 	periodEnd: 1,
 	employeeFirstName: 1,
+	employeeInitialName: 1,
 	employeeLastName: 1,
 	employeeCode: 1,
 	jobTitle: 1,
@@ -42,8 +44,13 @@ function toPayrollPayslipDto(doc: PayrollPayslipDocument): PayrollPayslipDto {
 		periodStart: doc.periodStart.toISOString(),
 		periodEnd: doc.periodEnd.toISOString(),
 		employeeFirstName: doc.employeeFirstName,
+		employeeInitialName: doc.employeeInitialName ?? null,
 		employeeLastName: doc.employeeLastName,
-		employeeFullName: `${doc.employeeFirstName} ${doc.employeeLastName}`.trim(),
+		employeeFullName: formatPayrollEmployeeFullName({
+			firstName: doc.employeeFirstName,
+			initialName: doc.employeeInitialName,
+			lastName: doc.employeeLastName
+		}),
 		employeeCode: doc.employeeCode,
 		jobTitle: doc.jobTitle,
 		payType: doc.payType,

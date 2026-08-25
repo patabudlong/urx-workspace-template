@@ -271,12 +271,24 @@
 		</p>
 	</div>
 
-	<div class="grid gap-5 sm:grid-cols-2">
+	<div class="grid gap-5 sm:grid-cols-3">
 		<Form.Field form={superform} name="firstName">
 			<Form.Control>
 				{#snippet children({ props })}
 					<Form.Label required>First name</Form.Label>
 					<Input {...props} bind:value={$form.firstName} autocomplete="given-name" />
+				{/snippet}
+			</Form.Control>
+			<SingleFieldErrors />
+		</Form.Field>
+
+		<Form.Field form={superform} name="initialName">
+			<Form.Control>
+				{#snippet children({ props })}
+					<Form.Label>
+						Initial name <span class="text-muted-foreground">(optional)</span>
+					</Form.Label>
+					<Input {...props} bind:value={$form.initialName} autocomplete="additional-name" />
 				{/snippet}
 			</Form.Control>
 			<SingleFieldErrors />

@@ -124,6 +124,7 @@ export function mapPayrollEmployeeToFormInput(
 ): import('$lib/shared/payroll/schemas').UpdatePayrollEmployeeInput {
 	return {
 		firstName: employee.firstName,
+		initialName: employee.initialName ?? '',
 		lastName: employee.lastName,
 		email: employee.email ?? '',
 		jobTitle: employee.jobTitle ?? '',

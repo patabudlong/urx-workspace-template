@@ -3498,6 +3498,7 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						id: { type: 'string' },
 						workspaceId: { type: 'string' },
 						firstName: { type: 'string' },
+						initialName: { type: 'string', nullable: true },
 						lastName: { type: 'string' },
 						fullName: { type: 'string' },
 						email: { type: 'string', format: 'email', nullable: true },
@@ -3516,6 +3517,7 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 					required: ['firstName', 'lastName', 'payType', 'payRate'],
 					properties: {
 						firstName: { type: 'string', maxLength: 80 },
+						initialName: { type: 'string', maxLength: 80 },
 						lastName: { type: 'string', maxLength: 80 },
 						email: { type: 'string', format: 'email' },
 						jobTitle: { type: 'string', maxLength: 120 },

@@ -20,6 +20,7 @@ import { dtrSettingsDefaults } from '../src/lib/shared/dtr/schemas.ts';
 import type { DtrSettingsDocument } from '../src/lib/shared/models/dtr-settings.ts';
 import type { DtrWorkScheduleDocument } from '../src/lib/shared/models/dtr-work-schedule.ts';
 import type { PayrollEmployeeDocument } from '../src/lib/shared/models/payroll-employee.ts';
+import { formatPayrollEmployeeFullName } from '../src/lib/shared/payroll/employee-name.ts';
 import type { DtrLunchBreakWindow } from '../src/lib/shared/dtr/calendar.ts';
 
 const COLLECTIONS = {
@@ -132,6 +133,7 @@ async function loadEmployeeContexts(
 			{
 				projection: {
 					firstName: 1,
+					initialName: 1,
 					lastName: 1,
 					employeeCode: 1,
 					workScheduleId: 1
@@ -152,7 +154,11 @@ async function loadEmployeeContexts(
 		byCode.set(code, {
 			id: employee._id.toString(),
 			employeeCode: code,
-			displayName: `${employee.firstName} ${employee.lastName}`.trim(),
+			displayName: formatPayrollEmployeeFullName({
+				firstName: employee.firstName,
+				initialName: employee.initialName,
+				lastName: employee.lastName
+			}),
 			workScheduleId: employee.workScheduleId?.toString() ?? null
 		});
 	}
