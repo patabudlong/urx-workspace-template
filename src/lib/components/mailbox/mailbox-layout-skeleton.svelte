@@ -1,6 +1,7 @@
 <script lang="ts">
 	import MailboxMessageListSkeleton from '$lib/components/mailbox/mailbox-message-list-skeleton.svelte';
 	import MailboxSidebarSkeleton from '$lib/components/mailbox/mailbox-sidebar-skeleton.svelte';
+	import { APP_SECONDARY_SIDEBAR_CLASS } from '$lib/components/ui/sidebar/constants.js';
 	import { cn } from '$lib/utils.js';
 </script>
 
@@ -9,11 +10,7 @@
 	aria-busy="true"
 	aria-label="Loading mailbox"
 >
-	<aside
-		class={cn(
-			'bg-sidebar text-sidebar-foreground border-sidebar-border hidden w-(--team-secondary-sidebar-width) shrink-0 lg:sticky lg:top-0 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:self-stretch lg:border-r lg:py-2'
-		)}
-	>
+	<aside class={cn(APP_SECONDARY_SIDEBAR_CLASS, 'lg:self-stretch')}>
 		<MailboxSidebarSkeleton />
 	</aside>
 

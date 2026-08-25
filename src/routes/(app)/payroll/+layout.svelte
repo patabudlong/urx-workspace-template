@@ -2,6 +2,7 @@
 	import PayrollSectionSidebar from '$lib/components/payroll/payroll-section-sidebar.svelte';
 	import PayrollSidebarPanel from '$lib/components/payroll/payroll-sidebar-panel.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
+	import { APP_SECONDARY_SIDEBAR_CLASS } from '$lib/components/ui/sidebar/constants.js';
 	import { getPayrollNavItems } from '$lib/navigation/payroll-nav';
 	import { cn } from '$lib/utils.js';
 	import { page } from '$app/state';
@@ -15,11 +16,7 @@
 </script>
 
 <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-auto overflow-y-auto lg:flex-row">
-	<aside
-		class={cn(
-			'bg-sidebar text-sidebar-foreground border-sidebar-border hidden w-(--team-secondary-sidebar-width) shrink-0 lg:sticky lg:top-0 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:self-start lg:border-r lg:py-2'
-		)}
-	>
+	<aside class={cn(APP_SECONDARY_SIDEBAR_CLASS)}>
 		<PayrollSidebarPanel items={payrollNavItems} />
 	</aside>
 
