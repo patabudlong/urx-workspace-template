@@ -11,7 +11,9 @@ export type PayrollEmployeeDocument = {
 	email: string | null;
 	userId: ObjectId | null;
 	jobTitle: string | null;
+	department: string | null;
 	employeeCode: string | null;
+	tin: string | null;
 	photoUrl: string | null;
 	payType: PayrollPayType;
 	payRateCents: number;
@@ -32,7 +34,9 @@ export type PayrollEmployeeDto = {
 	email: string | null;
 	userId: string | null;
 	jobTitle: string | null;
+	department: string | null;
 	employeeCode: string | null;
+	tin: string | null;
 	photoUrl: string | null;
 	payType: PayrollPayType;
 	payRateCents: number;

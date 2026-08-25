@@ -5,6 +5,7 @@
 	import FingerprintIcon from '@lucide/svelte/icons/fingerprint';
 	import IdCardIcon from '@lucide/svelte/icons/id-card';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
+	import DtrLockIcon from '$lib/components/dtr/dtr-lock-icon.svelte';
 
 	let {
 		label,
@@ -13,6 +14,8 @@
 		disabled = false,
 		loading = false,
 		complete = false,
+		locked = false,
+		lockedMessage = 'This day is locked because payroll was processed for this period.',
 		currentTime,
 		onpunch
 	}: {
@@ -22,6 +25,8 @@
 		disabled?: boolean;
 		loading?: boolean;
 		complete?: boolean;
+		locked?: boolean;
+		lockedMessage?: string;
 		currentTime: string;
 		onpunch: () => void | Promise<void>;
 	} = $props();
@@ -30,7 +35,7 @@
 	let success = $state(false);
 
 	async function handlePress() {
-		if (disabled || loading || scanning || complete) {
+		if (disabled || loading || scanning || complete || locked) {
 			return;
 		}
 
@@ -70,9 +75,11 @@
 				'pointer-events-none absolute size-56 rounded-full border transition-all duration-700 sm:size-64',
 				scanning
 					? 'scale-110 border-border/50 opacity-100'
-					: complete
-						? 'scale-100 border-border/40 opacity-50'
-						: 'scale-100 border-border/40 opacity-70'
+					: locked
+						? 'scale-100 border-border/40 opacity-40'
+						: complete
+							? 'scale-100 border-border/40 opacity-50'
+							: 'scale-100 border-border/40 opacity-70'
 			)}
 			aria-hidden="true"
 		></div>
@@ -87,16 +94,20 @@
 		<Button
 			type="button"
 			variant="outline"
-			disabled={disabled || loading || complete}
+			disabled={disabled || loading || complete || locked}
 			onclick={handlePress}
 			class={cn(
 				'relative z-10 size-40 rounded-full border-2 p-0 shadow-lg transition-all duration-300 sm:size-48',
-				'border-emerald-500/70 shadow-[0_0_24px_rgba(52,211,153,0.45)]',
-				scanning &&
+				locked
+					? 'border-border/60 bg-muted/40 opacity-80 shadow-none'
+					: 'border-emerald-500/70 shadow-[0_0_24px_rgba(52,211,153,0.45)]',
+				!locked &&
+					scanning &&
 					'border-emerald-400 bg-emerald-500/10 shadow-[0_0_36px_rgba(52,211,153,0.65)]',
-				success && 'border-emerald-500 bg-emerald-500/15 shadow-[0_0_32px_rgba(52,211,153,0.55)]',
-				complete && 'border-emerald-500/40 opacity-70 shadow-[0_0_12px_rgba(52,211,153,0.2)]',
-				!scanning &&
+				!locked && success && 'border-emerald-500 bg-emerald-500/15 shadow-[0_0_32px_rgba(52,211,153,0.55)]',
+				!locked && complete && 'border-emerald-500/40 opacity-70 shadow-[0_0_12px_rgba(52,211,153,0.2)]',
+				!locked &&
+					!scanning &&
 					!success &&
 					!complete &&
 					'hover:border-emerald-400 hover:bg-emerald-500/10 hover:shadow-[0_0_32px_rgba(52,211,153,0.55)]'
@@ -109,6 +120,8 @@
 						class="size-14 animate-spin text-emerald-600 sm:size-16 dark:text-emerald-400"
 						aria-hidden="true"
 					/>
+				{:else if locked}
+					<DtrLockIcon class="size-14 sm:size-16" />
 				{:else if success}
 					<CheckIcon class="size-14 text-emerald-600 sm:size-16" aria-hidden="true" />
 				{:else if complete}
@@ -120,7 +133,7 @@
 					/>
 				{/if}
 				<span class="text-xs font-semibold tracking-wide uppercase">
-					{scanning ? 'Scanning…' : success ? 'Recorded' : complete ? 'Complete' : 'Tap to scan'}
+					{locked ? 'Locked' : scanning ? 'Scanning…' : success ? 'Recorded' : complete ? 'Complete' : 'Tap to scan'}
 				</span>
 			</span>
 
@@ -137,7 +150,9 @@
 	<div class="max-w-sm text-center">
 		<p class="text-lg font-semibold">{label}</p>
 		<p class="text-muted-foreground mt-2 text-sm">
-			{#if complete}
+			{#if locked}
+				{lockedMessage}
+			{:else if complete}
 				All punches for today are recorded.
 			{:else if scanning}
 				Hold still while we verify your fingerprint…

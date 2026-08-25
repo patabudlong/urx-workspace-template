@@ -57,6 +57,8 @@ function createSyntheticUnworkedHolidayDay(input: {
 		afternoonTimeIn: null,
 		afternoonTimeOut: null,
 		workedMinutes: 0,
+		overtimeMinutes: 0,
+		nightShiftMinutes: 0,
 		source: 'manual',
 		approvalStatus: 'draft',
 		notes: null,

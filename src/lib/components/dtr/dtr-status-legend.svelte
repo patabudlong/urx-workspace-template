@@ -5,7 +5,7 @@
 	} from '$lib/components/dtr/dtr-day-cell-styles';
 	import { DTR_DAY_STATUS_LABELS, DTR_DAY_STATUSES } from '$lib/shared/dtr/status';
 	import { cn } from '$lib/utils.js';
-	import LockIcon from '@lucide/svelte/icons/lock';
+	import DtrLockIcon from '$lib/components/dtr/dtr-lock-icon.svelte';
 	import { DTR_DAY_UNDERTIME_LABEL_CLASSES } from '$lib/components/dtr/dtr-day-cell-styles';
 </script>
 
@@ -57,7 +57,7 @@
 			class="border-border/60 bg-emerald-500/15 relative inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border border-emerald-500/25"
 			aria-hidden="true"
 		>
-			<LockIcon class="text-muted-foreground size-2.5" aria-hidden="true" />
+			<DtrLockIcon class="size-2.5" />
 		</span>
 		<span>Locked (payroll processed)</span>
 	</span>

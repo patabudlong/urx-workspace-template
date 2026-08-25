@@ -5,7 +5,10 @@ import {
 	listActivePayrollEmployeeDocumentsForWorkspace,
 	syncPayrollEmployeeUserLinksForWorkspace
 } from '$lib/server/repositories/payroll-employees';
-import { replacePayrollPayslipsForRun } from '$lib/server/repositories/payroll-payslips';
+import {
+	computePayslipYtdTotals,
+	replacePayrollPayslipsForRun
+} from '$lib/server/repositories/payroll-payslips';
 import { getPayrollSettingsForWorkspace } from '$lib/server/repositories/payroll-settings';
 import {
 	getPayrollRunDocumentForWorkspace,
@@ -98,6 +101,14 @@ export async function processPayrollRunForWorkspace(input: {
 
 			const netCents = Math.max(0, earnings.grossCents - totalDeductionsCents);
 
+			const ytdTotals = settings.showYtdTotals
+				? await computePayslipYtdTotals({
+						workspaceId: input.workspaceId,
+						employeeId: employee._id.toString(),
+						periodEnd
+					})
+				: null;
+
 			payslipWrites.push({
 				workspaceId: new ObjectId(input.workspaceId),
 				runId: run._id,
@@ -109,17 +120,28 @@ export async function processPayrollRunForWorkspace(input: {
 				employeeInitialName: employee.initialName ?? null,
 				employeeLastName: employee.lastName,
 				employeeCode: employee.employeeCode ?? null,
+				employeeTin: employee.tin ?? null,
+				employeeDepartment: employee.department ?? null,
 				jobTitle: employee.jobTitle ?? null,
 				payType: employee.payType,
 				payRateCents: employee.payRateCents,
 				basePayCents: earnings.basePayCents,
+				overtimePayCents: earnings.overtimePayCents,
 				holidayPayCents: earnings.holidayPayCents,
+				restDayPayCents: earnings.restDayPayCents,
+				nightShiftPayCents: earnings.nightShiftPayCents,
+				otherEarningsCents: earnings.otherEarningsCents,
+				otherEarningLines: [],
 				grossCents: earnings.grossCents,
 				deductionLines,
 				totalDeductionsCents,
 				netCents,
 				workedMinutes: earnings.workedMinutes,
-				workDays: earnings.workDays
+				workDays: earnings.workDays,
+				paidMinutes: earnings.paidMinutes,
+				paidDays: earnings.paidDays,
+				ytdGrossCents: ytdTotals?.ytdGrossCents ?? null,
+				ytdNetCents: ytdTotals?.ytdNetCents ?? null
 			});
 		}
 

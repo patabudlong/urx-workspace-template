@@ -11,8 +11,8 @@
 	import type { DtrCalendarCell } from '$lib/shared/dtr/calendar';
 	import { DTR_DAY_STATUS_LABELS } from '$lib/shared/dtr/status';
 	import { formatUndertimeMinutes } from '$lib/shared/dtr/undertime';
+	import DtrCalendarLockIcon from '$lib/components/dtr/dtr-calendar-lock-icon.svelte';
 	import { cn } from '$lib/utils.js';
-	import LockIcon from '@lucide/svelte/icons/lock';
 
 	let {
 		month,
@@ -152,7 +152,7 @@
 			title={dayTitle(cell)}
 		>
 			{#if cell?.isLocked}
-				<LockIcon class="absolute top-1 right-1 size-3 opacity-70" aria-hidden="true" />
+				<DtrCalendarLockIcon />
 			{/if}
 			<span class="text-sm leading-none font-semibold">{dateValue.day}</span>
 			{#if holidayLabel}

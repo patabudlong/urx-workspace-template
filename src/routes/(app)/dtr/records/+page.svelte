@@ -31,7 +31,7 @@
 	import { cn } from '$lib/utils.js';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import CalendarDaysIcon from '@lucide/svelte/icons/calendar-days';
-	import LockIcon from '@lucide/svelte/icons/lock';
+	import DtrLockIcon from '$lib/components/dtr/dtr-lock-icon.svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { untrack } from 'svelte';
 	import { superForm } from 'sveltekit-superforms';
@@ -444,7 +444,7 @@
 							<div class="space-y-1">
 								<p class="text-muted-foreground text-sm font-medium">Record lock</p>
 								<p class="flex items-center gap-1.5 text-sm font-medium">
-									<LockIcon class="size-3.5" aria-hidden="true" />
+									<DtrLockIcon class="size-4 shrink-0" />
 									Locked for payroll
 								</p>
 							</div>

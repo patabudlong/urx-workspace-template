@@ -53,6 +53,13 @@ export const createPayrollEmployeeSchema = z.object({
 		.optional()
 		.or(z.literal('')),
 	jobTitle: z.string().trim().max(120).optional().or(z.literal('')),
+	department: z.string().trim().max(120).optional().or(z.literal('')),
+	tin: z
+		.string()
+		.trim()
+		.max(20, 'TIN must be 20 characters or fewer.')
+		.optional()
+		.or(z.literal('')),
 	employeeCode: z
 		.string()
 		.trim()
@@ -118,6 +125,8 @@ export const createPayrollEmployeeDefaults: CreatePayrollEmployeeInput = {
 	lastName: '',
 	email: '',
 	jobTitle: '',
+	department: '',
+	tin: '',
 	employeeCode: '',
 	payType: 'monthly',
 	payRate: 0,
@@ -150,7 +159,9 @@ export const payrollSettingsSchema = z
 		timezone: z.enum(PAYROLL_TIMEZONE_VALUES),
 		currency: z.enum(PAYROLL_CURRENCY_VALUES),
 		weekStartDay: z.enum(WEEK_START_DAYS).optional().or(z.literal('')),
-		periodAnchorDate: payrollDateInputSchema.optional().or(z.literal(''))
+		periodAnchorDate: payrollDateInputSchema.optional().or(z.literal('')),
+		registeredCompanyName: z.string().trim().max(160).optional().or(z.literal('')),
+		showYtdTotals: z.coerce.boolean().default(false)
 	})
 	.superRefine((data, ctx) => {
 		if (!requiresPeriodAnchor(data.payFrequency)) {
@@ -185,7 +196,9 @@ export function createPayrollSettingsDefaults(input: {
 		timezone: resolvePayrollTimezone(input.timezone),
 		currency: resolvePayrollCurrency(input.currency),
 		weekStartDay: 'monday' satisfies WeekStartDay,
-		periodAnchorDate: ''
+		periodAnchorDate: '',
+		registeredCompanyName: '',
+		showYtdTotals: false
 	};
 }
 

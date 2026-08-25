@@ -21,6 +21,8 @@ export type DtrDayDocument = {
 	afternoonTimeIn: string | null;
 	afternoonTimeOut: string | null;
 	workedMinutes: number;
+	overtimeMinutes: number;
+	nightShiftMinutes: number;
 	source: DtrDaySource;
 	approvalStatus: DtrApprovalStatus;
 	notes: string | null;
@@ -46,6 +48,8 @@ export type DtrDayDto = {
 	afternoonTimeIn: string | null;
 	afternoonTimeOut: string | null;
 	workedMinutes: number;
+	overtimeMinutes: number;
+	nightShiftMinutes: number;
 	source: DtrDaySource;
 	approvalStatus: DtrApprovalStatus;
 	notes: string | null;

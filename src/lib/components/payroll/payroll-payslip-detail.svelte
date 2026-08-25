@@ -7,20 +7,30 @@
 	import type { PayrollCurrency } from '$lib/shared/payroll/currency';
 	import type { PayrollPayslipDto } from '$lib/shared/models/payroll-payslip';
 	import type { PhDeductionIconKey } from '$lib/shared/payroll/deduction-icon-names';
-	import {
-		formatPayslipMoney,
-		formatPayslipPeriod,
-		formatWorkedHours,
-		getPayslipEmployeeNameParts
-	} from '$lib/shared/payroll/payslip-format';
-	import { PAYROLL_PAY_TYPE_LABELS } from '$lib/shared/payroll/pay-rate';
 	import { formatPayRateCents } from '$lib/shared/payroll/format';
+	import { PAYROLL_PAY_TYPE_LABELS } from '$lib/shared/payroll/pay-rate';
+	import { formatPayslipMoney, formatPayslipPeriod } from '$lib/shared/payroll/payslip-format';
+	import {
+		buildPayslipDisplayContext,
+		buildPayslipEarningLines,
+		buildPayslipEmployeeFields,
+		buildPayslipTotalLines,
+		formatPayslipDeductionLabel,
+		formatPayslipEarningLineAmount,
+		formatPayslipEarningLineLabel,
+		isPayslipEarningInfoLine,
+		PAYSLIP_CONFIDENTIALITY_NOTICE,
+		PAYSLIP_DOCUMENT_TITLE,
+		PAYSLIP_SECTION_LABELS
+	} from '$lib/shared/payroll/payslip-sections';
 	import { cn } from '$lib/utils.js';
 
 	let {
 		payslip,
 		currency,
 		workspaceName,
+		registeredCompanyName = null,
+		showYtdTotals = false,
 		showEmployee = false,
 		phDeductionIconUrls = {},
 		class: className = '',
@@ -29,6 +39,8 @@
 		payslip: PayrollPayslipDto;
 		currency: PayrollCurrency;
 		workspaceName: string;
+		registeredCompanyName?: string | null;
+		showYtdTotals?: boolean;
 		showEmployee?: boolean;
 		phDeductionIconUrls?: Partial<Record<PhDeductionIconKey, string>>;
 		class?: string;
@@ -39,11 +51,18 @@
 		currency === 'PHP' && Object.keys(phDeductionIconUrls).length > 0
 	);
 
-	const displayTotalDeductionsCents = $derived(
-		payslip.deductionLines.reduce((sum, line) => sum + line.amountCents, 0)
+	const display = $derived(
+		buildPayslipDisplayContext({
+			payslip,
+			workspaceName,
+			registeredCompanyName,
+			showYtdTotals
+		})
 	);
 
-	const employeeNames = $derived(getPayslipEmployeeNameParts(payslip));
+	const employeeFields = $derived(buildPayslipEmployeeFields(payslip));
+	const earningLines = $derived(buildPayslipEarningLines(payslip, currency));
+	const totalLines = $derived(buildPayslipTotalLines(payslip, display.showYtdTotals));
 </script>
 
 {#if variant === 'card'}
@@ -51,11 +70,15 @@
 		<Card.Header class="border-b border-border">
 			<div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 				<div class="space-y-2">
-					<Card.Title>{payslip.runTitle}</Card.Title>
-					<Card.Description>{formatPayslipPeriod(payslip)}</Card.Description>
+					<Card.Title>{PAYSLIP_DOCUMENT_TITLE}</Card.Title>
+					<Card.Description>{payslip.runTitle}</Card.Description>
+					<p class="text-muted-foreground text-sm">{formatPayslipPeriod(payslip)}</p>
 					<Badge variant="outline" class="w-fit capitalize">{payslip.payType}</Badge>
 				</div>
-				<PayrollPayslipWorkspaceHeader {workspaceName} />
+				<PayrollPayslipWorkspaceHeader
+					workspaceName={display.companyName}
+					referenceNumber={display.referenceNumber}
+				/>
 			</div>
 		</Card.Header>
 		<Card.Content class="space-y-6">
@@ -66,11 +89,18 @@
 	<div class={cn('space-y-6', className)}>
 		<div class="flex flex-col gap-4 border-b border-border pb-4 sm:flex-row sm:items-start sm:justify-between">
 			<div class="space-y-1">
-				<h2 class="text-xl font-semibold tracking-tight">{payslip.runTitle}</h2>
+				<h2 class="text-xl font-semibold tracking-tight">{PAYSLIP_DOCUMENT_TITLE}</h2>
+				<p class="text-muted-foreground text-sm">{payslip.runTitle}</p>
 				<p class="text-muted-foreground text-sm">{formatPayslipPeriod(payslip)}</p>
-				<p class="text-muted-foreground text-sm capitalize">{payslip.payType} pay</p>
+				<p class="text-muted-foreground text-sm capitalize">
+					{payslip.payType} pay · {formatPayRateCents(payslip.payRateCents, payslip.payType, currency)}
+					({PAYROLL_PAY_TYPE_LABELS[payslip.payType]})
+				</p>
 			</div>
-			<PayrollPayslipWorkspaceHeader {workspaceName} />
+			<PayrollPayslipWorkspaceHeader
+				workspaceName={display.companyName}
+				referenceNumber={display.referenceNumber}
+			/>
 		</div>
 		{@render payslipBody()}
 	</div>
@@ -78,88 +108,44 @@
 
 {#snippet payslipBody()}
 	{#if showEmployee}
-		<div class="space-y-4">
-			<div class="grid gap-4 sm:grid-cols-3">
-				<div>
-					<p class="text-muted-foreground text-sm">First name</p>
-					<p class="font-medium">{employeeNames.firstName}</p>
-				</div>
-				<div>
-					<p class="text-muted-foreground text-sm">Middle name</p>
-					<p class="font-medium">{employeeNames.middleName ?? '—'}</p>
-				</div>
-				<div>
-					<p class="text-muted-foreground text-sm">Last name</p>
-					<p class="font-medium">{employeeNames.lastName}</p>
-				</div>
-			</div>
+		<div class="space-y-3">
+			<p class="text-sm font-medium">{PAYSLIP_SECTION_LABELS.employeeInformation}</p>
 			<div class="grid gap-4 sm:grid-cols-2">
-				{#if payslip.employeeCode}
+				{#each employeeFields as field (field.label)}
 					<div>
-						<p class="text-muted-foreground text-sm">Employee code</p>
-						<p class="font-medium">{payslip.employeeCode}</p>
+						<p class="text-muted-foreground text-sm">{field.label}</p>
+						<p class="font-medium">{field.value}</p>
 					</div>
-				{/if}
-				{#if payslip.jobTitle}
-					<div>
-						<p class="text-muted-foreground text-sm">Job title</p>
-						<p class="font-medium">{payslip.jobTitle}</p>
-					</div>
-				{/if}
+				{/each}
 			</div>
 		</div>
 	{/if}
 
-	<div class="grid gap-4 sm:grid-cols-3">
-		<div>
-			<p class="text-muted-foreground text-sm">Pay rate</p>
-			<p class="font-medium">
-				{formatPayRateCents(payslip.payRateCents, payslip.payType, currency)}
-			</p>
-			<p class="text-muted-foreground text-xs">{PAYROLL_PAY_TYPE_LABELS[payslip.payType]}</p>
-		</div>
-		<div>
-			<p class="text-muted-foreground text-sm">Actual Hours Logged</p>
-			<p class="font-medium">{formatWorkedHours(payslip.workedMinutes)}</p>
-			<p class="text-muted-foreground text-xs">{payslip.workDays} day(s) with time</p>
-		</div>
-		<div>
-			<p class="text-muted-foreground text-sm">Net pay</p>
-			<p class="text-lg font-semibold">{formatPayslipMoney(payslip.netCents, currency)}</p>
-		</div>
-	</div>
-
 	<div class="space-y-3">
-		<p class="text-sm font-medium">Earnings</p>
+		<p class="text-sm font-medium">{PAYSLIP_SECTION_LABELS.earnings}</p>
 		<Table.Root>
 			<Table.Body>
-				<Table.Row>
-					<Table.Cell>Base pay</Table.Cell>
-					<Table.Cell class="text-right font-medium">
-						{formatPayslipMoney(payslip.basePayCents, currency)}
-					</Table.Cell>
-				</Table.Row>
-				{#if payslip.holidayPayCents > 0}
+				{#each earningLines as line (line.key)}
 					<Table.Row>
-						<Table.Cell>Holiday pay</Table.Cell>
-						<Table.Cell class="text-right font-medium">
-							{formatPayslipMoney(payslip.holidayPayCents, currency)}
+						<Table.Cell class={line.emphasize ? 'font-medium' : ''}>
+							{formatPayslipEarningLineLabel(line)}
+						</Table.Cell>
+						<Table.Cell class={cn('text-right', line.emphasize ? 'font-semibold' : 'font-medium')}>
+							{#if isPayslipEarningInfoLine(line)}
+								{formatPayslipEarningLineAmount(line, currency)}
+							{:else}
+								{formatPayslipMoney(line.amountCents, currency)}
+							{/if}
 						</Table.Cell>
 					</Table.Row>
-				{/if}
-				<Table.Row>
-					<Table.Cell class="font-medium">Gross pay</Table.Cell>
-					<Table.Cell class="text-right font-semibold">
-						{formatPayslipMoney(payslip.grossCents, currency)}
-					</Table.Cell>
-				</Table.Row>
+				{/each}
 			</Table.Body>
 		</Table.Root>
 	</div>
 
 	{#if payslip.deductionLines.length > 0}
 		<div class="space-y-3">
-			<p class="text-sm font-medium">Deductions</p>
+			<p class="text-sm font-medium">{PAYSLIP_SECTION_LABELS.deductions}</p>
 			<Table.Root>
 				<Table.Body>
 					{#each payslip.deductionLines as line (line.typeId)}
@@ -173,7 +159,7 @@
 											class="size-7 shrink-0 rounded-md object-contain bg-muted/40 p-0.5"
 										/>
 									{/if}
-									<span>{line.name}</span>
+									<span>{formatPayslipDeductionLabel(line.name)}</span>
 								</div>
 							</Table.Cell>
 							<Table.Cell class="text-right font-medium">
@@ -181,14 +167,35 @@
 							</Table.Cell>
 						</Table.Row>
 					{/each}
-					<Table.Row>
-						<Table.Cell class="font-medium">Total deductions</Table.Cell>
-						<Table.Cell class="text-right font-semibold">
-							−{formatPayslipMoney(displayTotalDeductionsCents, currency)}
-						</Table.Cell>
-					</Table.Row>
 				</Table.Body>
 			</Table.Root>
 		</div>
 	{/if}
+
+	<div class="space-y-3">
+		<p class="text-sm font-medium">{PAYSLIP_SECTION_LABELS.totals}</p>
+		<Table.Root>
+			<Table.Body>
+				{#each totalLines as line (line.key)}
+					<Table.Row>
+						<Table.Cell class={line.emphasize ? 'font-medium' : ''}>{line.label}</Table.Cell>
+						<Table.Cell
+							class={cn(
+								'text-right',
+								line.emphasize ? 'text-lg font-semibold' : 'font-medium'
+							)}
+						>
+							{#if line.key === 'total-deductions'}−{/if}
+							{formatPayslipMoney(line.amountCents, currency)}
+						</Table.Cell>
+					</Table.Row>
+				{/each}
+			</Table.Body>
+		</Table.Root>
+	</div>
+
+	<div class="border-t border-border pt-4 text-center">
+		<p class="text-muted-foreground text-xs">{PAYSLIP_CONFIDENTIALITY_NOTICE}</p>
+		<p class="text-muted-foreground text-xs">Validation reference: {display.validationReference}</p>
+	</div>
 {/snippet}

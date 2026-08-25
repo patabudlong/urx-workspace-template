@@ -4,6 +4,7 @@ import type {
 } from '$lib/shared/models/payroll-payslip';
 import { getPayrollPayslipsCollection } from '$lib/server/db/collections';
 import { formatPayrollEmployeeFullName } from '$lib/shared/payroll/employee-name';
+import { normalizePayrollPayslipDocument } from '$lib/shared/payroll/payslip-normalize';
 import { ObjectId } from 'mongodb';
 
 let payrollPayslipIndexesPromise: Promise<void> | null = null;
@@ -19,52 +20,76 @@ const PAYROLL_PAYSLIP_PROJECTION = {
 	employeeInitialName: 1,
 	employeeLastName: 1,
 	employeeCode: 1,
+	employeeTin: 1,
+	employeeDepartment: 1,
 	jobTitle: 1,
 	payType: 1,
 	payRateCents: 1,
 	basePayCents: 1,
+	overtimePayCents: 1,
 	holidayPayCents: 1,
+	restDayPayCents: 1,
+	nightShiftPayCents: 1,
+	otherEarningsCents: 1,
+	otherEarningLines: 1,
 	grossCents: 1,
 	deductionLines: 1,
 	totalDeductionsCents: 1,
 	netCents: 1,
 	workedMinutes: 1,
 	workDays: 1,
+	paidMinutes: 1,
+	paidDays: 1,
+	ytdGrossCents: 1,
+	ytdNetCents: 1,
 	createdAt: 1,
 	updatedAt: 1
 } as const;
 
 function toPayrollPayslipDto(doc: PayrollPayslipDocument): PayrollPayslipDto {
+	const normalized = normalizePayrollPayslipDocument(doc);
+
 	return {
-		id: doc._id.toString(),
-		workspaceId: doc.workspaceId.toString(),
-		runId: doc.runId.toString(),
-		employeeId: doc.employeeId.toString(),
-		runTitle: doc.runTitle,
-		periodStart: doc.periodStart.toISOString(),
-		periodEnd: doc.periodEnd.toISOString(),
-		employeeFirstName: doc.employeeFirstName,
-		employeeInitialName: doc.employeeInitialName ?? null,
-		employeeLastName: doc.employeeLastName,
+		id: normalized._id.toString(),
+		workspaceId: normalized.workspaceId.toString(),
+		runId: normalized.runId.toString(),
+		employeeId: normalized.employeeId.toString(),
+		runTitle: normalized.runTitle,
+		periodStart: normalized.periodStart.toISOString(),
+		periodEnd: normalized.periodEnd.toISOString(),
+		employeeFirstName: normalized.employeeFirstName,
+		employeeInitialName: normalized.employeeInitialName ?? null,
+		employeeLastName: normalized.employeeLastName,
 		employeeFullName: formatPayrollEmployeeFullName({
-			firstName: doc.employeeFirstName,
-			initialName: doc.employeeInitialName,
-			lastName: doc.employeeLastName
+			firstName: normalized.employeeFirstName,
+			initialName: normalized.employeeInitialName,
+			lastName: normalized.employeeLastName
 		}),
-		employeeCode: doc.employeeCode,
-		jobTitle: doc.jobTitle,
-		payType: doc.payType,
-		payRateCents: doc.payRateCents,
-		basePayCents: doc.basePayCents,
-		holidayPayCents: doc.holidayPayCents,
-		grossCents: doc.grossCents,
-		deductionLines: doc.deductionLines,
-		totalDeductionsCents: doc.totalDeductionsCents,
-		netCents: doc.netCents,
-		workedMinutes: doc.workedMinutes,
-		workDays: doc.workDays,
-		createdAt: doc.createdAt.toISOString(),
-		updatedAt: doc.updatedAt.toISOString()
+		employeeCode: normalized.employeeCode,
+		employeeTin: normalized.employeeTin,
+		employeeDepartment: normalized.employeeDepartment,
+		jobTitle: normalized.jobTitle,
+		payType: normalized.payType,
+		payRateCents: normalized.payRateCents,
+		basePayCents: normalized.basePayCents,
+		overtimePayCents: normalized.overtimePayCents,
+		holidayPayCents: normalized.holidayPayCents,
+		restDayPayCents: normalized.restDayPayCents,
+		nightShiftPayCents: normalized.nightShiftPayCents,
+		otherEarningsCents: normalized.otherEarningsCents,
+		otherEarningLines: normalized.otherEarningLines,
+		grossCents: normalized.grossCents,
+		deductionLines: normalized.deductionLines,
+		totalDeductionsCents: normalized.totalDeductionsCents,
+		netCents: normalized.netCents,
+		workedMinutes: normalized.workedMinutes,
+		workDays: normalized.workDays,
+		paidMinutes: normalized.paidMinutes,
+		paidDays: normalized.paidDays,
+		ytdGrossCents: normalized.ytdGrossCents,
+		ytdNetCents: normalized.ytdNetCents,
+		createdAt: normalized.createdAt.toISOString(),
+		updatedAt: normalized.updatedAt.toISOString()
 	};
 }
 
@@ -79,6 +104,49 @@ export async function ensurePayrollPayslipIndexes(): Promise<void> {
 	}
 
 	await payrollPayslipIndexesPromise;
+}
+
+export async function computePayslipYtdTotals(input: {
+	workspaceId: string;
+	employeeId: string;
+	periodEnd: string;
+}): Promise<{ ytdGrossCents: number; ytdNetCents: number }> {
+	await ensurePayrollPayslipIndexes();
+
+	if (!ObjectId.isValid(input.employeeId)) {
+		return { ytdGrossCents: 0, ytdNetCents: 0 };
+	}
+
+	const year = input.periodEnd.slice(0, 4);
+	const yearStart = new Date(`${year}-01-01T00:00:00.000Z`);
+	const periodEnd = new Date(input.periodEnd);
+
+	const collection = await getPayrollPayslipsCollection<PayrollPayslipDocument>();
+	const results = await collection
+		.aggregate<{ ytdGrossCents: number; ytdNetCents: number }>([
+			{
+				$match: {
+					workspaceId: new ObjectId(input.workspaceId),
+					employeeId: new ObjectId(input.employeeId),
+					periodEnd: { $gte: yearStart, $lte: periodEnd }
+				}
+			},
+			{
+				$group: {
+					_id: null,
+					ytdGrossCents: { $sum: '$grossCents' },
+					ytdNetCents: { $sum: '$netCents' }
+				}
+			}
+		])
+		.toArray();
+
+	const totals = results[0];
+
+	return {
+		ytdGrossCents: totals?.ytdGrossCents ?? 0,
+		ytdNetCents: totals?.ytdNetCents ?? 0
+	};
 }
 
 export async function listPayrollPayslipsForRun(input: {

@@ -74,6 +74,8 @@ export const load: PageServerLoad = async ({ parent, params, locals, url }) => {
 		currency: settings.currency,
 		canManagePayroll,
 		phDeductionIconUrls,
-		workspaceName: workspace.workspaceName
+		workspaceName: workspace.workspaceName,
+		registeredCompanyName: settings.registeredCompanyName,
+		showYtdTotals: settings.showYtdTotals
 	};
 };

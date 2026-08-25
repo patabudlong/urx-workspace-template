@@ -33,7 +33,7 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import CalendarDaysIcon from '@lucide/svelte/icons/calendar-days';
-	import LockIcon from '@lucide/svelte/icons/lock';
+	import DtrLockIcon from '$lib/components/dtr/dtr-lock-icon.svelte';
 
 	let { data } = $props();
 
@@ -50,12 +50,6 @@
 		isViewingToday ? data.punchState : resolveDtrPunchState(data.selectedRecord)
 	);
 
-	const selectedCalendarDay = $derived(
-		data.calendar.find((day) => day.date === data.selectedDate) ?? null
-	);
-
-	const selectedTimes = $derived(summarizeDtrDayTimes(data.selectedRecord));
-
 	const punchLabel = $derived.by(() => {
 		if (!punchState.nextSlot) {
 			return 'Day complete';
@@ -63,6 +57,22 @@
 
 		return DTR_PUNCH_SLOT_LABELS[punchState.nextSlot];
 	});
+
+	const selectedCalendarDay = $derived(
+		data.calendar.find((day) => day.date === data.selectedDate) ?? null
+	);
+
+	const isSelectedDateLocked = $derived(selectedCalendarDay?.isLocked ?? false);
+
+	const selectedTimes = $derived(summarizeDtrDayTimes(data.selectedRecord));
+
+	const punchesHeading = $derived(
+		isViewingToday ? "Today's punches" : `Punches · ${formatDtrCalendarDate(data.selectedDate)}`
+	);
+
+	const scannerLabel = $derived(
+		isSelectedDateLocked ? 'Locked for payroll' : punchLabel
+	);
 
 	const monthLabel = $derived.by(() => {
 		const [year, month] = data.month.split('-').map(Number);
@@ -87,7 +97,7 @@
 	}
 
 	async function handlePunch() {
-		if (!data.employee || punching || data.isTodayLocked || !punchState.nextSlot) {
+		if (!data.employee || punching || isSelectedDateLocked || !isViewingToday || !punchState.nextSlot) {
 			return;
 		}
 
@@ -121,13 +131,27 @@
 	}
 
 	function punchSlotValue(slot: DtrPunchSlot): string | null {
-		if (isViewingToday) {
+		if (isViewingToday && !isSelectedDateLocked) {
 			return data.todayRecord
 				? (summarizeDtrDayTimes(data.todayRecord)[slot] ?? punchState.punches[slot] ?? null)
 				: (punchState.punches[slot] ?? null);
 		}
 
 		return selectedTimes[slot];
+	}
+
+	function punchSlotDisplay(slot: DtrPunchSlot): string {
+		const value = punchSlotValue(slot);
+
+		if (value) {
+			return formatDtrDisplayTime(value);
+		}
+
+		if (isSelectedDateLocked) {
+			return '—';
+		}
+
+		return 'Pending';
 	}
 </script>
 
@@ -155,10 +179,10 @@
 				title="Time recorded"
 				description="Your punch was saved with biometric source."
 			/>
-		{:else if data.isTodayLocked}
+		{:else if isSelectedDateLocked}
 			<StatusAlert
 				variant="warning"
-				title="Today is locked"
+				title="Day is locked"
 				description={DTR_PUNCH_LOCKED_MESSAGE}
 			/>
 		{:else if punchState.isComplete && isViewingToday}
@@ -185,12 +209,14 @@
 				</Card.Header>
 				<Card.Content class="flex flex-col gap-6 py-8">
 					<DtrBiometricPunchButton
-						label={punchLabel}
+						label={scannerLabel}
 						employeeId={data.employee?.employeeCode}
 						action={punchState.nextAction ?? 'in'}
-						disabled={!isViewingToday || data.isTodayLocked}
+						disabled={!isViewingToday || isSelectedDateLocked}
+						locked={isSelectedDateLocked}
+						lockedMessage={DTR_PUNCH_LOCKED_MESSAGE}
 						loading={punching}
-						complete={punchState.isComplete}
+						complete={punchState.isComplete && !isSelectedDateLocked}
 						currentTime={liveTime}
 						onpunch={handlePunch}
 					/>
@@ -198,14 +224,24 @@
 					<Separator />
 
 					<div class="space-y-3">
-						<p class="text-sm font-medium">Today&apos;s punches</p>
+						<p class="text-sm font-medium">{punchesHeading}</p>
+						{#if isSelectedDateLocked}
+							<p class="text-muted-foreground text-sm">{DTR_PUNCH_LOCKED_MESSAGE}</p>
+						{/if}
 						<ul class="space-y-2">
 							{#each Object.entries(DTR_PUNCH_SLOT_LABELS) as [slot, label] (slot)}
-								{@const value = punchSlotValue(slot as DtrPunchSlot)}
+								{@const display = punchSlotDisplay(slot as DtrPunchSlot)}
 								<li class="flex items-center justify-between gap-3 text-sm">
 									<span class="text-muted-foreground">{label}</span>
-									<span class={cn('font-medium tabular-nums', value ? 'text-foreground' : 'text-muted-foreground/60')}>
-										{value ? formatDtrDisplayTime(value) : 'Pending'}
+									<span
+										class={cn(
+											'font-medium tabular-nums',
+											display === 'Pending' || display === '—'
+												? 'text-muted-foreground/60'
+												: 'text-foreground'
+										)}
+									>
+										{display}
 									</span>
 								</li>
 							{/each}
@@ -253,7 +289,7 @@
 						<Card.Content class="space-y-4">
 							{#if selectedCalendarDay?.isLocked}
 								<div class="text-muted-foreground flex items-center gap-2 text-sm">
-									<LockIcon class="size-4 shrink-0" aria-hidden="true" />
+									<DtrLockIcon class="size-4 shrink-0" />
 									Locked for payroll
 								</div>
 							{/if}

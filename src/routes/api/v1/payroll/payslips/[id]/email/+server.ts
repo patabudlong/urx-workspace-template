@@ -130,7 +130,9 @@ export const POST: RequestHandler = async ({ locals, request, url, params }) => 
 			payslip,
 			currency: settings.currency,
 			payslipUrl,
-			origin: url.origin
+			origin: url.origin,
+			registeredCompanyName: settings.registeredCompanyName,
+			showYtdTotals: settings.showYtdTotals
 		});
 	} catch {
 		return jsonError('INTERNAL_ERROR', PAYROLL_PAYSLIP_EMAIL_FAILED_MESSAGE, { requestId });

@@ -30,7 +30,7 @@ export const PH_PAYROLL_DEDUCTION_PRESETS: Array<Pick<PayrollDeductionType, 'nam
 	{ name: 'SSS', kind: 'fixed' },
 	{ name: 'PhilHealth', kind: 'fixed' },
 	{ name: 'Pag-IBIG', kind: 'fixed' },
-	{ name: 'Withholding tax', kind: 'percentage' },
+	{ name: 'BIR withholding tax', kind: 'percentage' },
 	{ name: 'Salary loan', kind: 'fixed' }
 ];
 
@@ -128,6 +128,8 @@ export function mapPayrollEmployeeToFormInput(
 		lastName: employee.lastName,
 		email: employee.email ?? '',
 		jobTitle: employee.jobTitle ?? '',
+		department: employee.department ?? '',
+		tin: employee.tin ?? '',
 		employeeCode: employee.employeeCode ?? '',
 		payType: employee.payType,
 		payRate: centsToMajorUnits(employee.payRateCents, currency),

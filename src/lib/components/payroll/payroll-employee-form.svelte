@@ -393,14 +393,36 @@
 		<Form.Control>
 			{#snippet children({ props })}
 				<Form.Label>
-					Employee code
-					<span class="text-muted-foreground">(optional, for biometrics)</span>
+					Employee number
+					<span class="text-muted-foreground">(optional)</span>
 				</Form.Label>
 				<Input {...props} bind:value={$form.employeeCode} autocomplete="off" />
 			{/snippet}
 		</Form.Control>
 		<SingleFieldErrors />
 	</Form.Field>
+
+	<div class="grid gap-5 sm:grid-cols-2">
+		<Form.Field form={superform} name="department">
+			<Form.Control>
+				{#snippet children({ props })}
+					<Form.Label>Department <span class="text-muted-foreground">(optional)</span></Form.Label>
+					<Input {...props} bind:value={$form.department} autocomplete="organization" />
+				{/snippet}
+			</Form.Control>
+			<SingleFieldErrors />
+		</Form.Field>
+
+		<Form.Field form={superform} name="tin">
+			<Form.Control>
+				{#snippet children({ props })}
+					<Form.Label>TIN <span class="text-muted-foreground">(optional)</span></Form.Label>
+					<Input {...props} bind:value={$form.tin} autocomplete="off" />
+				{/snippet}
+			</Form.Control>
+			<SingleFieldErrors />
+		</Form.Field>
+	</div>
 
 	<Form.Field form={superform} name="workScheduleId">
 		<Form.Control>

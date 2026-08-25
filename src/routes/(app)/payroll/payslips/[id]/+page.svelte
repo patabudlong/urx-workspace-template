@@ -98,6 +98,8 @@
 		payslip={data.payslip}
 		currency={data.currency}
 		workspaceName={data.workspaceName}
+		registeredCompanyName={data.registeredCompanyName}
+		showYtdTotals={data.showYtdTotals}
 		showEmployee={data.canManagePayroll}
 		phDeductionIconUrls={data.phDeductionIconUrls}
 	/>
@@ -108,6 +110,8 @@
 	payslip={data.payslip}
 	currency={data.currency}
 	workspaceName={data.workspaceName}
+	registeredCompanyName={data.registeredCompanyName}
+	showYtdTotals={data.showYtdTotals}
 	showEmployee={data.canManagePayroll}
 	phDeductionIconUrls={data.phDeductionIconUrls}
 />

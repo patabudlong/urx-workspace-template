@@ -23,7 +23,9 @@ const PAYROLL_EMPLOYEE_PROJECTION = {
 	email: 1,
 	userId: 1,
 	jobTitle: 1,
+	department: 1,
 	employeeCode: 1,
+	tin: 1,
 	photoUrl: 1,
 	payType: 1,
 	payRateCents: 1,
@@ -58,6 +60,8 @@ function buildEmployeeWriteFields(
 	const email = data.email?.trim() ? data.email.trim().toLowerCase() : null;
 	const initialName = data.initialName?.trim() ? data.initialName.trim() : null;
 	const jobTitle = data.jobTitle?.trim() ? data.jobTitle.trim() : null;
+	const department = data.department?.trim() ? data.department.trim() : null;
+	const tin = data.tin?.trim() ? data.tin.trim() : null;
 	const employeeCode = data.employeeCode?.trim() ? data.employeeCode.trim() : null;
 
 	return {
@@ -66,6 +70,8 @@ function buildEmployeeWriteFields(
 		lastName: data.lastName.trim(),
 		email,
 		jobTitle,
+		department,
+		tin,
 		employeeCode,
 		payType: data.payType,
 		payRateCents: dollarsToCents(data.payRate, currency),
@@ -96,7 +102,9 @@ function toPayrollEmployeeDto(
 		email: doc.email,
 		userId: doc.userId?.toString() ?? null,
 		jobTitle: doc.jobTitle,
+		department: doc.department ?? null,
 		employeeCode: doc.employeeCode ?? null,
+		tin: doc.tin ?? null,
 		photoUrl: doc.photoUrl ?? null,
 		payType: normalizePayrollPayType(doc.payType),
 		payRateCents: doc.payRateCents,

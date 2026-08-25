@@ -21,12 +21,20 @@ export async function sendPayslipEmail(input: {
 	currency: PayrollCurrency;
 	payslipUrl: string;
 	origin: string;
+	registeredCompanyName?: string | null;
+	showYtdTotals?: boolean;
 }): Promise<void> {
 	if (!isMailConfigured()) {
 		throw new Error('Mail is not configured');
 	}
 
-	const pdfBuffer = await generatePayslipPdfBuffer(input.payslip, input.currency);
+	const pdfBuffer = await generatePayslipPdfBuffer({
+		payslip: input.payslip,
+		currency: input.currency,
+		workspaceName: input.workspaceName,
+		registeredCompanyName: input.registeredCompanyName,
+		showYtdTotals: input.showYtdTotals
+	});
 	const filename = getPayslipPdfFilename(input.payslip);
 	const workspaceName = normalizeLegacyBrandText(input.workspaceName);
 	const runTitle = normalizeLegacyBrandText(input.payslip.runTitle);

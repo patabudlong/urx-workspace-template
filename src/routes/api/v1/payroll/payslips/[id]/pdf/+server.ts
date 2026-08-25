@@ -28,9 +28,11 @@ export const GET: RequestHandler = async ({ locals, request, url, params }) => {
 	});
 
 	let workspaceId: string | null = null;
+	let workspaceName = '';
 
 	if (adminContext.ok) {
 		workspaceId = adminContext.workspace.workspaceId;
+		workspaceName = adminContext.workspace.workspaceName;
 	} else {
 		const memberContext = await requirePayrollMemberWorkspace({
 			userId: locals.user?.id,
@@ -43,6 +45,7 @@ export const GET: RequestHandler = async ({ locals, request, url, params }) => {
 		}
 
 		workspaceId = memberContext.workspace.workspaceId;
+		workspaceName = memberContext.workspace.workspaceName;
 	}
 
 	const parsedParams = payrollPayslipIdParamSchema.safeParse(params);
@@ -84,7 +87,13 @@ export const GET: RequestHandler = async ({ locals, request, url, params }) => {
 	}
 
 	const settings = await getPayrollSettingsForWorkspace(workspaceId!);
-	const pdfBuffer = await generatePayslipPdfBuffer(payslip, settings.currency);
+	const pdfBuffer = await generatePayslipPdfBuffer({
+		payslip,
+		currency: settings.currency,
+		workspaceName,
+		registeredCompanyName: settings.registeredCompanyName,
+		showYtdTotals: settings.showYtdTotals
+	});
 	const filename = getPayslipPdfFilename(payslip);
 
 	return new Response(new Uint8Array(pdfBuffer), {

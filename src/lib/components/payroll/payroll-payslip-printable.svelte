@@ -11,21 +11,36 @@
 	import {
 		formatPayslipGeneratedAt,
 		formatPayslipMoney,
-		formatPayslipPeriod,
-		formatWorkedHours,
-		getPayslipEmployeeNameParts
+		formatPayslipPeriod
 	} from '$lib/shared/payroll/payslip-format';
+	import {
+		buildPayslipDeductionLines,
+		buildPayslipDisplayContext,
+		buildPayslipEarningLines,
+		buildPayslipEmployeeFields,
+		buildPayslipTotalLines,
+		formatPayslipEarningLineAmount,
+		formatPayslipEarningLineLabel,
+		isPayslipEarningInfoLine,
+		PAYSLIP_CONFIDENTIALITY_NOTICE,
+		PAYSLIP_DOCUMENT_TITLE,
+		PAYSLIP_SECTION_LABELS
+	} from '$lib/shared/payroll/payslip-sections';
 
 	let {
 		payslip,
 		currency,
 		workspaceName,
+		registeredCompanyName = null,
+		showYtdTotals = false,
 		showEmployee = false,
 		phDeductionIconUrls = {}
 	}: {
 		payslip: PayrollPayslipDto;
 		currency: PayrollCurrency;
 		workspaceName: string;
+		registeredCompanyName?: string | null;
+		showYtdTotals?: boolean;
 		showEmployee?: boolean;
 		phDeductionIconUrls?: Partial<Record<PhDeductionIconKey, string>>;
 	} = $props();
@@ -34,11 +49,19 @@
 		currency === 'PHP' && Object.keys(phDeductionIconUrls).length > 0
 	);
 
-	const displayTotalDeductionsCents = $derived(
-		payslip.deductionLines.reduce((sum, line) => sum + line.amountCents, 0)
+	const display = $derived(
+		buildPayslipDisplayContext({
+			payslip,
+			workspaceName,
+			registeredCompanyName,
+			showYtdTotals
+		})
 	);
 
-	const employeeNames = $derived(getPayslipEmployeeNameParts(payslip));
+	const employeeFields = $derived(buildPayslipEmployeeFields(payslip));
+	const earningLines = $derived(buildPayslipEarningLines(payslip, currency));
+	const deductionLines = $derived(buildPayslipDeductionLines(payslip.deductionLines));
+	const totalLines = $derived(buildPayslipTotalLines(payslip, display.showYtdTotals));
 
 	const generatedAt = new Date();
 
@@ -59,119 +82,103 @@
 <article class="pd-root">
 	<header class="pd-header">
 		<div class="pd-header-main">
-			<h1 class="pd-title">{payslip.runTitle}</h1>
-			<p class="pd-subtitle">{formatPayslipPeriod(payslip)}</p>
-			<p class="pd-subtitle capitalize">{payslip.payType} pay</p>
+			<h1 class="pd-title">{PAYSLIP_DOCUMENT_TITLE}</h1>
+			<p class="pd-subtitle">{payslip.runTitle}</p>
+			<p class="pd-subtitle capitalize">
+				{payslip.payType} pay · {formatPayRateCents(payslip.payRateCents, payslip.payType, currency)}
+				({PAYROLL_PAY_TYPE_LABELS[payslip.payType]})
+			</p>
 		</div>
-		<PayrollPayslipWorkspaceHeader {workspaceName} />
+		<PayrollPayslipWorkspaceHeader
+			workspaceName={display.companyName}
+			referenceNumber={display.referenceNumber}
+			periodLabel={formatPayslipPeriod(payslip)}
+		/>
 	</header>
 
 	{#if showEmployee}
-		<section class="pd-employee">
-			<div class="pd-employee-names">
-				<div>
-					<p class="pd-meta-label">First name</p>
-					<p class="pd-meta-value">{employeeNames.firstName}</p>
-				</div>
-				<div>
-					<p class="pd-meta-label">Middle name</p>
-					<p class="pd-meta-value">{employeeNames.middleName ?? '—'}</p>
-				</div>
-				<div>
-					<p class="pd-meta-label">Last name</p>
-					<p class="pd-meta-value">{employeeNames.lastName}</p>
-				</div>
+		<section class="pd-section">
+			<h3 class="pd-section-title">{PAYSLIP_SECTION_LABELS.employeeInformation}</h3>
+			<div class="pd-employee">
+				{#each employeeFields as field (field.label)}
+					<div>
+						<p class="pd-meta-label">{field.label}</p>
+						<p class="pd-meta-value">{field.value}</p>
+					</div>
+				{/each}
 			</div>
-			{#if payslip.employeeCode}
-				<div>
-					<p class="pd-meta-label">Employee code</p>
-					<p class="pd-meta-value">{payslip.employeeCode}</p>
-				</div>
-			{/if}
-			{#if payslip.jobTitle}
-				<div>
-					<p class="pd-meta-label">Job title</p>
-					<p class="pd-meta-value">{payslip.jobTitle}</p>
-				</div>
-			{/if}
 		</section>
 	{/if}
 
-	<section class="pd-meta">
-		<div>
-			<p class="pd-meta-label">Pay rate</p>
-			<p class="pd-meta-value">
-				{formatPayRateCents(payslip.payRateCents, payslip.payType, currency)}
-			</p>
-			<p class="pd-meta-hint">{PAYROLL_PAY_TYPE_LABELS[payslip.payType]}</p>
-		</div>
-		<div>
-			<p class="pd-meta-label">Actual Hours Logged</p>
-			<p class="pd-meta-value">{formatWorkedHours(payslip.workedMinutes)}</p>
-			<p class="pd-meta-hint">{payslip.workDays} day(s) with time</p>
-		</div>
-		<div>
-			<p class="pd-meta-label">Net pay</p>
-			<p class="pd-net">{formatPayslipMoney(payslip.netCents, currency)}</p>
-		</div>
-	</section>
-
 	<section class="pd-section">
-		<h3 class="pd-section-title">Earnings</h3>
+		<h3 class="pd-section-title">{PAYSLIP_SECTION_LABELS.earnings}</h3>
 		<table class="pd-table">
 			<tbody>
-				<tr>
-					<td>Base pay</td>
-					<td class="pd-strong">{formatPayslipMoney(payslip.basePayCents, currency)}</td>
-				</tr>
-				{#if payslip.holidayPayCents > 0}
+				{#each earningLines as line (line.key)}
 					<tr>
-						<td>Holiday pay</td>
-						<td class="pd-strong">{formatPayslipMoney(payslip.holidayPayCents, currency)}</td>
+						<td class={line.emphasize ? 'pd-total' : ''}>{formatPayslipEarningLineLabel(line)}</td>
+						<td class={line.emphasize ? 'pd-total' : 'pd-strong'}>
+							{#if isPayslipEarningInfoLine(line)}
+								{formatPayslipEarningLineAmount(line, currency)}
+							{:else}
+								{formatPayslipMoney(line.amountCents, currency)}
+							{/if}
+						</td>
 					</tr>
-				{/if}
-				<tr>
-					<td class="pd-total">Gross pay</td>
-					<td class="pd-total">{formatPayslipMoney(payslip.grossCents, currency)}</td>
-				</tr>
+				{/each}
 			</tbody>
 		</table>
 	</section>
 
-	{#if payslip.deductionLines.length > 0}
+	{#if deductionLines.length > 0}
 		<section class="pd-section">
-			<h3 class="pd-section-title">Deductions</h3>
+			<h3 class="pd-section-title">{PAYSLIP_SECTION_LABELS.deductions}</h3>
 			<table class="pd-table">
 				<tbody>
-					{#each payslip.deductionLines as line (line.typeId)}
+					{#each deductionLines as line (line.key)}
 						<tr>
 							<td>
 								{#if showPhDeductionIcons}
 									<span class="pd-label">
 										<PayrollDeductionTypeIcon
-											name={line.name}
+											name={line.label}
 											iconUrls={phDeductionIconUrls}
 											class="size-6 shrink-0 object-contain"
 										/>
-										<span>{line.name}</span>
+										<span>{line.label}</span>
 									</span>
 								{:else}
-									{line.name}
+									{line.label}
 								{/if}
 							</td>
 							<td class="pd-strong">−{formatPayslipMoney(line.amountCents, currency)}</td>
 						</tr>
 					{/each}
-					<tr>
-						<td class="pd-total">Total deductions</td>
-						<td class="pd-total">−{formatPayslipMoney(displayTotalDeductionsCents, currency)}</td>
-					</tr>
 				</tbody>
 			</table>
 		</section>
 	{/if}
 
+	<section class="pd-section">
+		<h3 class="pd-section-title">{PAYSLIP_SECTION_LABELS.totals}</h3>
+		<table class="pd-table">
+			<tbody>
+				{#each totalLines as line (line.key)}
+					<tr>
+						<td class={line.emphasize ? 'pd-total' : ''}>{line.label}</td>
+						<td class={line.emphasize ? 'pd-total' : 'pd-strong'}>
+							{#if line.key === 'total-deductions'}−{/if}
+							{formatPayslipMoney(line.amountCents, currency)}
+						</td>
+					</tr>
+				{/each}
+			</tbody>
+		</table>
+	</section>
+
 	<footer class="pd-footer">
+		<p>{PAYSLIP_CONFIDENTIALITY_NOTICE}</p>
+		<p>Validation reference: {display.validationReference}</p>
 		<p>Date and time generated: {formatPayslipGeneratedAt(generatedAt)}</p>
 	</footer>
 </article>

@@ -47,7 +47,9 @@ export const load: PageServerLoad = async ({ parent }) => {
 			timezone: settings.timezone,
 			currency: settings.currency,
 			weekStartDay: settings.weekStartDay ?? defaults.weekStartDay,
-			periodAnchorDate: settings.periodAnchorDate ?? ''
+			periodAnchorDate: settings.periodAnchorDate ?? '',
+			registeredCompanyName: settings.registeredCompanyName ?? '',
+			showYtdTotals: settings.showYtdTotals
 		},
 		zod4(payrollSettingsSchema)
 	);

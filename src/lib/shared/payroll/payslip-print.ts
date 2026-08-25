@@ -9,10 +9,22 @@ import { PAYROLL_PAY_TYPE_LABELS } from '$lib/shared/payroll/pay-rate';
 import {
 	formatPayslipGeneratedAt,
 	formatPayslipMoney,
-	formatPayslipPeriod,
-	formatWorkedHours,
-	getPayslipEmployeeNameParts
+	formatPayslipPeriod
 } from '$lib/shared/payroll/payslip-format';
+import {
+	buildPayslipDeductionLines,
+	buildPayslipDisplayContext,
+	buildPayslipEarningLines,
+	buildPayslipEmployeeFields,
+	buildPayslipTotalLines,
+	formatPayslipDeductionLabel,
+	formatPayslipEarningLineAmount,
+	formatPayslipEarningLineLabel,
+	isPayslipEarningInfoLine,
+	PAYSLIP_CONFIDENTIALITY_NOTICE,
+	PAYSLIP_DOCUMENT_TITLE,
+	PAYSLIP_SECTION_LABELS
+} from '$lib/shared/payroll/payslip-sections';
 
 /** 1 cm ≈ 28.35 pt (PDFKit). */
 const CM_TO_PT = 72 / 2.54;
@@ -50,6 +62,12 @@ export const PAYSLIP_PRINT_DOCUMENT_CSS = `
 		margin: 0;
 	}
 
+	.pd-workspace-meta {
+		color: #52525b;
+		font-size: 12px;
+		margin: 4px 0 0;
+	}
+
 	.pd-header {
 		align-items: flex-start;
 		border-bottom: 1px solid #d4d4d8;
@@ -81,7 +99,7 @@ export const PAYSLIP_PRINT_DOCUMENT_CSS = `
 	.pd-meta {
 		display: grid;
 		gap: 16px;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 		margin-bottom: 24px;
 	}
 
@@ -96,23 +114,11 @@ export const PAYSLIP_PRINT_DOCUMENT_CSS = `
 		margin: 2px 0 0;
 	}
 
-	.pd-net {
-		font-size: 20px;
-		font-weight: 700;
-	}
-
 	.pd-employee {
 		display: grid;
 		gap: 16px;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		margin-bottom: 24px;
-	}
-
-	.pd-employee-names {
-		display: grid;
-		gap: 16px;
-		grid-column: 1 / -1;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
 	}
 
 	.pd-section {
@@ -165,6 +171,11 @@ export const PAYSLIP_PRINT_DOCUMENT_CSS = `
 		font-weight: 700;
 	}
 
+	.pd-net {
+		font-size: 20px;
+		font-weight: 700;
+	}
+
 	.pd-footer {
 		border-top: 1px solid #e4e4e7;
 		color: #71717a;
@@ -175,7 +186,11 @@ export const PAYSLIP_PRINT_DOCUMENT_CSS = `
 	}
 
 	.pd-footer p {
-		margin: 0;
+		margin: 0 0 4px;
+	}
+
+	.pd-footer p:last-child {
+		margin-bottom: 0;
 	}
 `;
 
@@ -205,6 +220,8 @@ export type PayslipPrintDocumentInput = {
 	payslip: PayrollPayslipDto;
 	currency: PayrollCurrency;
 	workspaceName: string;
+	registeredCompanyName?: string | null;
+	showYtdTotals?: boolean;
 	showEmployee?: boolean;
 	phDeductionIconUrls?: Partial<Record<PhDeductionIconKey, string>>;
 };
@@ -223,18 +240,25 @@ function renderDeductionLabel(
 	iconUrls: Partial<Record<PhDeductionIconKey, string>>
 ): string {
 	const iconUrl = resolvePhDeductionIconUrlFromMap(name, iconUrls);
+	const label = formatPayslipDeductionLabel(name);
 
 	if (!iconUrl) {
-		return `<span>${escapeHtml(name)}</span>`;
+		return `<span>${escapeHtml(label)}</span>`;
 	}
 
-	return `<span class="pd-label"><img src="${escapeHtml(iconUrl)}" alt="" /><span>${escapeHtml(name)}</span></span>`;
+	return `<span class="pd-label"><img src="${escapeHtml(iconUrl)}" alt="" /><span>${escapeHtml(label)}</span></span>`;
 }
 
-function renderWorkspaceHeader(workspaceName: string): string {
+function renderWorkspaceHeader(
+	companyName: string,
+	referenceNumber: string,
+	periodLabel: string
+): string {
 	return `
 		<div class="pd-workspace">
-			<p class="pd-workspace-name">${escapeHtml(workspaceName)}</p>
+			<p class="pd-workspace-name">${escapeHtml(companyName)}</p>
+			<p class="pd-workspace-meta">Reference: ${escapeHtml(referenceNumber)}</p>
+			<p class="pd-workspace-meta">${escapeHtml(periodLabel)}</p>
 		</div>`;
 }
 
@@ -243,144 +267,133 @@ export function buildPayslipPrintDocumentHtml(input: PayslipPrintDocumentInput):
 		payslip,
 		currency,
 		workspaceName,
+		registeredCompanyName = null,
+		showYtdTotals = false,
 		showEmployee = false,
 		phDeductionIconUrls = {}
 	} = input;
+	const display = buildPayslipDisplayContext({
+		payslip,
+		workspaceName,
+		registeredCompanyName,
+		showYtdTotals
+	});
 	const showIcons = currency === 'PHP' && Object.keys(phDeductionIconUrls).length > 0;
-	const totalDeductionsCents = payslip.deductionLines.reduce(
-		(sum, line) => sum + line.amountCents,
-		0
-	);
+	const periodLabel = formatPayslipPeriod(payslip);
+	const earningLines = buildPayslipEarningLines(payslip, currency);
+	const deductionLines = buildPayslipDeductionLines(payslip.deductionLines);
+	const totalLines = buildPayslipTotalLines(payslip, display.showYtdTotals);
 
 	const employeeSection =
 		showEmployee
-			? (() => {
-					const names = getPayslipEmployeeNameParts(payslip);
-
-					return `
-		<section class="pd-employee">
-			<div class="pd-employee-names">
-				<div>
-					<p class="pd-meta-label">First name</p>
-					<p class="pd-meta-value">${escapeHtml(names.firstName)}</p>
-				</div>
-				<div>
-					<p class="pd-meta-label">Middle name</p>
-					<p class="pd-meta-value">${names.middleName ? escapeHtml(names.middleName) : '—'}</p>
-				</div>
-				<div>
-					<p class="pd-meta-label">Last name</p>
-					<p class="pd-meta-value">${escapeHtml(names.lastName)}</p>
-				</div>
-			</div>
-			${
-				payslip.employeeCode
-					? `
-			<div>
-				<p class="pd-meta-label">Employee code</p>
-				<p class="pd-meta-value">${escapeHtml(payslip.employeeCode)}</p>
-			</div>`
-					: ''
-			}
-			${
-				payslip.jobTitle
-					? `
-			<div>
-				<p class="pd-meta-label">Job title</p>
-				<p class="pd-meta-value">${escapeHtml(payslip.jobTitle)}</p>
-			</div>`
-					: ''
-			}
-		</section>`;
-				})()
-			: '';
-
-	const holidayRow =
-		payslip.holidayPayCents > 0
 			? `
-			<tr>
-				<td>Holiday pay</td>
-				<td class="pd-strong">${escapeHtml(formatPayslipMoney(payslip.holidayPayCents, currency))}</td>
-			</tr>`
+		<section class="pd-section">
+			<h3 class="pd-section-title">${escapeHtml(PAYSLIP_SECTION_LABELS.employeeInformation)}</h3>
+			<div class="pd-employee">
+				${buildPayslipEmployeeFields(payslip)
+					.map(
+						(field) => `
+				<div>
+					<p class="pd-meta-label">${escapeHtml(field.label)}</p>
+					<p class="pd-meta-value">${escapeHtml(field.value)}</p>
+				</div>`
+					)
+					.join('')}
+			</div>
+		</section>`
 			: '';
 
-	const deductionRows = payslip.deductionLines
+	const earningsRows = earningLines
+		.map((line) => {
+			if (isPayslipEarningInfoLine(line)) {
+				return `
+			<tr>
+				<td>${escapeHtml(formatPayslipEarningLineLabel(line))}</td>
+				<td class="pd-strong">${escapeHtml(formatPayslipEarningLineAmount(line, currency))}</td>
+			</tr>`;
+			}
+
+			const emphasize = line.emphasize ? ' pd-total' : ' pd-strong';
+			return `
+			<tr>
+				<td${line.emphasize ? ' class="pd-total"' : ''}>${escapeHtml(formatPayslipEarningLineLabel(line))}</td>
+				<td class="${emphasize.trim()}">${escapeHtml(formatPayslipMoney(line.amountCents, currency))}</td>
+			</tr>`;
+		})
+		.join('');
+
+	const deductionRows = deductionLines
 		.map(
 			(line) => `
 			<tr>
-				<td>${showIcons ? renderDeductionLabel(line.name, phDeductionIconUrls) : escapeHtml(line.name)}</td>
+				<td>${showIcons ? renderDeductionLabel(line.label, phDeductionIconUrls) : escapeHtml(line.label)}</td>
 				<td class="pd-strong">−${escapeHtml(formatPayslipMoney(line.amountCents, currency))}</td>
 			</tr>`
 		)
 		.join('');
 
 	const deductionsSection =
-		payslip.deductionLines.length > 0
+		deductionLines.length > 0
 			? `
 		<section class="pd-section">
-			<h3 class="pd-section-title">Deductions</h3>
+			<h3 class="pd-section-title">${escapeHtml(PAYSLIP_SECTION_LABELS.deductions)}</h3>
 			<table class="pd-table">
 				<tbody>
 					${deductionRows}
-					<tr>
-						<td class="pd-total">Total deductions</td>
-						<td class="pd-total">−${escapeHtml(formatPayslipMoney(totalDeductionsCents, currency))}</td>
-					</tr>
 				</tbody>
 			</table>
 		</section>`
 			: '';
 
+	const totalsRows = totalLines
+		.map((line) => {
+			const emphasize = line.emphasize ? ' pd-total' : ' pd-strong';
+			const prefix = line.key === 'total-deductions' ? '−' : '';
+
+			return `
+			<tr>
+				<td${line.emphasize ? ' class="pd-total"' : ''}>${escapeHtml(line.label)}</td>
+				<td class="${emphasize.trim()}">${prefix}${escapeHtml(formatPayslipMoney(line.amountCents, currency))}</td>
+			</tr>`;
+		})
+		.join('');
+
 	const body = `
 		<article class="pd-root">
 			<header class="pd-header">
 				<div class="pd-header-main">
-					<h1 class="pd-title">${escapeHtml(payslip.runTitle)}</h1>
-					<p class="pd-subtitle">${escapeHtml(formatPayslipPeriod(payslip))}</p>
-					<p class="pd-subtitle">${escapeHtml(payslip.payType)} pay</p>
+					<h1 class="pd-title">${escapeHtml(PAYSLIP_DOCUMENT_TITLE)}</h1>
+					<p class="pd-subtitle">${escapeHtml(payslip.runTitle)}</p>
+					<p class="pd-subtitle">${escapeHtml(payslip.payType)} pay · ${escapeHtml(formatPayRateCents(payslip.payRateCents, payslip.payType, currency))} (${escapeHtml(PAYROLL_PAY_TYPE_LABELS[payslip.payType])})</p>
 				</div>
-				${renderWorkspaceHeader(workspaceName)}
+				${renderWorkspaceHeader(display.companyName, display.referenceNumber, periodLabel)}
 			</header>
 
 			${employeeSection}
 
-			<section class="pd-meta">
-				<div>
-					<p class="pd-meta-label">Pay rate</p>
-					<p class="pd-meta-value">${escapeHtml(formatPayRateCents(payslip.payRateCents, payslip.payType, currency))}</p>
-					<p class="pd-meta-hint">${escapeHtml(PAYROLL_PAY_TYPE_LABELS[payslip.payType])}</p>
-				</div>
-				<div>
-					<p class="pd-meta-label">Actual Hours Logged</p>
-					<p class="pd-meta-value">${escapeHtml(formatWorkedHours(payslip.workedMinutes))}</p>
-					<p class="pd-meta-hint">${payslip.workDays} day(s) with time</p>
-				</div>
-				<div>
-					<p class="pd-meta-label">Net pay</p>
-					<p class="pd-net">${escapeHtml(formatPayslipMoney(payslip.netCents, currency))}</p>
-				</div>
-			</section>
-
 			<section class="pd-section">
-				<h3 class="pd-section-title">Earnings</h3>
+				<h3 class="pd-section-title">${escapeHtml(PAYSLIP_SECTION_LABELS.earnings)}</h3>
 				<table class="pd-table">
 					<tbody>
-						<tr>
-							<td>Base pay</td>
-							<td class="pd-strong">${escapeHtml(formatPayslipMoney(payslip.basePayCents, currency))}</td>
-						</tr>
-						${holidayRow}
-						<tr>
-							<td class="pd-total">Gross pay</td>
-							<td class="pd-total">${escapeHtml(formatPayslipMoney(payslip.grossCents, currency))}</td>
-						</tr>
+						${earningsRows}
 					</tbody>
 				</table>
 			</section>
 
 			${deductionsSection}
 
+			<section class="pd-section">
+				<h3 class="pd-section-title">${escapeHtml(PAYSLIP_SECTION_LABELS.totals)}</h3>
+				<table class="pd-table">
+					<tbody>
+						${totalsRows}
+					</tbody>
+				</table>
+			</section>
+
 			<footer class="pd-footer">
+				<p>${escapeHtml(PAYSLIP_CONFIDENTIALITY_NOTICE)}</p>
+				<p>Validation reference: ${escapeHtml(display.validationReference)}</p>
 				<p>Date and time generated: ${escapeHtml(formatPayslipGeneratedAt(new Date()))}</p>
 			</footer>
 		</article>
@@ -391,7 +404,7 @@ export function buildPayslipPrintDocumentHtml(input: PayslipPrintDocumentInput):
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>Payslip — ${escapeHtml(payslip.employeeFullName)}</title>
+		<title>${escapeHtml(PAYSLIP_DOCUMENT_TITLE)} — ${escapeHtml(payslip.employeeFullName)}</title>
 		<style>${PAYSLIP_PRINT_PAGE_CSS}</style>
 	</head>
 	<body>

@@ -5,6 +5,10 @@ import type { PayrollPayType } from '$lib/shared/payroll/pay-rate';
 import type { PayFrequency } from '$lib/shared/payroll/frequency';
 import type { DtrDayDto } from '$lib/shared/models/dtr-day';
 import type { PayrollPayslipDeductionLine } from '$lib/shared/models/payroll-payslip';
+import {
+	DTR_DEFAULT_NIGHT_SHIFT_RATE_MULTIPLIER,
+	DTR_DEFAULT_OVERTIME_RATE_MULTIPLIER
+} from '$lib/shared/dtr/payslip-integration';
 import { shouldIncludeZeroAmountDeductionLine } from '$lib/shared/payroll/payslip-deductions';
 import {
 	computeMonthlyAmountForPayPeriod,
@@ -16,10 +20,16 @@ const MONTHLY_WORKING_DAYS = PH_MONTHLY_WORKING_DAYS;
 
 export type PayrollEarningsBreakdown = {
 	basePayCents: number;
+	overtimePayCents: number;
 	holidayPayCents: number;
+	restDayPayCents: number;
+	nightShiftPayCents: number;
+	otherEarningsCents: number;
 	grossCents: number;
 	workedMinutes: number;
 	workDays: number;
+	paidMinutes: number;
+	paidDays: number;
 };
 
 export function computeHourlyRateCents(
@@ -105,7 +115,10 @@ export function computeEmployeeEarnings(input: {
 	);
 
 	let basePayCents = 0;
+	let overtimePayCents = 0;
 	let holidayPayCents = 0;
+	let restDayPayCents = 0;
+	let nightShiftPayCents = 0;
 	let workedMinutes = 0;
 	let workDays = 0;
 
@@ -124,15 +137,36 @@ export function computeEmployeeEarnings(input: {
 			workDays += 1;
 		}
 
+		const overtimeMinutes = day.overtimeMinutes ?? 0;
+		if (overtimeMinutes > 0) {
+			overtimePayCents += Math.round(
+				hourlyRateCents * (overtimeMinutes / 60) * DTR_DEFAULT_OVERTIME_RATE_MULTIPLIER
+			);
+		}
+
+		const nightShiftMinutes = day.nightShiftMinutes ?? 0;
+		if (nightShiftMinutes > 0) {
+			nightShiftPayCents += Math.round(
+				hourlyRateCents * (nightShiftMinutes / 60) * DTR_DEFAULT_NIGHT_SHIFT_RATE_MULTIPLIER
+			);
+		}
+
 		if (isHolidayDay(day)) {
 			const payPercent = day.holidayPayPercent ?? 0;
 			const worked = day.workedMinutes > 0;
 
 			if (worked) {
 				const hours = day.workedMinutes / 60;
-				holidayPayCents += Math.round(hourlyRateCents * hours * (payPercent / 100));
+				const amount = Math.round(hourlyRateCents * hours * (payPercent / 100));
+
+				if (day.holidayCategory === 'regular' || day.holidayCategory === 'special_non_working') {
+					holidayPayCents += amount;
+				} else {
+					restDayPayCents += amount;
+				}
 			} else if (payPercent > 0) {
-				holidayPayCents += Math.round(dailyRateCents * (payPercent / 100));
+				const amount = Math.round(dailyRateCents * (payPercent / 100));
+				holidayPayCents += amount;
 			}
 
 			continue;
@@ -147,14 +181,25 @@ export function computeEmployeeEarnings(input: {
 		}
 	}
 
-	const grossCents = basePayCents + holidayPayCents;
+	const grossCents =
+		basePayCents +
+		overtimePayCents +
+		holidayPayCents +
+		restDayPayCents +
+		nightShiftPayCents;
 
 	return {
 		basePayCents,
+		overtimePayCents,
 		holidayPayCents,
+		restDayPayCents,
+		nightShiftPayCents,
+		otherEarningsCents: 0,
 		grossCents,
 		workedMinutes,
-		workDays
+		workDays,
+		paidMinutes: workedMinutes,
+		paidDays: workDays
 	};
 }
 

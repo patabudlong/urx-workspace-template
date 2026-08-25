@@ -8,7 +8,7 @@
 		DTR_DAY_STATUS_CELL_CLASSES,
 		DTR_DAY_UNDERTIME_LABEL_CLASSES
 	} from '$lib/components/dtr/dtr-day-cell-styles';
-	import LockIcon from '@lucide/svelte/icons/lock';
+	import DtrCalendarLockIcon from '$lib/components/dtr/dtr-calendar-lock-icon.svelte';
 
 	let {
 		status,
@@ -80,7 +80,7 @@
 {#if interactive}
 	<button type="button" class={cn(sharedClasses, 'cursor-pointer')} title={title} {onclick}>
 		{#if locked}
-			<LockIcon class="absolute top-1 right-1 size-3 opacity-70" aria-hidden="true" />
+			<DtrCalendarLockIcon />
 		{/if}
 		<span class="text-xs leading-none font-semibold">{dayOfMonth}</span>
 		{#if holidayLabel}
@@ -102,7 +102,7 @@
 {:else}
 	<div class={sharedClasses} title={title}>
 		{#if locked}
-			<LockIcon class="absolute top-1 right-1 size-3 opacity-70" aria-hidden="true" />
+			<DtrCalendarLockIcon />
 		{/if}
 		<span class="text-xs leading-none font-semibold">{dayOfMonth}</span>
 		{#if holidayLabel}

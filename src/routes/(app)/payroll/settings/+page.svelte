@@ -6,6 +6,7 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Form from '$lib/components/ui/form/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
+	import { Label } from '$lib/components/ui/label/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import { PAYROLL_CURRENCIES } from '$lib/shared/payroll/currency';
 	import {
@@ -235,6 +236,40 @@
 						</Form.Field>
 					</div>
 				{/if}
+
+				<Form.Field form={superform} name="registeredCompanyName">
+					<Form.Control>
+						{#snippet children({ props })}
+							<Form.Label>
+								Registered company name
+								<span class="text-muted-foreground">(optional)</span>
+							</Form.Label>
+							<Input {...props} bind:value={$form.registeredCompanyName} autocomplete="organization" />
+						{/snippet}
+					</Form.Control>
+					<SingleFieldErrors />
+					<p class="text-muted-foreground text-xs">
+						Shown on payslips instead of the workspace brand name when set.
+					</p>
+				</Form.Field>
+
+				<Form.Field form={superform} name="showYtdTotals">
+					<Form.Control>
+						{#snippet children({ props })}
+							<div class="flex items-center gap-3">
+								<input
+									{...props}
+									id={props.id}
+									type="checkbox"
+									bind:checked={$form.showYtdTotals}
+									class="border-input size-4 rounded border"
+								/>
+								<Label for={props.id}>Show year-to-date totals on payslips</Label>
+							</div>
+						{/snippet}
+					</Form.Control>
+					<SingleFieldErrors />
+				</Form.Field>
 
 				<Button type="submit" class="h-10" disabled={submitting}>
 					{#if submitting}

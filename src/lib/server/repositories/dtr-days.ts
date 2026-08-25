@@ -27,6 +27,8 @@ const DTR_DAY_PROJECTION = {
 	afternoonTimeIn: 1,
 	afternoonTimeOut: 1,
 	workedMinutes: 1,
+	overtimeMinutes: 1,
+	nightShiftMinutes: 1,
 	source: 1,
 	approvalStatus: 1,
 	notes: 1,
@@ -53,6 +55,8 @@ function toDtrDayDto(doc: DtrDayDocument): DtrDayDto {
 		afternoonTimeIn: doc.afternoonTimeIn ?? null,
 		afternoonTimeOut: doc.afternoonTimeOut ?? null,
 		workedMinutes: doc.workedMinutes,
+		overtimeMinutes: doc.overtimeMinutes ?? 0,
+		nightShiftMinutes: doc.nightShiftMinutes ?? 0,
 		source: doc.source,
 		approvalStatus: doc.approvalStatus,
 		notes: doc.notes,
@@ -317,6 +321,8 @@ export async function upsertDtrDayForWorkspace(input: {
 				workspaceId: workspaceObjectId,
 				employeeId: employeeObjectId,
 				date: input.data.date,
+				overtimeMinutes: 0,
+				nightShiftMinutes: 0,
 				createdAt: now
 			}
 		},

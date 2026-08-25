@@ -3,14 +3,29 @@ import type { PayrollCurrency } from '$lib/shared/payroll/currency';
 import type { PayrollPayslipDto } from '$lib/shared/models/payroll-payslip';
 import { formatPayRateCents } from '$lib/shared/payroll/format';
 import { PAYROLL_PAY_TYPE_LABELS } from '$lib/shared/payroll/pay-rate';
-import {
-	formatPayslipGeneratedAt,
-	formatPayslipMoney,
-	formatPayslipPeriod,
-	formatWorkedHours,
-	getPayslipEmployeeNameParts
-} from '$lib/shared/payroll/payslip-format';
+import { formatPayslipGeneratedAt, formatPayslipMoney, formatPayslipPeriod } from '$lib/shared/payroll/payslip-format';
 import { PAYSLIP_PRINT_MARGINS } from '$lib/shared/payroll/payslip-print';
+import {
+	buildPayslipDeductionLines,
+	buildPayslipDisplayContext,
+	buildPayslipEarningLines,
+	buildPayslipEmployeeFields,
+	buildPayslipTotalLines,
+	formatPayslipEarningLineAmount,
+	formatPayslipEarningLineLabel,
+	isPayslipEarningInfoLine,
+	PAYSLIP_CONFIDENTIALITY_NOTICE,
+	PAYSLIP_DOCUMENT_TITLE,
+	PAYSLIP_SECTION_LABELS
+} from '$lib/shared/payroll/payslip-sections';
+
+export type PayslipPdfInput = {
+	payslip: PayrollPayslipDto;
+	currency: PayrollCurrency;
+	workspaceName: string;
+	registeredCompanyName?: string | null;
+	showYtdTotals?: boolean;
+};
 
 function buildPayslipPdfFilename(payslip: PayrollPayslipDto): string {
 	const safeTitle = payslip.runTitle.replace(/[^\w.-]+/g, '-').replace(/-+/g, '-');
@@ -21,10 +36,10 @@ export function getPayslipPdfFilename(payslip: PayrollPayslipDto): string {
 	return buildPayslipPdfFilename(payslip);
 }
 
-export function generatePayslipPdfBuffer(
-	payslip: PayrollPayslipDto,
-	currency: PayrollCurrency
-): Promise<Buffer> {
+export function generatePayslipPdfBuffer(input: PayslipPdfInput): Promise<Buffer> {
+	const { payslip, currency, workspaceName, registeredCompanyName = null, showYtdTotals = false } =
+		input;
+
 	return new Promise((resolve, reject) => {
 		const doc = new PDFDocument({
 			size: 'A4',
@@ -42,82 +57,91 @@ export function generatePayslipPdfBuffer(
 		doc.on('error', reject);
 
 		const left = doc.page.margins.left;
+		const right = doc.page.width - doc.page.margins.right;
+		const display = buildPayslipDisplayContext({
+			payslip,
+			workspaceName,
+			registeredCompanyName,
+			showYtdTotals
+		});
 
-		doc.fontSize(20).font('Helvetica-Bold').text('Payslip', { align: 'left' });
-		doc.moveDown(0.5);
+		doc.fontSize(20).font('Helvetica-Bold').text(PAYSLIP_DOCUMENT_TITLE, { align: 'left' });
+		doc.moveDown(0.35);
 		doc.fontSize(12).font('Helvetica').text(payslip.runTitle);
 		doc.text(formatPayslipPeriod(payslip));
-		doc.moveDown(1);
-
-		const employeeNames = getPayslipEmployeeNameParts(payslip);
-
-		doc.font('Helvetica-Bold').text('Employee');
-		doc.font('Helvetica').text(`First name: ${employeeNames.firstName}`);
-		doc.text(`Middle name: ${employeeNames.middleName ?? '—'}`);
-		doc.text(`Last name: ${employeeNames.lastName}`);
-
-		if (payslip.employeeCode) {
-			doc.text(`Code: ${payslip.employeeCode}`);
-		}
-
-		if (payslip.jobTitle) {
-			doc.text(`Role: ${payslip.jobTitle}`);
-		}
-
-		doc.moveDown(0.75);
-		doc.font('Helvetica-Bold').text('Pay rate');
-		doc.font('Helvetica').text(
+		doc.text(
 			`${formatPayRateCents(payslip.payRateCents, payslip.payType, currency)} (${PAYROLL_PAY_TYPE_LABELS[payslip.payType]})`
 		);
-		doc.text(`Actual Hours Logged: ${formatWorkedHours(payslip.workedMinutes)} (${payslip.workDays} day(s))`);
+		doc.text(`Reference: ${display.referenceNumber}`);
+		doc.text(display.companyName, { align: 'right' });
+		doc.moveDown(0.75);
 
-		doc.moveDown(1);
-		doc.font('Helvetica-Bold').fontSize(14).text('Earnings');
-		doc.moveDown(0.35);
-		doc.fontSize(12).font('Helvetica');
+		doc.font('Helvetica-Bold').text(PAYSLIP_SECTION_LABELS.employeeInformation);
+		doc.moveDown(0.25);
+		doc.font('Helvetica');
 
-		const line = (label: string, amountCents: number, emphasize = false) => {
+		for (const field of buildPayslipEmployeeFields(payslip)) {
+			doc.text(`${field.label}: ${field.value}`);
+		}
+
+		const line = (label: string, amountText: string, emphasize = false) => {
 			const y = doc.y;
 			doc.font(emphasize ? 'Helvetica-Bold' : 'Helvetica').text(label, left, y, {
 				width: 320,
 				continued: false
 			});
-			doc.font(emphasize ? 'Helvetica-Bold' : 'Helvetica').text(formatPayslipMoney(amountCents, currency), {
+			doc.font(emphasize ? 'Helvetica-Bold' : 'Helvetica').text(amountText, {
 				align: 'right'
 			});
 		};
 
-		line('Base pay', payslip.basePayCents);
+		doc.moveDown(0.75);
+		doc.font('Helvetica-Bold').fontSize(14).text(PAYSLIP_SECTION_LABELS.earnings);
+		doc.moveDown(0.35);
+		doc.fontSize(12).font('Helvetica');
 
-		if (payslip.holidayPayCents > 0) {
-			line('Holiday pay', payslip.holidayPayCents);
+		for (const earningLine of buildPayslipEarningLines(payslip, currency)) {
+			if (isPayslipEarningInfoLine(earningLine)) {
+				line(
+					formatPayslipEarningLineLabel(earningLine),
+					formatPayslipEarningLineAmount(earningLine, currency)
+				);
+				continue;
+			}
+
+			line(
+				formatPayslipEarningLineLabel(earningLine),
+				formatPayslipMoney(earningLine.amountCents, currency),
+				earningLine.emphasize
+			);
 		}
 
-		line('Gross pay', payslip.grossCents, true);
+		const deductionLines = buildPayslipDeductionLines(payslip.deductionLines);
 
-		if (payslip.deductionLines.length > 0) {
+		if (deductionLines.length > 0) {
 			doc.moveDown(0.75);
-			doc.font('Helvetica-Bold').fontSize(14).text('Deductions');
+			doc.font('Helvetica-Bold').fontSize(14).text(PAYSLIP_SECTION_LABELS.deductions);
 			doc.moveDown(0.35);
 			doc.fontSize(12);
 
-			for (const deduction of payslip.deductionLines) {
-				line(deduction.name, -deduction.amountCents);
+			for (const deduction of deductionLines) {
+				line(deduction.label, `−${formatPayslipMoney(deduction.amountCents, currency)}`);
 			}
-
-			line('Total deductions', -payslip.totalDeductionsCents, true);
 		}
 
-		doc.moveDown(1);
-		doc.font('Helvetica-Bold').fontSize(16).text('Net pay', left, doc.y, {
-			width: 320,
-			continued: false
-		});
-		doc.font('Helvetica-Bold').fontSize(16).text(formatPayslipMoney(payslip.netCents, currency), {
-			align: 'right'
-		});
+		doc.moveDown(0.75);
+		doc.font('Helvetica-Bold').fontSize(14).text(PAYSLIP_SECTION_LABELS.totals);
+		doc.moveDown(0.35);
+		doc.fontSize(12);
 
-		const right = doc.page.width - doc.page.margins.right;
+		for (const totalLine of buildPayslipTotalLines(payslip, display.showYtdTotals)) {
+			const prefix = totalLine.key === 'total-deductions' ? '−' : '';
+			line(
+				totalLine.label,
+				`${prefix}${formatPayslipMoney(totalLine.amountCents, currency)}`,
+				totalLine.emphasize
+			);
+		}
 
 		doc.moveDown(2);
 		doc.strokeColor('#e4e4e7')
@@ -129,10 +153,20 @@ export function generatePayslipPdfBuffer(
 		doc.font('Helvetica')
 			.fontSize(9)
 			.fillColor('#71717a')
-			.text(`Date and time generated: ${formatPayslipGeneratedAt(new Date())}`, left, doc.y, {
+			.text(PAYSLIP_CONFIDENTIALITY_NOTICE, left, doc.y, {
 				align: 'center',
 				width: right - left
 			});
+		doc.moveDown(0.25);
+		doc.text(`Validation reference: ${display.validationReference}`, left, doc.y, {
+			align: 'center',
+			width: right - left
+		});
+		doc.moveDown(0.25);
+		doc.text(`Date and time generated: ${formatPayslipGeneratedAt(new Date())}`, left, doc.y, {
+			align: 'center',
+			width: right - left
+		});
 
 		doc.end();
 	});

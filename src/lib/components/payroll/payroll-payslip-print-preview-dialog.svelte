@@ -13,6 +13,8 @@
 		payslip,
 		currency,
 		workspaceName,
+		registeredCompanyName = null,
+		showYtdTotals = false,
 		showEmployee = false,
 		phDeductionIconUrls = {}
 	}: {
@@ -20,6 +22,8 @@
 		payslip: PayrollPayslipDto;
 		currency: PayrollCurrency;
 		workspaceName: string;
+		registeredCompanyName?: string | null;
+		showYtdTotals?: boolean;
 		showEmployee?: boolean;
 		phDeductionIconUrls?: Partial<Record<PhDeductionIconKey, string>>;
 	} = $props();
@@ -33,6 +37,8 @@
 			payslip,
 			currency,
 			workspaceName,
+			registeredCompanyName,
+			showYtdTotals,
 			showEmployee,
 			phDeductionIconUrls
 		});
@@ -57,6 +63,8 @@
 				{payslip}
 				{currency}
 				{workspaceName}
+				{registeredCompanyName}
+				{showYtdTotals}
 				{showEmployee}
 				{phDeductionIconUrls}
 			/>

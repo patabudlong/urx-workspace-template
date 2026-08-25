@@ -2,16 +2,11 @@
 	import { CalendarDate, parseDate, type DateValue } from '@internationalized/date';
 	import { Calendar as CalendarPrimitive } from 'bits-ui';
 	import { Calendar } from '$lib/components/ui/calendar/index.js';
-	import {
-		DTR_DAY_HOLIDAY_CELL_CLASSES,
-		DTR_DAY_LOCKED_CELL_CLASSES,
-		DTR_DAY_STATUS_CELL_CLASSES
-	} from '$lib/components/dtr/dtr-day-cell-styles';
 	import type { DtrDayDto } from '$lib/shared/models/dtr-day';
 	import type { DtrCalendarCell } from '$lib/shared/dtr/calendar';
 	import { formatDtrDisplayTime, summarizeDtrDayTimes } from '$lib/shared/dtr/punch';
+	import DtrCalendarLockIcon from '$lib/components/dtr/dtr-calendar-lock-icon.svelte';
 	import { cn } from '$lib/utils.js';
-	import LockIcon from '@lucide/svelte/icons/lock';
 
 	let {
 		month,
@@ -35,7 +30,23 @@
 	let value = $state<DateValue | undefined>();
 
 	const calendarDayClass =
-		'relative flex min-h-[4.75rem] w-full flex-col items-stretch justify-start gap-0.5 rounded-lg border p-1.5 text-left text-sm leading-none font-medium whitespace-normal select-none not-data-disabled:cursor-pointer not-data-selected:hover:brightness-[1.03] focus:relative focus:border-ring focus:ring-ring/50 data-disabled:pointer-events-none data-disabled:opacity-40 data-[today]:not([data-selected]):ring-primary/40 data-[today]:not([data-selected]):ring-1 data-[today]:not([data-selected]):ring-inset data-[selected]:bg-transparent data-[selected]:text-inherit data-[selected]:shadow-sm data-[selected]:ring-primary data-[selected]:ring-2 data-[selected]:ring-offset-2 data-[selected]:ring-offset-background data-[selected]:hover:text-inherit sm:min-h-24';
+		'relative flex min-h-[4.75rem] w-full flex-col items-stretch justify-start gap-0.5 rounded-lg border bg-muted p-1.5 text-left text-sm leading-none font-medium whitespace-normal select-none not-data-disabled:cursor-pointer not-data-selected:hover:brightness-[1.03] focus:relative focus:border-ring focus:ring-ring/50 data-disabled:pointer-events-none data-disabled:opacity-40 data-[today]:not([data-selected]):ring-primary/40 data-[today]:not([data-selected]):ring-1 data-[today]:not([data-selected]):ring-inset data-[selected]:text-inherit data-[selected]:shadow-sm data-[selected]:ring-primary data-[selected]:ring-2 data-[selected]:ring-offset-2 data-[selected]:ring-offset-background data-[selected]:hover:text-inherit sm:min-h-24';
+
+	const clockStatusCellClasses: Record<DtrCalendarCell['status'], string> = {
+		present:
+			'bg-emerald-500/35 text-emerald-800 border border-emerald-600/40 dark:text-emerald-200',
+		absent: 'bg-destructive/30 text-destructive border border-destructive/40',
+		rest: 'bg-muted text-muted-foreground border border-border',
+		partial:
+			'bg-amber-500/35 text-amber-800 border border-amber-600/40 dark:text-amber-200',
+		pending: 'text-muted-foreground border border-dashed border-border'
+	};
+
+	const clockHolidayCellClasses =
+		'bg-violet-500/35 text-violet-900 border border-violet-600/45 dark:text-violet-100';
+
+	const clockLockedCellClasses =
+		'ring-1 ring-inset ring-foreground/15 after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:bg-foreground/5';
 
 	function parseMonthValue(monthValue: string): CalendarDate {
 		const [year, monthNumber] = monthValue.split('-').map(Number);
@@ -99,12 +110,14 @@
 
 	function statusCellClasses(cell: DtrCalendarCell | undefined): string {
 		if (!cell) {
-			return 'border-border/60 bg-background text-muted-foreground';
+			return 'border-border text-muted-foreground';
 		}
 
-		return cell.holidayName
-			? DTR_DAY_HOLIDAY_CELL_CLASSES
-			: DTR_DAY_STATUS_CELL_CLASSES[cell.status];
+		if (cell.holidayName) {
+			return clockHolidayCellClasses;
+		}
+
+		return clockStatusCellClasses[cell.status];
 	}
 </script>
 
@@ -141,12 +154,12 @@
 			class={cn(
 				calendarDayClass,
 				statusCellClasses(cell),
-				cell?.isLocked && DTR_DAY_LOCKED_CELL_CLASSES,
+				cell?.isLocked && clockLockedCellClasses,
 				outsideMonth && 'border-transparent bg-transparent text-muted-foreground/50'
 			)}
 		>
 			{#if cell?.isLocked}
-				<LockIcon class="absolute top-1 right-1 size-3 opacity-70" aria-hidden="true" />
+				<DtrCalendarLockIcon />
 			{/if}
 			<span class="text-sm leading-none font-semibold">{dateValue.day}</span>
 			{#if summary}
