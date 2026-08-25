@@ -7,9 +7,14 @@
 	import GradientButton from '$lib/components/gradient-button.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Form from '$lib/components/ui/form/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Switch } from '$lib/components/ui/switch/index.js';
-	import { AUTH_ACTION_BUTTON_CLASS } from '$lib/auth/ui';
+	import {
+		AUTH_ACTION_BUTTON_CLASS,
+		AUTH_FIELD_CONTROL_CLASS,
+		AUTH_INLINE_BUTTON_LINK_CLASS
+	} from '$lib/auth/ui';
 	import { cn } from '$lib/utils.js';
 	import { twoFactorLoginChallengeSchema } from '$lib/shared/schemas/security';
 	import {
@@ -212,9 +217,9 @@
 					<Form.Control>
 						{#snippet children({ props })}
 							<Form.Label required>Backup code</Form.Label>
-							<input
+							<Input
 								{...props}
-								class="border-input bg-background h-10 w-full rounded-lg border px-3 text-sm"
+								class={AUTH_FIELD_CONTROL_CLASS}
 								bind:value={$form.code}
 								autocomplete="one-time-code"
 								disabled={submitting || formRateLimited}
@@ -297,7 +302,7 @@
 			{#if useBackupCode}
 				<button
 					type="button"
-					class="text-primary font-medium"
+					class={AUTH_INLINE_BUTTON_LINK_CLASS}
 					onclick={() => {
 						useBackupCode = false;
 						$form.method = data.methods[0] ?? TWO_FACTOR_METHODS.TOTP;
@@ -308,7 +313,7 @@
 			{:else}
 				<button
 					type="button"
-					class="text-primary font-medium"
+					class={AUTH_INLINE_BUTTON_LINK_CLASS}
 					onclick={() => {
 						useBackupCode = true;
 						$form.code = '';

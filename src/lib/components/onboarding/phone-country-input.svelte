@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as InputGroup from '$lib/components/ui/input-group/index.js';
 	import * as Select from '$lib/components/ui/select/index.js';
+	import { cn } from '$lib/utils.js';
 	import {
 		PHONE_COUNTRY_CODES,
 		countryFlag,
@@ -80,7 +81,7 @@
 		aria-invalid={ariaInvalid}
 		aria-describedby={ariaDescribedby}
 		bind:value={nationalNumber}
-		class="pl-2"
+		class={cn(className && 'h-full', 'pl-2')}
 	/>
 	<input type="hidden" {name} {value} />
 </InputGroup.Root>

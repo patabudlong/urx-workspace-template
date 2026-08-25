@@ -30,9 +30,7 @@
 	type="button"
 	appearance="outline"
 	tone="primary"
-	class={cn(
-		variant === 'compact' ? 'h-10 w-full gap-2' : cn(AUTH_ACTION_BUTTON_CLASS, 'gap-2')
-	)}
+	class={cn(AUTH_ACTION_BUTTON_CLASS, 'gap-2')}
 	{disabled}
 	onclick={handleClick}
 >

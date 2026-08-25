@@ -10,3 +10,7 @@ export const AUTH_OAUTH_COMPACT_CLASS =
 
 /** Inline link inside auth footer copy (e.g. "Sign in", "Sign up"). */
 export const AUTH_INLINE_LINK_CLASS = 'gradient-link text-sm font-medium';
+
+/** Inline text button matching auth link styling (e.g. "Use a backup code"). */
+export const AUTH_INLINE_BUTTON_LINK_CLASS =
+	'gradient-link cursor-pointer border-0 bg-transparent p-0 text-sm font-medium';

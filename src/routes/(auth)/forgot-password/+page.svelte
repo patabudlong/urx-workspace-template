@@ -15,7 +15,11 @@
 	} from '$lib/shared/schemas/auth';
 	import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 	import { warmRecaptcha } from '$lib/recaptcha/client';
-	import { AUTH_ACTION_BUTTON_CLASS, AUTH_FIELD_CONTROL_CLASS } from '$lib/auth/ui';
+	import {
+		AUTH_ACTION_BUTTON_CLASS,
+		AUTH_FIELD_CONTROL_CLASS,
+		AUTH_INLINE_LINK_CLASS
+	} from '$lib/auth/ui';
 	import { cn } from '$lib/utils.js';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import { get } from 'svelte/store';
@@ -140,7 +144,7 @@
 	{#snippet footer()}
 		{#if submitted}
 			<p class="text-center text-sm">
-				<a href="/login" class="hover:text-foreground">Back to sign in</a>
+				<a href="/login" class={AUTH_INLINE_LINK_CLASS}>Back to sign in</a>
 				<span class="text-muted-foreground px-2" aria-hidden="true">|</span>
 				<a href="/verify/resend" class="hover:text-foreground">
 					Resend verification email
@@ -149,7 +153,7 @@
 		{:else}
 			<p class="text-center text-sm">
 				Remember your password?
-				<a href="/login" class="hover:text-foreground">Sign in</a>
+				<a href="/login" class={AUTH_INLINE_LINK_CLASS}>Sign in</a>
 			</p>
 		{/if}
 	{/snippet}

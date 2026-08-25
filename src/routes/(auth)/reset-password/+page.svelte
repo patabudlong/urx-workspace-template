@@ -13,7 +13,11 @@
 	import { PASSWORD_HISTORY_LIMIT, PASSWORD_REQUIREMENTS_SUMMARY } from '$lib/shared/password-policy';
 	import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 	import { warmRecaptcha } from '$lib/recaptcha/client';
-	import { AUTH_ACTION_BUTTON_CLASS, AUTH_FIELD_CONTROL_CLASS } from '$lib/auth/ui';
+	import {
+		AUTH_ACTION_BUTTON_CLASS,
+		AUTH_FIELD_CONTROL_CLASS,
+		AUTH_INLINE_LINK_CLASS
+	} from '$lib/auth/ui';
 	import { cn } from '$lib/utils.js';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import { get } from 'svelte/store';
@@ -143,7 +147,7 @@
 
 	{#snippet footer()}
 		<p class="text-center text-sm">
-			<a href="/login" class="hover:text-foreground">Back to sign in</a>
+			<a href="/login" class={AUTH_INLINE_LINK_CLASS}>Back to sign in</a>
 		</p>
 	{/snippet}
 </AuthFormPanel>

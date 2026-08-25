@@ -1,4 +1,5 @@
 <script lang="ts">
+	import GradientText from '$lib/components/gradient-text.svelte';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import type { Snippet } from 'svelte';
 
@@ -33,7 +34,9 @@
 >
 	<div class="flex w-full flex-col items-center gap-3 text-center">
 		<div class="space-y-1">
-			<p class="text-primary text-xs font-semibold tracking-wide uppercase">Setup guide</p>
+			<GradientText tone="primary" as="p" class="text-xs font-semibold tracking-wide uppercase">
+				Setup guide
+			</GradientText>
 			<h2 class="text-foreground text-lg font-semibold tracking-tight sm:text-xl">
 				Get your workspace ready
 			</h2>
