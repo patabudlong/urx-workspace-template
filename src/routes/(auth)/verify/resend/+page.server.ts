@@ -10,7 +10,8 @@ import { assertAuthRecaptcha } from '$lib/server/security/recaptcha';
 import { resendVerificationSchema } from '$lib/shared/schemas/auth';
 import { safeEmailPrefill } from '$lib/shared/auth-prefill';
 import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
-import { AUTH_RATE_LIMIT_MESSAGE } from '$lib/shared/auth-messages';
+import { createAuthRateLimitMessage } from '$lib/shared/auth-messages';
+import { getVerificationEmailRetryAfterSeconds } from '$lib/server/security/auth-rate-limit';
 
 export const load: PageServerLoad = async ({ url }) => {
 	const form = await superValidate(zod4(resendVerificationSchema), {
@@ -69,7 +70,13 @@ export const actions: Actions = {
 			}
 
 			if (result.reason === 'THROTTLED') {
-				return message(form, AUTH_RATE_LIMIT_MESSAGE, { status: 429 });
+				return message(
+					form,
+					createAuthRateLimitMessage(
+						getVerificationEmailRetryAfterSeconds(form.data.email)
+					),
+					{ status: 429 }
+				);
 			}
 
 			return message(

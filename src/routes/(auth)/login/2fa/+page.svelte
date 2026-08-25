@@ -19,11 +19,14 @@
 	import { twoFactorLoginChallengeSchema } from '$lib/shared/schemas/security';
 	import {
 		INVALID_VERIFICATION_CODE_MESSAGE,
-		isAuthRateLimitMessage
+		formatRateLimitCountdown,
+		isAuthRateLimitMessage,
+		type AuthRateLimitMessage
 	} from '$lib/shared/auth-messages';
 	import {
 		TWO_FACTOR_CODE_SENT_MESSAGE
 	} from '$lib/shared/security-messages';
+	import { createVerificationResendCooldown } from '$lib/auth/verification-resend-cooldown.svelte';
 	import { TWO_FACTOR_METHODS } from '$lib/shared/models/two-factor';
 	import { TRUSTED_DEVICE_TTL_DAYS } from '$lib/shared/models/two-factor';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
@@ -38,8 +41,14 @@
 	let submitting = $state(false);
 	let sendingCode = $state(false);
 	let codeSendSuccess = $state(false);
+	let sendCodeRateLimitMessage = $state<AuthRateLimitMessage | null>(null);
+	let sendCodeRateLimited = $state(false);
 	let formRateLimited = $state(false);
 	let useBackupCode = $state(false);
+	const sendCodeCooldown = createVerificationResendCooldown({
+		idleLabel: 'Send code',
+		activeLabel: (remaining) => `Send again in ${formatRateLimitCountdown(remaining)}`
+	});
 
 	const superform = superForm(untrack(() => data.form), {
 		id: 'twoFactorLoginForm',
@@ -59,8 +68,10 @@
 	const { enhance, form, message: formMessage, errors } = superform;
 
 	const sendCodeMessage = $derived(
-		codeSendSuccess || $formMessage === TWO_FACTOR_CODE_SENT_MESSAGE ? TWO_FACTOR_CODE_SENT_MESSAGE : null
+		codeSendSuccess ? TWO_FACTOR_CODE_SENT_MESSAGE : null
 	);
+
+	const sendCodeRateLimit = $derived(sendCodeRateLimitMessage);
 
 	const formError = $derived(
 		$formMessage &&
@@ -109,6 +120,8 @@
 	<div class="space-y-6">
 		{#if rateLimitMessage}
 			<AuthFormMessageAlert message={rateLimitMessage} bind:limited={formRateLimited} />
+		{:else if sendCodeRateLimit}
+			<AuthFormMessageAlert message={sendCodeRateLimit} bind:limited={sendCodeRateLimited} />
 		{:else if sendCodeMessage}
 			<StatusAlert
 				variant="info"
@@ -181,10 +194,11 @@
 					$form.method === TWO_FACTOR_METHODS.EMAIL &&
 						'border-primary bg-primary/5 text-primary ring-primary/20 ring-2 hover:bg-primary/10 hover:text-primary'
 				)}
-				disabled={sendingCode || submitting || formRateLimited}
+				disabled={sendingCode || submitting || formRateLimited || sendCodeRateLimited || sendCodeCooldown.active}
 				onclick={async () => {
 					sendingCode = true;
 					codeSendSuccess = false;
+					sendCodeRateLimitMessage = null;
 					try {
 						const response = await fetch('?/sendCode', {
 							method: 'POST',
@@ -192,8 +206,16 @@
 							body: new URLSearchParams({ method: $form.method })
 						});
 						const result = deserialize(await response.text());
+
 						if (result.type === 'success') {
 							codeSendSuccess = true;
+							sendCodeCooldown.start();
+							return;
+						}
+
+						if (result.type === 'failure' && isAuthRateLimitMessage(result.data?.rateLimit)) {
+							sendCodeRateLimitMessage = result.data.rateLimit;
+							sendCodeCooldown.start(result.data.rateLimit.retryAfterSeconds);
 						}
 					} finally {
 						sendingCode = false;
@@ -203,6 +225,8 @@
 				{#if sendingCode}
 					<Loader2Icon class="size-4 animate-spin" aria-hidden="true" />
 					Sending code…
+				{:else if sendCodeCooldown.active}
+					{sendCodeCooldown.label}
 				{:else}
 					Send code via {methodLabel($form.method)}
 				{/if}

@@ -13,6 +13,8 @@
 	import { RECAPTCHA_ACTIONS } from '$lib/shared/recaptcha';
 	import { warmRecaptcha } from '$lib/recaptcha/client';
 	import { AUTH_ACTION_BUTTON_CLASS, AUTH_INLINE_LINK_CLASS } from '$lib/auth/ui';
+	import { formatRateLimitCountdown, isAuthRateLimitMessage } from '$lib/shared/auth-messages';
+	import { createVerificationResendCooldown } from '$lib/auth/verification-resend-cooldown.svelte';
 	import { cn } from '$lib/utils.js';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import { get } from 'svelte/store';
@@ -24,6 +26,10 @@
 
 	let recaptchaError = $state<string | null>(null);
 	let formRateLimited = $state(false);
+	const resendCooldown = createVerificationResendCooldown({
+		idleLabel: 'Resend verification email',
+		activeLabel: (remaining) => `Resend available in ${formatRateLimitCountdown(remaining)}`
+	});
 	const authLoading = createAuthLoadingState();
 	const submitDisabled = $derived(authLoading.authBusy || formRateLimited);
 
@@ -32,6 +38,16 @@
 
 	onMount(() => {
 		warmRecaptcha(RECAPTCHA_ACTIONS.VERIFY_EMAIL);
+
+		if (data.codeSent) {
+			resendCooldown.start();
+		}
+	});
+
+	$effect(() => {
+		if (isAuthRateLimitMessage($formMessage)) {
+			resendCooldown.start($formMessage.retryAfterSeconds);
+		}
 	});
 
 	const superform = superForm(untrack(() => data.form), {
@@ -197,9 +213,13 @@
 			<div class="space-y-3 text-center">
 				<p class="text-sm">Didn't get a code?</p>
 				<p class="text-sm">
-					<a href={resendHref} class="hover:text-foreground">
-						Resend verification email
-					</a>
+					{#if resendCooldown.active}
+						<span class="text-muted-foreground">{resendCooldown.label}</span>
+					{:else}
+						<a href={resendHref} class="hover:text-foreground">
+							Resend verification email
+						</a>
+					{/if}
 					<span class="px-2" aria-hidden="true">|</span>
 					<a href="/verify/resend" class="hover:text-foreground">
 						Use a different email

@@ -353,6 +353,23 @@ export function isVerificationEmailThrottled(email: string): boolean {
 	);
 }
 
+export function getVerificationEmailRetryAfterSeconds(email: string): number {
+	const normalizedEmail = email.trim().toLowerCase();
+
+	if (!normalizedEmail) {
+		return 0;
+	}
+
+	const entry = store.get(verificationEmailRateLimitKey(normalizedEmail));
+	const now = Date.now();
+
+	if (!entry || entry.resetAt <= now) {
+		return 0;
+	}
+
+	return Math.max(1, Math.ceil((entry.resetAt - now) / 1000));
+}
+
 export function consumeVerificationEmailSend(email: string): boolean {
 	if (!isAuthRateLimitEnabled()) {
 		return true;

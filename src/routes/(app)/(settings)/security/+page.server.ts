@@ -263,14 +263,25 @@ export const actions: Actions = {
 		};
 	},
 
-	sendSmsSetupCode: async ({ locals, url }) => {
+	sendSmsSetupCode: async ({ locals, url, getClientAddress }) => {
 		if (!locals.user) {
 			return fail(401);
 		}
 
-		const result = await sendSetupOtpCode({ userId: locals.user.id, method: 'sms', origin: url.origin });
+		const result = await sendSetupOtpCode({
+			userId: locals.user.id,
+			method: 'sms',
+			origin: url.origin,
+			clientIp: getClientAddress()
+		});
 
 		if (!result.ok) {
+			if (result.reason === 'THROTTLED') {
+				return fail(429, {
+					error: createAuthRateLimitMessage(result.retryAfterSeconds ?? 60)
+				});
+			}
+
 			if (result.reason === 'ALREADY_ENABLED') {
 				return fail(400, { error: TWO_FACTOR_ALREADY_ENABLED_MESSAGE });
 			}
@@ -319,14 +330,25 @@ export const actions: Actions = {
 		};
 	},
 
-	sendEmailSetupCode: async ({ locals, url }) => {
+	sendEmailSetupCode: async ({ locals, url, getClientAddress }) => {
 		if (!locals.user) {
 			return fail(401);
 		}
 
-		const result = await sendSetupOtpCode({ userId: locals.user.id, method: 'email', origin: url.origin });
+		const result = await sendSetupOtpCode({
+			userId: locals.user.id,
+			method: 'email',
+			origin: url.origin,
+			clientIp: getClientAddress()
+		});
 
 		if (!result.ok) {
+			if (result.reason === 'THROTTLED') {
+				return fail(429, {
+					error: createAuthRateLimitMessage(result.retryAfterSeconds ?? 60)
+				});
+			}
+
 			if (result.reason === 'ALREADY_ENABLED') {
 				return fail(400, { error: TWO_FACTOR_ALREADY_ENABLED_MESSAGE });
 			}

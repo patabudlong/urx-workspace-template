@@ -22,6 +22,7 @@
 	let verifyDialogOpen = $state(false);
 	let phoneDialogMode = $state<'add' | 'change'>('add');
 	let pendingVerification = $state(false);
+	let codeSentOnOpen = $state(false);
 
 	const needsVerification = $derived(Boolean(profile.phoneNumber) && !profile.phoneVerified);
 	const hasPhone = $derived(Boolean(profile.phoneNumber));
@@ -38,6 +39,7 @@
 
 	function handlePhoneSaved() {
 		pendingVerification = true;
+		codeSentOnOpen = true;
 	}
 
 	$effect(() => {
@@ -132,5 +134,10 @@
 />
 
 {#if hasPhone}
-	<ProfileVerifyPhoneDialog bind:open={verifyDialogOpen} {data} phoneNumber={profile.phoneNumber} />
+	<ProfileVerifyPhoneDialog
+		bind:open={verifyDialogOpen}
+		bind:codeSentOnOpen
+		{data}
+		phoneNumber={profile.phoneNumber}
+	/>
 {/if}

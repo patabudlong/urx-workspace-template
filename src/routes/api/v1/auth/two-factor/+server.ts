@@ -5,7 +5,7 @@ import {
 	verifyTwoFactorChallenge
 } from '$lib/server/auth/two-factor/challenge';
 import { jsonError, jsonOk } from '$lib/server/api/response';
-import { INVALID_VERIFICATION_CODE_MESSAGE } from '$lib/shared/auth-messages';
+import { INVALID_VERIFICATION_CODE_MESSAGE, createAuthRateLimitMessage } from '$lib/shared/auth-messages';
 import { TWO_FACTOR_METHODS } from '$lib/shared/models/two-factor';
 import { twoFactorLoginChallengeSchema } from '$lib/shared/schemas/security';
 import { TWO_FACTOR_CODE_SENT_MESSAGE } from '$lib/shared/security-messages';
@@ -74,7 +74,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	);
 };
 
-export const PUT: RequestHandler = async ({ request, url }) => {
+export const PUT: RequestHandler = async ({ request, url, getClientAddress }) => {
 	const requestId = request.headers.get('x-request-id') ?? undefined;
 
 	let body: unknown;
@@ -110,10 +110,18 @@ export const PUT: RequestHandler = async ({ request, url }) => {
 	const sent = await sendTwoFactorLoginCode({
 		userId: payload.sub,
 		method: parsed.data.method,
-		origin: url.origin
+		origin: url.origin,
+		clientIp: getClientAddress()
 	});
 
 	if (!sent.ok) {
+		if (sent.reason === 'THROTTLED') {
+			return jsonError('RATE_LIMITED', createAuthRateLimitMessage(sent.retryAfterSeconds ?? 60).text, {
+				requestId,
+				headers: { 'Retry-After': String(sent.retryAfterSeconds ?? 60) }
+			});
+		}
+
 		return jsonError('BAD_REQUEST', 'Could not send verification code', { requestId });
 	}
 
