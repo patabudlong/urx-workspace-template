@@ -20,6 +20,11 @@ import {
 import { getWorkspaceHostSuffix } from '$lib/server/workspace-host';
 import { buildEmployeeMonthCalendar, getMonthDateRange } from '$lib/shared/dtr/calendar';
 import { canManageDtr } from '$lib/shared/dtr/access';
+import {
+	buildSecurityEventRequestContext,
+	recordDtrSecurityEventInBackground
+} from '$lib/server/security/record-security-event';
+import { SECURITY_EVENT_ACTIONS } from '$lib/shared/models/security-event';
 import { DTR_DAY_LOCKED_MESSAGE, DTR_DAY_SAVED_MESSAGE, DTR_DAY_SAVE_FAILED_MESSAGE } from '$lib/shared/dtr/messages';
 import { isDtrDayLockedError } from '$lib/server/dtr/errors';
 import { resolveLunchBreakForEmployeeDay } from '$lib/server/dtr/lunch-break';
@@ -169,7 +174,8 @@ export const load: PageServerLoad = async ({ parent, url }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request, url, locals }) => {
+	default: async (event) => {
+		const { request, url, locals } = event;
 		const form = await superValidate(request, zod4(upsertDtrDaySchema));
 
 		if (!locals.user) {
@@ -199,6 +205,18 @@ export const actions: Actions = {
 
 			return message(form, DTR_DAY_SAVE_FAILED_MESSAGE, { status: 500 });
 		}
+
+		recordDtrSecurityEventInBackground(event, {
+			workspaceId: workspace.workspaceId,
+			actorUserId: locals.user.id,
+			action: SECURITY_EVENT_ACTIONS.DTR_DAY_UPDATED,
+			...buildSecurityEventRequestContext(event),
+			metadata: {
+				detail: `Updated DTR for employee ${form.data.employeeId} on ${form.data.date}.`,
+				employeeId: form.data.employeeId,
+				date: form.data.date
+			}
+		});
 
 		return message(form, DTR_DAY_SAVED_MESSAGE);
 	}

@@ -36,7 +36,7 @@
 	</div>
 
 	<div class="flex shrink-0 items-center gap-1 sm:gap-2">
-		<NotificationBellButton />
+		<NotificationBellButton workspaceId={workspace?.workspaceId ?? null} />
 		<ThemeToggle />
 		<UserProfileMenu {userDisplay} {workspaceRole} {workspace} />
 	</div>

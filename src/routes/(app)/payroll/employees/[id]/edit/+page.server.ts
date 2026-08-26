@@ -18,6 +18,11 @@ import {
 } from '$lib/server/workspace-context';
 import { getWorkspaceHostSuffix } from '$lib/server/workspace-host';
 import { canManagePayroll } from '$lib/shared/payroll/access';
+import {
+	buildSecurityEventRequestContext,
+	recordPayrollSecurityEventInBackground
+} from '$lib/server/security/record-security-event';
+import { SECURITY_EVENT_ACTIONS } from '$lib/shared/models/security-event';
 import { buildPhDeductionIconUrlMap } from '$lib/server/payroll/deduction-icons';
 import { mapPayrollEmployeeToFormInput } from '$lib/shared/payroll/deductions';
 import {
@@ -71,7 +76,8 @@ export const load: PageServerLoad = async ({ parent, params, url }) => {
 };
 
 export const actions: Actions = {
-	update: async ({ request, url, locals, params }) => {
+	update: async (event) => {
+		const { request, url, locals, params } = event;
 		const { form, photo, removePhoto } = await parsePayrollEmployeeUpdateFormSubmission(request);
 
 		if (!locals.user) {
@@ -115,6 +121,19 @@ export const actions: Actions = {
 					return message(form, photoResult.message, { status: 400 });
 				}
 			}
+
+			recordPayrollSecurityEventInBackground(event, {
+				workspaceId: workspace.workspaceId,
+				actorUserId: locals.user.id,
+				action: SECURITY_EVENT_ACTIONS.PAYROLL_EMPLOYEE_UPDATED,
+				...buildSecurityEventRequestContext(event),
+				metadata: {
+					detail: `Updated employee ${updated.fullName} (${updated.employeeCode}).`,
+					employeeId: updated.id,
+					employeeCode: updated.employeeCode,
+					fullName: updated.fullName
+				}
+			});
 		} catch (error) {
 			if (error instanceof Error && error.message === 'Invalid work schedule') {
 				return message(form, 'Selected work schedule is invalid or no longer available.', {
@@ -131,7 +150,8 @@ export const actions: Actions = {
 
 		return message(form, PAYROLL_EMPLOYEE_UPDATED_MESSAGE);
 	},
-	deactivate: async ({ url, locals, params }) => {
+	deactivate: async (event) => {
+		const { url, locals, params } = event;
 		if (!locals.user) {
 			error(401, 'Authentication required.');
 		}
@@ -143,6 +163,15 @@ export const actions: Actions = {
 			error(403, 'Payroll access required.');
 		}
 
+		const employee = await getPayrollEmployeeForWorkspace({
+			workspaceId: workspace.workspaceId,
+			employeeId: params.id
+		});
+
+		if (!employee) {
+			error(404, PAYROLL_EMPLOYEE_NOT_FOUND_MESSAGE);
+		}
+
 		const deactivated = await deactivatePayrollEmployeeForWorkspace({
 			workspaceId: workspace.workspaceId,
 			employeeId: params.id
@@ -151,6 +180,19 @@ export const actions: Actions = {
 		if (!deactivated) {
 			error(404, PAYROLL_EMPLOYEE_NOT_FOUND_MESSAGE);
 		}
+
+		recordPayrollSecurityEventInBackground(event, {
+			workspaceId: workspace.workspaceId,
+			actorUserId: locals.user.id,
+			action: SECURITY_EVENT_ACTIONS.PAYROLL_EMPLOYEE_DEACTIVATED,
+			...buildSecurityEventRequestContext(event),
+			metadata: {
+				detail: `Deactivated employee ${employee.fullName} (${employee.employeeCode}).`,
+				employeeId: employee.id,
+				employeeCode: employee.employeeCode,
+				fullName: employee.fullName
+			}
+		});
 
 		throw redirect(303, '/payroll/employees?deactivated=1');
 	}

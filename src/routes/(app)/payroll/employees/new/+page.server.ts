@@ -21,6 +21,11 @@ import {
 } from '$lib/server/workspace-context';
 import { getWorkspaceHostSuffix } from '$lib/server/workspace-host';
 import { canManagePayroll } from '$lib/shared/payroll/access';
+import {
+	buildSecurityEventRequestContext,
+	recordPayrollSecurityEventInBackground
+} from '$lib/server/security/record-security-event';
+import { SECURITY_EVENT_ACTIONS } from '$lib/shared/models/security-event';
 import { buildPhDeductionIconUrlMap } from '$lib/server/payroll/deduction-icons';
 import {
 	createPayrollEmployeeSchema,
@@ -74,7 +79,8 @@ export const load: PageServerLoad = async ({ parent, url }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request, url, locals }) => {
+	default: async (event) => {
+		const { request, url, locals } = event;
 		const { form, photo } = await parsePayrollEmployeeFormSubmission(request);
 
 		if (!locals.user) {
@@ -112,6 +118,19 @@ export const actions: Actions = {
 					return message(form, photoResult.message, { status: 400 });
 				}
 			}
+
+			recordPayrollSecurityEventInBackground(event, {
+				workspaceId: workspace.workspaceId,
+				actorUserId: locals.user.id,
+				action: SECURITY_EVENT_ACTIONS.PAYROLL_EMPLOYEE_CREATED,
+				...buildSecurityEventRequestContext(event),
+				metadata: {
+					detail: `Added employee ${employee.fullName} (${employee.employeeCode}).`,
+					employeeId: employee.id,
+					employeeCode: employee.employeeCode,
+					fullName: employee.fullName
+				}
+			});
 		} catch (error) {
 			if (error instanceof Error && error.message === 'Invalid work schedule') {
 				return message(form, 'Selected work schedule is invalid or no longer available.', {

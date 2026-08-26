@@ -13,6 +13,7 @@ export const CollectionNames = {
 	workspaceInvitations: 'workspace_invitations',
 	twoFactorOtpTokens: 'two_factor_otp_tokens',
 	securityEvents: 'security_events',
+	notifications: 'notifications',
 // urixoft-workspace-mailbox:collections:start
 	userMailboxCredentials: 'user_mailbox_credentials',
 // urixoft-workspace-mailbox:collections:end
@@ -93,6 +94,12 @@ export async function getSecurityEventsCollection<T extends Document = Document>
 	Collection<T>
 > {
 	return getCollection<T>('securityEvents');
+}
+
+export async function getNotificationsCollection<T extends Document = Document>(): Promise<
+	Collection<T>
+> {
+	return getCollection<T>('notifications');
 }
 // urixoft-workspace-mailbox:getter:start
 export async function getUserMailboxCredentialsCollection<T extends Document = Document>(): Promise<Collection<T>> {

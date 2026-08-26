@@ -13,6 +13,10 @@ import {
 import { getPayrollPayslipForWorkspace } from '$lib/server/repositories/payroll-payslips';
 import { getPayrollSettingsForWorkspace } from '$lib/server/repositories/payroll-settings';
 import {
+	buildSecurityEventRequestContext,
+	recordPayrollSecurityEvent
+} from '$lib/server/security/record-security-event';
+import {
 	PAYROLL_EMPLOYEE_LINK_REQUIRED_MESSAGE,
 	PAYROLL_PAYSLIP_EMAIL_FAILED_MESSAGE,
 	PAYROLL_PAYSLIP_EMAIL_NOT_CONFIGURED_MESSAGE,
@@ -21,8 +25,10 @@ import {
 } from '$lib/shared/payroll/messages';
 import { canManagePayroll } from '$lib/shared/payroll/access';
 import { payrollPayslipIdParamSchema } from '$lib/shared/payroll/schemas';
+import { SECURITY_EVENT_ACTIONS } from '$lib/shared/models/security-event';
 
-export const POST: RequestHandler = async ({ locals, request, url, params }) => {
+export const POST: RequestHandler = async (event) => {
+	const { locals, request, url, params, getClientAddress } = event;
 	const requestId = request.headers.get('x-request-id') ?? undefined;
 
 	if (!isMailConfigured()) {
@@ -136,6 +142,21 @@ export const POST: RequestHandler = async ({ locals, request, url, params }) => 
 		});
 	} catch {
 		return jsonError('INTERNAL_ERROR', PAYROLL_PAYSLIP_EMAIL_FAILED_MESSAGE, { requestId });
+	}
+
+	if (locals.user?.id) {
+		await recordPayrollSecurityEvent({
+			workspaceId: workspaceId!,
+			actorUserId: locals.user.id,
+			action: SECURITY_EVENT_ACTIONS.PAYROLL_PAYSLIP_EMAILED,
+			...buildSecurityEventRequestContext({ request, getClientAddress }),
+			metadata: {
+				detail: `Emailed payslip to ${recipientEmail}.`,
+				payslipId: payslip.id,
+				recipientEmail,
+				employeeId: payslip.employeeId
+			}
+		});
 	}
 
 	return jsonOk({ sent: true, message: PAYROLL_PAYSLIP_EMAIL_SENT_MESSAGE }, { requestId });

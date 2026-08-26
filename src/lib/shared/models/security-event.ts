@@ -12,7 +12,9 @@ export const SECURITY_EVENT_CATEGORIES = {
 	AUTH: 'auth',
 	ACCOUNT: 'account',
 	WORKSPACE: 'workspace',
-	PLATFORM: 'platform'
+	PLATFORM: 'platform',
+	DTR: 'dtr',
+	PAYROLL: 'payroll'
 } as const;
 
 export type SecurityEventCategory =
@@ -48,7 +50,20 @@ export const SECURITY_EVENT_ACTIONS = {
 	INVITATION_REVOKED: 'workspace.invitation_revoked',
 	WORKSPACE_SETTINGS_UPDATED: 'workspace.settings_updated',
 	WORKSPACE_APPROVED: 'platform.workspace_approved',
-	WORKSPACE_REJECTED: 'platform.workspace_rejected'
+	WORKSPACE_REJECTED: 'platform.workspace_rejected',
+	DTR_DAY_UPDATED: 'dtr.day_updated',
+	DTR_NG_IMPORTED: 'dtr.ng_timecard_imported',
+	DTR_SETTINGS_UPDATED: 'dtr.settings_updated',
+	DTR_WORK_SCHEDULES_UPDATED: 'dtr.work_schedules_updated',
+	DTR_HOLIDAY_CALENDAR_UPDATED: 'dtr.holiday_calendar_updated',
+	PAYROLL_RUN_CREATED: 'payroll.run_created',
+	PAYROLL_RUN_PROCESSED: 'payroll.run_processed',
+	PAYROLL_RUN_DELETED: 'payroll.run_deleted',
+	PAYROLL_EMPLOYEE_CREATED: 'payroll.employee_created',
+	PAYROLL_EMPLOYEE_UPDATED: 'payroll.employee_updated',
+	PAYROLL_EMPLOYEE_DEACTIVATED: 'payroll.employee_deactivated',
+	PAYROLL_SETTINGS_UPDATED: 'payroll.settings_updated',
+	PAYROLL_PAYSLIP_EMAILED: 'payroll.payslip_emailed'
 } as const;
 
 export type SecurityEventAction =

@@ -3,8 +3,13 @@ import { jsonError, jsonOk } from '$lib/server/api/response';
 import { requireDtrWorkspace } from '$lib/server/dtr/api-context';
 import { isDtrDayLockedError } from '$lib/server/dtr/errors';
 import { listDtrDaysForWorkspace, upsertDtrDayForWorkspace } from '$lib/server/repositories/dtr-days';
+import {
+	buildSecurityEventRequestContext,
+	recordDtrSecurityEvent
+} from '$lib/server/security/record-security-event';
 import { getMonthDateRange } from '$lib/shared/dtr/calendar';
 import { DTR_DAY_LOCKED_MESSAGE } from '$lib/shared/dtr/messages';
+import { SECURITY_EVENT_ACTIONS } from '$lib/shared/models/security-event';
 import { dtrDaysQuerySchema, upsertDtrDaySchema } from '$lib/shared/dtr/schemas';
 
 export const GET: RequestHandler = async ({ locals, request, url }) => {
@@ -38,7 +43,8 @@ export const GET: RequestHandler = async ({ locals, request, url }) => {
 	return jsonOk({ month: parsed.data.month, items }, { requestId });
 };
 
-export const POST: RequestHandler = async ({ locals, request, url }) => {
+export const POST: RequestHandler = async (event) => {
+	const { locals, request, url, getClientAddress } = event;
 	const requestId = request.headers.get('x-request-id') ?? undefined;
 	const context = await requireDtrWorkspace({
 		userId: locals.user?.id,
@@ -78,6 +84,20 @@ export const POST: RequestHandler = async ({ locals, request, url }) => {
 
 	if (!day) {
 		return jsonError('CONFLICT', DTR_DAY_LOCKED_MESSAGE, { requestId });
+	}
+
+	if (locals.user?.id) {
+		await recordDtrSecurityEvent({
+			workspaceId: context.workspace.workspaceId,
+			actorUserId: locals.user.id,
+			action: SECURITY_EVENT_ACTIONS.DTR_DAY_UPDATED,
+			...buildSecurityEventRequestContext({ request, getClientAddress }),
+			metadata: {
+				detail: `Updated DTR for employee ${parsed.data.employeeId} on ${parsed.data.date}.`,
+				employeeId: parsed.data.employeeId,
+				date: parsed.data.date
+			}
+		});
 	}
 
 	return jsonOk(day, { status: 201, requestId });

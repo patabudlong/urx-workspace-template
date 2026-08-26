@@ -15,6 +15,11 @@ import {
 import { getWorkspaceHostSuffix } from '$lib/server/workspace-host';
 import { canManageDtr } from '$lib/shared/dtr/access';
 import {
+	buildSecurityEventRequestContext,
+	recordDtrSecurityEventInBackground
+} from '$lib/server/security/record-security-event';
+import { SECURITY_EVENT_ACTIONS } from '$lib/shared/models/security-event';
+import {
 	DTR_HOLIDAY_CALENDAR_SAVED_MESSAGE,
 	DTR_HOLIDAY_CALENDAR_SAVE_FAILED_MESSAGE
 } from '$lib/shared/dtr/messages';
@@ -68,7 +73,8 @@ export const load: PageServerLoad = async ({ parent, url }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request, url, locals }) => {
+	default: async (event) => {
+		const { request, url, locals } = event;
 		const initialForm = await superValidate(request, zod4(dtrHolidayCalendarSchema));
 		const form = initialForm.valid
 			? initialForm
@@ -99,6 +105,18 @@ export const actions: Actions = {
 			await upsertDtrHolidayCalendarForWorkspace({
 				workspaceId: workspace.workspaceId,
 				data: form.data
+			});
+
+			recordDtrSecurityEventInBackground(event, {
+				workspaceId: workspace.workspaceId,
+				actorUserId: locals.user.id,
+				action: SECURITY_EVENT_ACTIONS.DTR_HOLIDAY_CALENDAR_UPDATED,
+				...buildSecurityEventRequestContext(event),
+				metadata: {
+					detail: `Saved holiday calendar for ${form.data.year}: "${form.data.title}".`,
+					year: form.data.year,
+					title: form.data.title
+				}
 			});
 
 			return message(form, DTR_HOLIDAY_CALENDAR_SAVED_MESSAGE);

@@ -3,13 +3,19 @@ import { jsonError, jsonOk } from '$lib/server/api/response';
 import { processPayrollRunForWorkspace } from '$lib/server/payroll/process-run';
 import { requirePayrollWorkspace } from '$lib/server/payroll/api-context';
 import {
+	buildSecurityEventRequestContext,
+	recordPayrollSecurityEvent
+} from '$lib/server/security/record-security-event';
+import {
 	PAYROLL_RUN_ALREADY_PROCESSED_MESSAGE,
 	PAYROLL_RUN_NOT_FOUND_MESSAGE,
 	PAYROLL_RUN_PROCESS_FAILED_MESSAGE
 } from '$lib/shared/payroll/messages';
 import { payrollRunIdParamSchema } from '$lib/shared/payroll/schemas';
+import { SECURITY_EVENT_ACTIONS } from '$lib/shared/models/security-event';
 
-export const POST: RequestHandler = async ({ locals, request, url, params }) => {
+export const POST: RequestHandler = async (event) => {
+	const { locals, request, url, params, getClientAddress } = event;
 	const requestId = request.headers.get('x-request-id') ?? undefined;
 	const context = await requirePayrollWorkspace({
 		userId: locals.user?.id,
@@ -44,6 +50,20 @@ export const POST: RequestHandler = async ({ locals, request, url, params }) => 
 		}
 
 		return jsonError('INTERNAL_ERROR', PAYROLL_RUN_PROCESS_FAILED_MESSAGE, { requestId });
+	}
+
+	if (locals.user?.id) {
+		await recordPayrollSecurityEvent({
+			workspaceId: context.workspace.workspaceId,
+			actorUserId: locals.user.id,
+			action: SECURITY_EVENT_ACTIONS.PAYROLL_RUN_PROCESSED,
+			...buildSecurityEventRequestContext({ request, getClientAddress }),
+			metadata: {
+				detail: `Processed pay run "${result.run.title}".`,
+				runId: result.run.id,
+				title: result.run.title
+			}
+		});
 	}
 
 	return jsonOk(result.run, { requestId });

@@ -15,6 +15,11 @@ import {
 import { getWorkspaceHostSuffix } from '$lib/server/workspace-host';
 import { canManageDtr } from '$lib/shared/dtr/access';
 import {
+	buildSecurityEventRequestContext,
+	recordDtrSecurityEventInBackground
+} from '$lib/server/security/record-security-event';
+import { SECURITY_EVENT_ACTIONS } from '$lib/shared/models/security-event';
+import {
 	DTR_NG_IMPORT_EMPTY_MESSAGE,
 	DTR_NG_IMPORT_FAILED_MESSAGE,
 	DTR_NG_IMPORT_FILE_INVALID_MESSAGE,
@@ -116,7 +121,8 @@ export const actions: Actions = {
 		}
 	},
 
-	import: async ({ url, locals, cookies }) => {
+	import: async (event) => {
+		const { url, locals, cookies } = event;
 		const workspace = await resolveDtrWorkspace(locals, url);
 
 		if (!workspace) {
@@ -130,17 +136,30 @@ export const actions: Actions = {
 		}
 
 		try {
-			const imported = await importDtrNgPreviewRows({
+			const daysWritten = await importDtrNgPreviewRows({
 				workspaceId: workspace.workspaceId,
 				rows: preview.rows
 			});
 
 			clearDtrNgImportPreviewCookie(cookies);
 
+			if (locals.user) {
+				recordDtrSecurityEventInBackground(event, {
+					workspaceId: workspace.workspaceId,
+					actorUserId: locals.user.id,
+					action: SECURITY_EVENT_ACTIONS.DTR_NG_IMPORTED,
+					...buildSecurityEventRequestContext(event),
+					metadata: {
+						detail: `Imported ${daysWritten} day record${daysWritten === 1 ? '' : 's'} from NG timecard.`,
+						daysWritten
+					}
+				});
+			}
+
 			return {
 				success: true,
 				message: DTR_NG_IMPORT_SUCCESS_MESSAGE,
-				imported
+				imported: daysWritten
 			};
 		} catch {
 			return fail(500, { message: DTR_NG_IMPORT_FAILED_MESSAGE });

@@ -7,6 +7,11 @@ import { runInBackground } from '$lib/server/runtime/background-task';
 import { formatUserAgentLabel } from '$lib/shared/format-user-agent';
 import { trySendSecurityAlertEmail } from '$lib/server/mail/security-alert-email';
 import {
+	notifySecurityPasswordChanged,
+	notifySecurityPasswordResetCompleted,
+	notifySecurityUnusualLogin
+} from '$lib/server/notifications/record-notification';
+import {
 	SECURITY_EMAIL_KINDS,
 	SECURITY_EMAIL_LEVELS
 } from '$lib/shared/mail/security-alert-email';
@@ -280,6 +285,12 @@ export async function recordLoginSuccess(input: {
 			ipAddress: input.ipAddress,
 			userAgent: input.userAgent
 		});
+
+		await notifySecurityUnusualLogin({
+			recipientUserId: input.userId,
+			ipAddress: input.ipAddress,
+			deviceLabel: formatUserAgentLabel(input.userAgent)
+		});
 	}
 }
 
@@ -409,6 +420,12 @@ export async function recordTwoFactorSuccess(input: {
 			ipAddress: input.ipAddress,
 			userAgent: input.userAgent
 		});
+
+		await notifySecurityUnusualLogin({
+			recipientUserId: input.userId,
+			ipAddress: input.ipAddress,
+			deviceLabel: formatUserAgentLabel(input.userAgent)
+		});
 	}
 }
 
@@ -477,6 +494,10 @@ export async function recordPasswordResetCompleted(input: {
 		ipAddress: input.ipAddress,
 		userAgent: input.userAgent
 	});
+
+	await notifySecurityPasswordResetCompleted({
+		recipientUserId: input.userId
+	});
 }
 
 export async function recordPasswordChanged(input: {
@@ -504,6 +525,10 @@ export async function recordPasswordChanged(input: {
 		origin: input.origin,
 		ipAddress: input.ipAddress,
 		userAgent: input.userAgent
+	});
+
+	await notifySecurityPasswordChanged({
+		recipientUserId: input.userId
 	});
 }
 
@@ -588,6 +613,104 @@ export async function recordPlatformSecurityEvent(input: {
 		severity: SECURITY_EVENT_SEVERITIES.INFO,
 		actorUserId: input.actorUserId,
 		workspaceId: input.workspaceId,
+		metadata: input.metadata
+	});
+}
+
+type DtrSecurityEventAction =
+	| typeof SECURITY_EVENT_ACTIONS.DTR_DAY_UPDATED
+	| typeof SECURITY_EVENT_ACTIONS.DTR_NG_IMPORTED
+	| typeof SECURITY_EVENT_ACTIONS.DTR_SETTINGS_UPDATED
+	| typeof SECURITY_EVENT_ACTIONS.DTR_WORK_SCHEDULES_UPDATED
+	| typeof SECURITY_EVENT_ACTIONS.DTR_HOLIDAY_CALENDAR_UPDATED;
+
+type PayrollSecurityEventAction =
+	| typeof SECURITY_EVENT_ACTIONS.PAYROLL_RUN_CREATED
+	| typeof SECURITY_EVENT_ACTIONS.PAYROLL_RUN_PROCESSED
+	| typeof SECURITY_EVENT_ACTIONS.PAYROLL_RUN_DELETED
+	| typeof SECURITY_EVENT_ACTIONS.PAYROLL_EMPLOYEE_CREATED
+	| typeof SECURITY_EVENT_ACTIONS.PAYROLL_EMPLOYEE_UPDATED
+	| typeof SECURITY_EVENT_ACTIONS.PAYROLL_EMPLOYEE_DEACTIVATED
+	| typeof SECURITY_EVENT_ACTIONS.PAYROLL_SETTINGS_UPDATED
+	| typeof SECURITY_EVENT_ACTIONS.PAYROLL_PAYSLIP_EMAILED;
+
+function dtrEventSeverity(action: DtrSecurityEventAction): SecurityEventSeverity {
+	if (action === SECURITY_EVENT_ACTIONS.DTR_NG_IMPORTED) {
+		return SECURITY_EVENT_SEVERITIES.WARNING;
+	}
+
+	return SECURITY_EVENT_SEVERITIES.INFO;
+}
+
+function payrollEventSeverity(action: PayrollSecurityEventAction): SecurityEventSeverity {
+	if (
+		action === SECURITY_EVENT_ACTIONS.PAYROLL_RUN_DELETED ||
+		action === SECURITY_EVENT_ACTIONS.PAYROLL_EMPLOYEE_DEACTIVATED
+	) {
+		return SECURITY_EVENT_SEVERITIES.CRITICAL;
+	}
+
+	if (action === SECURITY_EVENT_ACTIONS.PAYROLL_RUN_PROCESSED) {
+		return SECURITY_EVENT_SEVERITIES.WARNING;
+	}
+
+	return SECURITY_EVENT_SEVERITIES.INFO;
+}
+
+export function recordDtrSecurityEventInBackground(
+	event: Pick<RequestEvent, 'platform'> | undefined,
+	input: Parameters<typeof recordDtrSecurityEvent>[0]
+): void {
+	runSecurityTask(event, () => recordDtrSecurityEvent(input));
+}
+
+export function recordPayrollSecurityEventInBackground(
+	event: Pick<RequestEvent, 'platform'> | undefined,
+	input: Parameters<typeof recordPayrollSecurityEvent>[0]
+): void {
+	runSecurityTask(event, () => recordPayrollSecurityEvent(input));
+}
+
+export async function recordDtrSecurityEvent(input: {
+	workspaceId: string;
+	actorUserId: string;
+	action: DtrSecurityEventAction;
+	ipAddress?: string;
+	userAgent?: string;
+	metadata?: Record<string, unknown>;
+}): Promise<void> {
+	await recordSecurityEvent({
+		scope: SECURITY_EVENT_SCOPES.WORKSPACE,
+		category: SECURITY_EVENT_CATEGORIES.DTR,
+		action: input.action,
+		severity: dtrEventSeverity(input.action),
+		actorUserId: input.actorUserId,
+		userId: input.actorUserId,
+		workspaceId: input.workspaceId,
+		ipAddress: input.ipAddress,
+		userAgent: input.userAgent,
+		metadata: input.metadata
+	});
+}
+
+export async function recordPayrollSecurityEvent(input: {
+	workspaceId: string;
+	actorUserId: string;
+	action: PayrollSecurityEventAction;
+	ipAddress?: string;
+	userAgent?: string;
+	metadata?: Record<string, unknown>;
+}): Promise<void> {
+	await recordSecurityEvent({
+		scope: SECURITY_EVENT_SCOPES.WORKSPACE,
+		category: SECURITY_EVENT_CATEGORIES.PAYROLL,
+		action: input.action,
+		severity: payrollEventSeverity(input.action),
+		actorUserId: input.actorUserId,
+		userId: input.actorUserId,
+		workspaceId: input.workspaceId,
+		ipAddress: input.ipAddress,
+		userAgent: input.userAgent,
 		metadata: input.metadata
 	});
 }

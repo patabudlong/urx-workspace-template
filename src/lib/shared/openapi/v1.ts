@@ -60,6 +60,10 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 			{
 				name: 'Mailbox',
 				description: 'Per-user IMAP mailbox read and SMTP send (PrivateEmail compatible)'
+			},
+			{
+				name: 'Notifications',
+				description: 'In-app notifications for team activity and account security'
 			}
 		],
 		paths: {
@@ -2388,6 +2392,157 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						}
 					}
 				}
+			},
+			'/notifications': {
+				get: {
+					tags: ['Notifications'],
+					summary: 'List notifications',
+					description: 'Returns paginated in-app notifications for the authenticated user.',
+					operationId: 'listNotifications',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'page', in: 'query', schema: { type: 'integer', minimum: 1, default: 1 } },
+						{
+							name: 'limit',
+							in: 'query',
+							schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 }
+						},
+						{
+							name: 'unreadOnly',
+							in: 'query',
+							schema: { type: 'string', enum: ['true', 'false'] }
+						},
+						{
+							name: 'category',
+							in: 'query',
+							schema: { type: 'string', enum: ['security', 'team', 'system'] }
+						},
+						{ name: 'workspaceId', in: 'query', schema: { type: 'string' } }
+					],
+					responses: {
+						'200': {
+							description: 'Paginated notifications',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/NotificationsPaginatedResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/notifications/unread-count': {
+				get: {
+					tags: ['Notifications'],
+					summary: 'Unread notification count',
+					description: 'Returns the unread notification count for header badges.',
+					operationId: 'getUnreadNotificationCount',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'workspaceId', in: 'query', schema: { type: 'string' } }
+					],
+					responses: {
+						'200': {
+							description: 'Unread count',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/NotificationUnreadCountSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/notifications/read-all': {
+				post: {
+					tags: ['Notifications'],
+					summary: 'Mark all notifications read',
+					operationId: 'markAllNotificationsRead',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					requestBody: {
+						required: false,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/NotificationsReadAllRequest' }
+							}
+						}
+					},
+					responses: {
+						'200': {
+							description: 'Notifications marked read',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/NotificationsReadAllSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/notifications/{id}/read': {
+				patch: {
+					tags: ['Notifications'],
+					summary: 'Mark notification read',
+					operationId: 'markNotificationRead',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+					],
+					responses: {
+						'200': {
+							description: 'Updated notification',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/NotificationSuccessResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'Notification not found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
 			}
 		},
 		components: {
@@ -3808,6 +3963,100 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 							required: ['messageId'],
 							properties: {
 								messageId: { type: 'string', nullable: true }
+							}
+						},
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				NotificationSummary: {
+					type: 'object',
+					required: [
+						'id',
+						'workspaceId',
+						'category',
+						'action',
+						'severity',
+						'title',
+						'body',
+						'href',
+						'metadata',
+						'isRead',
+						'readAt',
+						'createdAt'
+					],
+					properties: {
+						id: { type: 'string' },
+						workspaceId: { type: 'string', nullable: true },
+						category: { type: 'string', enum: ['security', 'team', 'system'] },
+						action: { type: 'string' },
+						severity: { type: 'string', enum: ['info', 'warning', 'critical'] },
+						title: { type: 'string' },
+						body: { type: 'string', nullable: true },
+						href: { type: 'string', nullable: true },
+						metadata: { type: 'object', additionalProperties: true },
+						isRead: { type: 'boolean' },
+						readAt: { type: 'string', format: 'date-time', nullable: true },
+						createdAt: { type: 'string', format: 'date-time' }
+					}
+				},
+				NotificationSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/NotificationSummary' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				NotificationsPaginatedResponse: {
+					type: 'object',
+					required: ['data', 'pagination', 'meta'],
+					properties: {
+						data: {
+							type: 'array',
+							items: { $ref: '#/components/schemas/NotificationSummary' }
+						},
+						pagination: {
+							type: 'object',
+							required: ['page', 'limit', 'total', 'hasMore'],
+							properties: {
+								page: { type: 'integer' },
+								limit: { type: 'integer' },
+								total: { type: 'integer' },
+								hasMore: { type: 'boolean' }
+							}
+						},
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				NotificationUnreadCountSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							type: 'object',
+							required: ['count'],
+							properties: {
+								count: { type: 'integer', minimum: 0 }
+							}
+						},
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				NotificationsReadAllRequest: {
+					type: 'object',
+					properties: {
+						workspaceId: { type: 'string' }
+					}
+				},
+				NotificationsReadAllSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							type: 'object',
+							required: ['updatedCount'],
+							properties: {
+								updatedCount: { type: 'integer', minimum: 0 }
 							}
 						},
 						meta: { $ref: '#/components/schemas/ApiMeta' }
