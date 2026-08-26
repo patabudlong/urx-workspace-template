@@ -94,6 +94,58 @@ const ACTION_PRESENTATIONS: Record<SecurityEventAction, SecurityEventPresentatio
 	[SECURITY_EVENT_ACTIONS.WORKSPACE_REJECTED]: {
 		title: 'Workspace rejected',
 		description: 'A workspace request was rejected by platform staff.'
+	},
+	[SECURITY_EVENT_ACTIONS.DTR_DAY_UPDATED]: {
+		title: 'DTR record updated',
+		description: 'A daily time record was created or edited.'
+	},
+	[SECURITY_EVENT_ACTIONS.DTR_NG_IMPORTED]: {
+		title: 'NG timecard imported',
+		description: 'Time records were bulk-imported from an NG timecard file.'
+	},
+	[SECURITY_EVENT_ACTIONS.DTR_SETTINGS_UPDATED]: {
+		title: 'DTR settings updated',
+		description: 'Daily time record settings were changed.'
+	},
+	[SECURITY_EVENT_ACTIONS.DTR_WORK_SCHEDULES_UPDATED]: {
+		title: 'Work schedules updated',
+		description: 'DTR work schedules were changed.'
+	},
+	[SECURITY_EVENT_ACTIONS.DTR_HOLIDAY_CALENDAR_UPDATED]: {
+		title: 'Holiday calendar updated',
+		description: 'A DTR holiday calendar was created or updated.'
+	},
+	[SECURITY_EVENT_ACTIONS.PAYROLL_RUN_CREATED]: {
+		title: 'Pay run created',
+		description: 'A new payroll run was created.'
+	},
+	[SECURITY_EVENT_ACTIONS.PAYROLL_RUN_PROCESSED]: {
+		title: 'Pay run processed',
+		description: 'A payroll run was processed and payslips were generated.'
+	},
+	[SECURITY_EVENT_ACTIONS.PAYROLL_RUN_DELETED]: {
+		title: 'Pay run deleted',
+		description: 'A payroll run was permanently deleted.'
+	},
+	[SECURITY_EVENT_ACTIONS.PAYROLL_EMPLOYEE_CREATED]: {
+		title: 'Employee added',
+		description: 'A payroll employee record was created.'
+	},
+	[SECURITY_EVENT_ACTIONS.PAYROLL_EMPLOYEE_UPDATED]: {
+		title: 'Employee updated',
+		description: 'A payroll employee record was updated.'
+	},
+	[SECURITY_EVENT_ACTIONS.PAYROLL_EMPLOYEE_DEACTIVATED]: {
+		title: 'Employee deactivated',
+		description: 'A payroll employee was deactivated.'
+	},
+	[SECURITY_EVENT_ACTIONS.PAYROLL_SETTINGS_UPDATED]: {
+		title: 'Payroll settings updated',
+		description: 'Payroll configuration was changed.'
+	},
+	[SECURITY_EVENT_ACTIONS.PAYROLL_PAYSLIP_EMAILED]: {
+		title: 'Payslip emailed',
+		description: 'A payslip was emailed to an employee.'
 	}
 };
 
@@ -101,7 +153,9 @@ const CATEGORY_LABELS: Record<SecurityEventCategory, string> = {
 	auth: 'Sign-in',
 	account: 'Account',
 	workspace: 'Workspace',
-	platform: 'Platform'
+	platform: 'Platform',
+	dtr: 'DTR',
+	payroll: 'Payroll'
 };
 
 const SEVERITY_LABELS: Record<SecurityEventSeverity, string> = {

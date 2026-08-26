@@ -16,6 +16,11 @@ import {
 import { getWorkspaceHostSuffix } from '$lib/server/workspace-host';
 import { canManagePayroll } from '$lib/shared/payroll/access';
 import {
+	buildSecurityEventRequestContext,
+	recordPayrollSecurityEventInBackground
+} from '$lib/server/security/record-security-event';
+import { SECURITY_EVENT_ACTIONS } from '$lib/shared/models/security-event';
+import {
 	PAYROLL_RUN_ALREADY_PROCESSED_MESSAGE,
 	PAYROLL_RUN_DELETE_FAILED_MESSAGE,
 	PAYROLL_RUN_DELETE_PROCESSING_MESSAGE,
@@ -62,7 +67,8 @@ export const load: PageServerLoad = async ({ parent, params, isDataRequest }) =>
 };
 
 export const actions: Actions = {
-	process: async ({ params, locals, url }) => {
+	process: async (event) => {
+		const { params, locals, url } = event;
 		if (!locals.user) {
 			return fail(401, { message: 'Authentication required.' });
 		}
@@ -93,10 +99,23 @@ export const actions: Actions = {
 			return message(form, PAYROLL_RUN_PROCESS_FAILED_MESSAGE, { status: 500 });
 		}
 
+		recordPayrollSecurityEventInBackground(event, {
+			workspaceId: workspace.workspaceId,
+			actorUserId: locals.user.id,
+			action: SECURITY_EVENT_ACTIONS.PAYROLL_RUN_PROCESSED,
+			...buildSecurityEventRequestContext(event),
+			metadata: {
+				detail: `Processed pay run "${result.run.title}".`,
+				runId: result.run.id,
+				title: result.run.title
+			}
+		});
+
 		return message(form, PAYROLL_RUN_PROCESSED_MESSAGE);
 	},
 
-	delete: async ({ params, locals, url }) => {
+	delete: async (event) => {
+		const { params, locals, url } = event;
 		if (!locals.user) {
 			return fail(401, { message: 'Authentication required.' });
 		}
@@ -106,6 +125,15 @@ export const actions: Actions = {
 
 		if (!workspace || !canManagePayroll(workspace.role)) {
 			return fail(403, { message: 'Payroll access required.' });
+		}
+
+		const run = await getPayrollRunForWorkspace({
+			workspaceId: workspace.workspaceId,
+			runId: params.id
+		});
+
+		if (!run) {
+			return fail(404, { message: PAYROLL_RUN_NOT_FOUND_MESSAGE });
 		}
 
 		const result = await deletePayrollRunForWorkspace({
@@ -125,6 +153,18 @@ export const actions: Actions = {
 			return fail(500, { message: PAYROLL_RUN_DELETE_FAILED_MESSAGE });
 		}
 
-		redirect(303, '/payroll/runs?deleted=1');
+		recordPayrollSecurityEventInBackground(event, {
+			workspaceId: workspace.workspaceId,
+			actorUserId: locals.user.id,
+			action: SECURITY_EVENT_ACTIONS.PAYROLL_RUN_DELETED,
+			...buildSecurityEventRequestContext(event),
+			metadata: {
+				detail: `Deleted pay run "${run.title}".`,
+				runId: run.id,
+				title: run.title
+			}
+		});
+
+		throw redirect(303, '/payroll/runs?deleted=1');
 	}
 };

@@ -13,6 +13,11 @@ import {
 } from '$lib/server/workspace-context';
 import { getWorkspaceHostSuffix } from '$lib/server/workspace-host';
 import { canManagePayroll } from '$lib/shared/payroll/access';
+import {
+	buildSecurityEventRequestContext,
+	recordPayrollSecurityEventInBackground
+} from '$lib/server/security/record-security-event';
+import { SECURITY_EVENT_ACTIONS } from '$lib/shared/models/security-event';
 import { PAY_FREQUENCY_LABELS } from '$lib/shared/payroll/frequency';
 import { buildPhDeductionIconUrlMap } from '$lib/server/payroll/deduction-icons';
 import {
@@ -58,7 +63,8 @@ export const load: PageServerLoad = async ({ parent, url }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request, url, locals }) => {
+	default: async (event) => {
+		const { request, url, locals } = event;
 		const form = await superValidate(request, zod4(payrollDeductionTypesSchema));
 
 		if (!locals.user) {
@@ -85,6 +91,18 @@ export const actions: Actions = {
 		} catch {
 			return message(form, PAYROLL_DEDUCTION_TYPES_SAVE_FAILED_MESSAGE, { status: 500 });
 		}
+
+		recordPayrollSecurityEventInBackground(event, {
+			workspaceId: workspace.workspaceId,
+			actorUserId: locals.user.id,
+			action: SECURITY_EVENT_ACTIONS.PAYROLL_SETTINGS_UPDATED,
+			...buildSecurityEventRequestContext(event),
+			metadata: {
+				detail: `Updated ${form.data.types.length} payroll deduction type${form.data.types.length === 1 ? '' : 's'}.`,
+				section: 'deductions',
+				typeCount: form.data.types.length
+			}
+		});
 
 		return message(form, PAYROLL_DEDUCTION_TYPES_SAVED_MESSAGE);
 	}

@@ -37,6 +37,11 @@ import {
 } from '$lib/shared/team/invitation-messages';
 import type { SecurityEventRequestContext } from '$lib/server/security/record-security-event';
 import { recordWorkspaceSecurityEvent } from '$lib/server/security/record-security-event';
+import {
+	notifyTeamInvitationAccepted,
+	notifyTeamInvitationReceived
+} from '$lib/server/notifications/record-notification';
+import { runInBackground } from '$lib/server/runtime/background-task';
 import { SECURITY_EVENT_ACTIONS } from '$lib/shared/models/security-event';
 
 const TOKEN_BYTES = 16;
@@ -183,7 +188,7 @@ export async function sendPreparedTeamInvitationEmail(
 }
 
 export async function queueTeamInvitationForWeb(
-	_event: Pick<RequestEvent, 'platform'>,
+	event: Pick<RequestEvent, 'platform'>,
 	input: {
 		workspaceId: string;
 		invitedByUserId: string;
@@ -257,6 +262,23 @@ export async function queueTeamInvitationForWeb(
 			role: input.data.role
 		}
 	});
+
+	if (prepared.payload.hasAccount) {
+		const invitee = await findUserByEmail(prepared.payload.to);
+
+		if (invitee) {
+			runInBackground(event, () =>
+				notifyTeamInvitationReceived({
+					recipientUserId: invitee._id.toString(),
+					workspaceId: input.workspaceId,
+					workspaceName: prepared.payload.workspaceName,
+					inviterName: prepared.payload.inviterName,
+					roleLabel,
+					acceptUrl: prepared.payload.acceptUrl
+				})
+			);
+		}
+	}
 
 	return { ok: true, inviteeHasAccount: prepared.payload.hasAccount };
 }
@@ -374,6 +396,15 @@ export async function acceptWorkspaceInvitation(input: {
 			invitedEmail,
 			role: invitation.role
 		}
+	});
+
+	const roleLabel = findTeamInviteRoleOption(invitation.role)?.label ?? invitation.role;
+
+	await notifyTeamInvitationAccepted({
+		recipientUserId: invitation.invitedByUserId.toString(),
+		workspaceId: invitation.workspaceId.toString(),
+		inviteeEmail: invitedEmail,
+		roleLabel
 	});
 
 	return { ok: true, workspaceSlug: workspace.slug };

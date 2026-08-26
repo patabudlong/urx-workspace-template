@@ -7,11 +7,16 @@ import {
 	listPayrollEmployeesForWorkspace
 } from '$lib/server/repositories/payroll-employees';
 import { getPayrollSettingsForWorkspace } from '$lib/server/repositories/payroll-settings';
+import {
+	buildSecurityEventRequestContext,
+	recordPayrollSecurityEvent
+} from '$lib/server/security/record-security-event';
 import { PAYROLL_EMPLOYEE_CODE_TAKEN_MESSAGE } from '$lib/shared/payroll/messages';
 import {
 	createPayrollEmployeeSchema,
 	payrollEmployeesQuerySchema
 } from '$lib/shared/payroll/schemas';
+import { SECURITY_EVENT_ACTIONS } from '$lib/shared/models/security-event';
 
 export const GET: RequestHandler = async ({ locals, request, url }) => {
 	const requestId = request.headers.get('x-request-id') ?? undefined;
@@ -52,7 +57,8 @@ export const GET: RequestHandler = async ({ locals, request, url }) => {
 	);
 };
 
-export const POST: RequestHandler = async ({ locals, request, url }) => {
+export const POST: RequestHandler = async (event) => {
+	const { locals, request, url, getClientAddress } = event;
 	const requestId = request.headers.get('x-request-id') ?? undefined;
 	const context = await requirePayrollWorkspace({
 		userId: locals.user?.id,
@@ -86,6 +92,21 @@ export const POST: RequestHandler = async ({ locals, request, url }) => {
 			data: parsed.data,
 			currency: settings.currency
 		});
+
+		if (locals.user?.id) {
+			await recordPayrollSecurityEvent({
+				workspaceId: context.workspace.workspaceId,
+				actorUserId: locals.user.id,
+				action: SECURITY_EVENT_ACTIONS.PAYROLL_EMPLOYEE_CREATED,
+				...buildSecurityEventRequestContext({ request, getClientAddress }),
+				metadata: {
+					detail: `Added employee ${employee.fullName} (${employee.employeeCode}).`,
+					employeeId: employee.id,
+					employeeCode: employee.employeeCode,
+					fullName: employee.fullName
+				}
+			});
+		}
 
 		return jsonOk(employee, { status: 201, requestId });
 	} catch (error) {

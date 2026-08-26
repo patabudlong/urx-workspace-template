@@ -8,11 +8,16 @@ import {
 	updatePayrollEmployeeForWorkspace
 } from '$lib/server/repositories/payroll-employees';
 import { getPayrollSettingsForWorkspace } from '$lib/server/repositories/payroll-settings';
+import {
+	buildSecurityEventRequestContext,
+	recordPayrollSecurityEvent
+} from '$lib/server/security/record-security-event';
 import { PAYROLL_EMPLOYEE_CODE_TAKEN_MESSAGE } from '$lib/shared/payroll/messages';
 import {
 	payrollEmployeeIdParamSchema,
 	updatePayrollEmployeeSchema
 } from '$lib/shared/payroll/schemas';
+import { SECURITY_EVENT_ACTIONS } from '$lib/shared/models/security-event';
 
 export const GET: RequestHandler = async ({ locals, request, params, url }) => {
 	const requestId = request.headers.get('x-request-id') ?? undefined;
@@ -46,7 +51,8 @@ export const GET: RequestHandler = async ({ locals, request, params, url }) => {
 	return jsonOk(employee, { requestId });
 };
 
-export const PATCH: RequestHandler = async ({ locals, request, params, url }) => {
+export const PATCH: RequestHandler = async (event) => {
+	const { locals, request, params, url, getClientAddress } = event;
 	const requestId = request.headers.get('x-request-id') ?? undefined;
 	const context = await requirePayrollWorkspace({
 		userId: locals.user?.id,
@@ -95,6 +101,21 @@ export const PATCH: RequestHandler = async ({ locals, request, params, url }) =>
 			return jsonError('NOT_FOUND', 'Employee not found', { requestId });
 		}
 
+		if (locals.user?.id) {
+			await recordPayrollSecurityEvent({
+				workspaceId: context.workspace.workspaceId,
+				actorUserId: locals.user.id,
+				action: SECURITY_EVENT_ACTIONS.PAYROLL_EMPLOYEE_UPDATED,
+				...buildSecurityEventRequestContext({ request, getClientAddress }),
+				metadata: {
+					detail: `Updated employee ${employee.fullName} (${employee.employeeCode}).`,
+					employeeId: employee.id,
+					employeeCode: employee.employeeCode,
+					fullName: employee.fullName
+				}
+			});
+		}
+
 		return jsonOk(employee, { requestId });
 	} catch (error) {
 		if (error instanceof Error && error.message === 'Invalid work schedule') {
@@ -111,7 +132,8 @@ export const PATCH: RequestHandler = async ({ locals, request, params, url }) =>
 	}
 };
 
-export const DELETE: RequestHandler = async ({ locals, request, params, url }) => {
+export const DELETE: RequestHandler = async (event) => {
+	const { locals, request, params, url, getClientAddress } = event;
 	const requestId = request.headers.get('x-request-id') ?? undefined;
 	const context = await requirePayrollWorkspace({
 		userId: locals.user?.id,
@@ -131,6 +153,15 @@ export const DELETE: RequestHandler = async ({ locals, request, params, url }) =
 		});
 	}
 
+	const employee = await getPayrollEmployeeForWorkspace({
+		workspaceId: context.workspace.workspaceId,
+		employeeId: parsedParams.data.id
+	});
+
+	if (!employee) {
+		return jsonError('NOT_FOUND', 'Employee not found', { requestId });
+	}
+
 	const deactivated = await deactivatePayrollEmployeeForWorkspace({
 		workspaceId: context.workspace.workspaceId,
 		employeeId: parsedParams.data.id
@@ -138,6 +169,21 @@ export const DELETE: RequestHandler = async ({ locals, request, params, url }) =
 
 	if (!deactivated) {
 		return jsonError('NOT_FOUND', 'Employee not found', { requestId });
+	}
+
+	if (locals.user?.id) {
+		await recordPayrollSecurityEvent({
+			workspaceId: context.workspace.workspaceId,
+			actorUserId: locals.user.id,
+			action: SECURITY_EVENT_ACTIONS.PAYROLL_EMPLOYEE_DEACTIVATED,
+			...buildSecurityEventRequestContext({ request, getClientAddress }),
+			metadata: {
+				detail: `Deactivated employee ${employee.fullName} (${employee.employeeCode}).`,
+				employeeId: employee.id,
+				employeeCode: employee.employeeCode,
+				fullName: employee.fullName
+			}
+		});
 	}
 
 	return jsonOk({ id: parsedParams.data.id, isActive: false }, { requestId });

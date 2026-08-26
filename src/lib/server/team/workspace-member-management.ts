@@ -7,6 +7,11 @@ import {
 import { findUserById } from '$lib/server/repositories/users';
 import type { SecurityEventRequestContext } from '$lib/server/security/record-security-event';
 import { recordWorkspaceSecurityEvent } from '$lib/server/security/record-security-event';
+import {
+	notifyTeamMemberRemoved,
+	notifyTeamMemberRoleChanged
+} from '$lib/server/notifications/record-notification';
+import { findWorkspaceById } from '$lib/server/repositories/workspaces';
 import { SECURITY_EVENT_ACTIONS } from '$lib/shared/models/security-event';
 import { WORKSPACE_MEMBER_ROLES } from '$lib/shared/models/workspace-member';
 import type { TeamInviteRole } from '$lib/shared/team/invite-roles';
@@ -79,6 +84,14 @@ export async function removeWorkspaceMemberForWeb(input: {
 				: 'A workspace member was removed.',
 			previousRole: member.role
 		}
+	});
+
+	const workspace = await findWorkspaceById(input.workspaceId);
+
+	await notifyTeamMemberRemoved({
+		recipientUserId: member.userId.toString(),
+		workspaceId: input.workspaceId,
+		workspaceName: workspace?.name ?? 'the workspace'
 	});
 
 	return { ok: true };
@@ -164,6 +177,13 @@ export async function updateWorkspaceMemberRoleForWeb(input: {
 			previousRole: member.role,
 			newRole: input.role
 		}
+	});
+
+	await notifyTeamMemberRoleChanged({
+		recipientUserId: member.userId.toString(),
+		workspaceId: input.workspaceId,
+		previousRoleLabel,
+		newRoleLabel: roleLabel
 	});
 
 	return { ok: true, changed: true };

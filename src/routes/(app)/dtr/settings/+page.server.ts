@@ -10,6 +10,11 @@ import {
 import { getWorkspaceHostSuffix } from '$lib/server/workspace-host';
 import { canManageDtr } from '$lib/shared/dtr/access';
 import {
+	buildSecurityEventRequestContext,
+	recordDtrSecurityEventInBackground
+} from '$lib/server/security/record-security-event';
+import { SECURITY_EVENT_ACTIONS } from '$lib/shared/models/security-event';
+import {
 	DTR_SETTINGS_SAVED_MESSAGE,
 	DTR_SETTINGS_SAVE_FAILED_MESSAGE
 } from '$lib/shared/dtr/messages';
@@ -43,7 +48,8 @@ export const load: PageServerLoad = async ({ parent }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request, url, locals }) => {
+	default: async (event) => {
+		const { request, url, locals } = event;
 		const form = await superValidate(request, zod4(dtrSettingsSchema));
 
 		if (!locals.user) {
@@ -69,6 +75,16 @@ export const actions: Actions = {
 		} catch {
 			return message(form, DTR_SETTINGS_SAVE_FAILED_MESSAGE, { status: 500 });
 		}
+
+		recordDtrSecurityEventInBackground(event, {
+			workspaceId: workspace.workspaceId,
+			actorUserId: locals.user.id,
+			action: SECURITY_EVENT_ACTIONS.DTR_SETTINGS_UPDATED,
+			...buildSecurityEventRequestContext(event),
+			metadata: {
+				detail: 'Updated DTR settings (rest days, standard work minutes, lunch break).'
+			}
+		});
 
 		return message(form, DTR_SETTINGS_SAVED_MESSAGE);
 	}
