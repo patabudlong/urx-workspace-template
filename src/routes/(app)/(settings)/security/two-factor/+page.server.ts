@@ -29,8 +29,10 @@ import {
 	TWO_FACTOR_SEND_FAILED_MESSAGE,
 	TWO_FACTOR_SETUP_FAILED_MESSAGE,
 	TWO_FACTOR_SMS_NOT_CONFIGURED_MESSAGE,
+	TWO_FACTOR_SMS_SETUP_UNAVAILABLE_MESSAGE,
 	TWO_FACTOR_TRUSTED_DEVICE_REVOKED_MESSAGE
 } from '$lib/shared/security-messages';
+import { isTwoFactorSmsSetupAvailable } from '$lib/shared/two-factor-availability';
 import {
 	twoFactorDisableSchema,
 	twoFactorDisableWithCodeSchema,
@@ -173,6 +175,10 @@ export const actions: Actions = {
 			return fail(401);
 		}
 
+		if (!isTwoFactorSmsSetupAvailable()) {
+			return fail(400, { error: TWO_FACTOR_SMS_SETUP_UNAVAILABLE_MESSAGE });
+		}
+
 		const result = await sendSetupOtpCode({
 			userId: locals.user.id,
 			method: 'sms',
@@ -199,6 +205,10 @@ export const actions: Actions = {
 				return fail(400, { error: TWO_FACTOR_SMS_NOT_CONFIGURED_MESSAGE });
 			}
 
+			if (result.reason === 'SMS_SETUP_UNAVAILABLE') {
+				return fail(400, { error: TWO_FACTOR_SMS_SETUP_UNAVAILABLE_MESSAGE });
+			}
+
 			return fail(500, { error: TWO_FACTOR_SEND_FAILED_MESSAGE });
 		}
 
@@ -212,6 +222,10 @@ export const actions: Actions = {
 
 		if (!locals.user) {
 			return fail(401, { confirmSmsForm: form });
+		}
+
+		if (!isTwoFactorSmsSetupAvailable()) {
+			return message(form, TWO_FACTOR_SMS_SETUP_UNAVAILABLE_MESSAGE, { status: 400 });
 		}
 
 		if (!form.valid) {

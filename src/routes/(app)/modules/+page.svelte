@@ -10,7 +10,6 @@
 	import ClipboardClockIcon from '@lucide/svelte/icons/clipboard-clock';
 	import Loader2Icon from '@lucide/svelte/icons/loader-2';
 	import MailIcon from '@lucide/svelte/icons/mail';
-	import MessageSquareIcon from '@lucide/svelte/icons/message-square';
 	import { enhance } from '$app/forms';
 	import type { Component } from 'svelte';
 	import type { WorkspacePackageId } from '$lib/shared/workspace-packages';
@@ -32,29 +31,25 @@
 	const packageIcons: Record<WorkspacePackageId, Component> = {
 		[WORKSPACE_PACKAGE_IDS.MAILBOX]: MailIcon,
 		[WORKSPACE_PACKAGE_IDS.PAYROLL]: BanknoteIcon,
-		[WORKSPACE_PACKAGE_IDS.DTR]: ClipboardClockIcon,
-		[WORKSPACE_PACKAGE_IDS.SMS]: MessageSquareIcon
+		[WORKSPACE_PACKAGE_IDS.DTR]: ClipboardClockIcon
 	};
 
 	const packageIconClasses: Record<WorkspacePackageId, string> = {
 		[WORKSPACE_PACKAGE_IDS.MAILBOX]: 'size-8 text-rose-600 dark:text-rose-400',
 		[WORKSPACE_PACKAGE_IDS.PAYROLL]: 'size-8 text-emerald-600 dark:text-emerald-400',
-		[WORKSPACE_PACKAGE_IDS.DTR]: 'size-8 text-violet-600 dark:text-violet-400',
-		[WORKSPACE_PACKAGE_IDS.SMS]: 'size-8 text-sky-600 dark:text-sky-400'
+		[WORKSPACE_PACKAGE_IDS.DTR]: 'size-8 text-violet-600 dark:text-violet-400'
 	};
 
 	const packageSettingsHrefs: Record<WorkspacePackageId, string> = {
 		[WORKSPACE_PACKAGE_IDS.MAILBOX]: '/mailbox/settings/connection',
 		[WORKSPACE_PACKAGE_IDS.PAYROLL]: '/payroll/settings',
-		[WORKSPACE_PACKAGE_IDS.DTR]: '/dtr/settings',
-		[WORKSPACE_PACKAGE_IDS.SMS]: '/sms'
+		[WORKSPACE_PACKAGE_IDS.DTR]: '/dtr/settings'
 	};
 
 	const packageModuleHrefs: Record<WorkspacePackageId, string> = {
 		[WORKSPACE_PACKAGE_IDS.MAILBOX]: '/mailbox/INBOX',
 		[WORKSPACE_PACKAGE_IDS.PAYROLL]: '/payroll',
-		[WORKSPACE_PACKAGE_IDS.DTR]: '/dtr',
-		[WORKSPACE_PACKAGE_IDS.SMS]: '/sms'
+		[WORKSPACE_PACKAGE_IDS.DTR]: '/dtr'
 	};
 
 	const showSuccess = $derived(form?.message === WORKSPACE_MODULES_UPDATED_MESSAGE);

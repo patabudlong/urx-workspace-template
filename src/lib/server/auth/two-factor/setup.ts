@@ -37,6 +37,7 @@ import {
 	isTwoFactorOtpSendThrottled
 } from '$lib/server/security/two-factor-otp-rate-limit';
 import { findUserById, isUserPhoneVerified } from '$lib/server/repositories/users';
+import { isTwoFactorSmsSetupAvailable } from '$lib/shared/two-factor-availability';
 import { TWO_FACTOR_METHODS } from '$lib/shared/models/two-factor';
 import type { UserDocument } from '$lib/shared/models/user';
 
@@ -155,6 +156,7 @@ export async function sendSetupOtpCode(input: {
 				| 'ALREADY_ENABLED'
 				| 'PHONE_NOT_VERIFIED'
 				| 'SMS_NOT_CONFIGURED'
+				| 'SMS_SETUP_UNAVAILABLE'
 				| 'SEND_FAILED'
 				| 'THROTTLED';
 			retryAfterSeconds?: number;
@@ -171,6 +173,10 @@ export async function sendSetupOtpCode(input: {
 	const twoFactor = getUserTwoFactor(user);
 
 	if (input.method === 'sms') {
+		if (!isTwoFactorSmsSetupAvailable()) {
+			return { ok: false, reason: 'SMS_SETUP_UNAVAILABLE' };
+		}
+
 		if (twoFactor.methods.sms) {
 			return { ok: false, reason: 'ALREADY_ENABLED' };
 		}

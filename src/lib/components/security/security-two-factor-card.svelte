@@ -12,6 +12,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { SOLAR } from '$lib/icons/solar-icons';
+	import { isTwoFactorSmsSetupAvailable } from '$lib/shared/two-factor-availability';
 	import type { SecurityProfile } from '$lib/shared/schemas/security';
 	import {
 		TWO_FACTOR_PHONE_REQUIRED_MESSAGE,
@@ -83,6 +84,14 @@
 		}
 	]);
 
+	const visibleSetupOptions = $derived(
+		setupOptions.filter((option) => option.id !== 'sms' || isTwoFactorSmsSetupAvailable())
+	);
+
+	const setupOptionsGridClass = $derived(
+		visibleSetupOptions.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'
+	);
+
 	function showBackupCodes(codes: string[]) {
 		backupCodes = codes;
 		backupCodesDialogOpen = true;
@@ -151,7 +160,7 @@
 	<Card.Header>
 		<Card.Title>Two-factor authentication</Card.Title>
 		<Card.Description>
-			Add an extra layer of security with authenticator apps, SMS, or email verification.
+			Add an extra layer of security with an authenticator app or email verification.
 		</Card.Description>
 	</Card.Header>
 	<Card.Content class="space-y-6">
@@ -214,8 +223,8 @@
 
 		<div class="space-y-3">
 			<p class="text-sm font-medium">Setup options</p>
-			<div class="grid gap-3 md:grid-cols-3">
-				{#each setupOptions as option (option.id)}
+			<div class={cn('grid gap-3', setupOptionsGridClass)}>
+				{#each visibleSetupOptions as option (option.id)}
 					<SecuritySetupOptionCard
 						icon={option.icon}
 						iconClass={option.iconClass}
@@ -334,12 +343,14 @@
 	onBackupCodes={showBackupCodes}
 />
 
-<SecuritySetupSmsOtpDialog
-	bind:open={smsDialogOpen}
-	confirmForm={data.confirmSmsForm}
-	bind:codeSent={smsCodeSent}
-	onBackupCodes={showBackupCodes}
-/>
+{#if isTwoFactorSmsSetupAvailable()}
+	<SecuritySetupSmsOtpDialog
+		bind:open={smsDialogOpen}
+		confirmForm={data.confirmSmsForm}
+		bind:codeSent={smsCodeSent}
+		onBackupCodes={showBackupCodes}
+	/>
+{/if}
 
 <SecuritySetupEmailOtpDialog
 	bind:open={emailDialogOpen}

@@ -19,8 +19,7 @@ import {
 const PACKAGE_MODULE_HREFS: Record<WorkspacePackageId, string> = {
 	[WORKSPACE_PACKAGE_IDS.MAILBOX]: '/mailbox/INBOX',
 	[WORKSPACE_PACKAGE_IDS.PAYROLL]: '/payroll',
-	[WORKSPACE_PACKAGE_IDS.DTR]: '/dtr',
-	[WORKSPACE_PACKAGE_IDS.SMS]: '/sms'
+	[WORKSPACE_PACKAGE_IDS.DTR]: '/dtr'
 };
 
 const GROWTH_MONTHS = 6;
