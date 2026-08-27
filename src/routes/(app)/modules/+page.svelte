@@ -1,4 +1,7 @@
 <script lang="ts">
+// urixoft-workspace-accounting:modules-import:start
+	import CalculatorIcon from '@lucide/svelte/icons/calculator';
+// urixoft-workspace-accounting:modules-import:end
 	import { invalidateAll } from '$app/navigation';
 	import WorkspaceModuleCard from '$lib/components/modules/workspace-module-card.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
@@ -31,25 +34,37 @@
 	const packageIcons: Record<WorkspacePackageId, Component> = {
 		[WORKSPACE_PACKAGE_IDS.MAILBOX]: MailIcon,
 		[WORKSPACE_PACKAGE_IDS.PAYROLL]: BanknoteIcon,
-		[WORKSPACE_PACKAGE_IDS.DTR]: ClipboardClockIcon
+		[WORKSPACE_PACKAGE_IDS.DTR]: ClipboardClockIcon,
+// urixoft-workspace-accounting:modules-icons:start
+		[WORKSPACE_PACKAGE_IDS.ACCOUNTING]: CalculatorIcon
+// urixoft-workspace-accounting:modules-icons:end
 	};
 
 	const packageIconClasses: Record<WorkspacePackageId, string> = {
 		[WORKSPACE_PACKAGE_IDS.MAILBOX]: 'size-8 text-rose-600 dark:text-rose-400',
 		[WORKSPACE_PACKAGE_IDS.PAYROLL]: 'size-8 text-emerald-600 dark:text-emerald-400',
-		[WORKSPACE_PACKAGE_IDS.DTR]: 'size-8 text-violet-600 dark:text-violet-400'
+		[WORKSPACE_PACKAGE_IDS.DTR]: 'size-8 text-violet-600 dark:text-violet-400',
+// urixoft-workspace-accounting:modules-icon-classes:start
+		[WORKSPACE_PACKAGE_IDS.ACCOUNTING]: 'size-8 text-amber-600 dark:text-amber-400'
+// urixoft-workspace-accounting:modules-icon-classes:end
 	};
 
 	const packageSettingsHrefs: Record<WorkspacePackageId, string> = {
 		[WORKSPACE_PACKAGE_IDS.MAILBOX]: '/mailbox/settings/connection',
 		[WORKSPACE_PACKAGE_IDS.PAYROLL]: '/payroll/settings',
-		[WORKSPACE_PACKAGE_IDS.DTR]: '/dtr/settings'
+		[WORKSPACE_PACKAGE_IDS.DTR]: '/dtr/settings',
+// urixoft-workspace-accounting:modules-settings-hrefs:start
+		[WORKSPACE_PACKAGE_IDS.ACCOUNTING]: '/accounting/settings'
+// urixoft-workspace-accounting:modules-settings-hrefs:end
 	};
 
 	const packageModuleHrefs: Record<WorkspacePackageId, string> = {
 		[WORKSPACE_PACKAGE_IDS.MAILBOX]: '/mailbox/INBOX',
 		[WORKSPACE_PACKAGE_IDS.PAYROLL]: '/payroll',
-		[WORKSPACE_PACKAGE_IDS.DTR]: '/dtr'
+		[WORKSPACE_PACKAGE_IDS.DTR]: '/dtr',
+// urixoft-workspace-accounting:modules-hrefs:start
+		[WORKSPACE_PACKAGE_IDS.ACCOUNTING]: '/accounting'
+// urixoft-workspace-accounting:modules-hrefs:end
 	};
 
 	const showSuccess = $derived(form?.message === WORKSPACE_MODULES_UPDATED_MESSAGE);

@@ -4,6 +4,9 @@ export const WORKSPACE_PACKAGE_IDS = {
 	MAILBOX: 'urixoft-workspace-mailbox',
 	PAYROLL: 'urixoft-workspace-payroll',
 	DTR: 'urixoft-workspace-dtr',
+// urixoft-workspace-accounting:workspace-packages:start
+	ACCOUNTING: 'urixoft-workspace-accounting'
+// urixoft-workspace-accounting:workspace-packages:end
 } as const;
 
 export type WorkspacePackageId =
@@ -12,7 +15,8 @@ export type WorkspacePackageId =
 export const workspacePackageIdSchema = z.enum([
 	WORKSPACE_PACKAGE_IDS.MAILBOX,
 	WORKSPACE_PACKAGE_IDS.PAYROLL,
-	WORKSPACE_PACKAGE_IDS.DTR
+	WORKSPACE_PACKAGE_IDS.DTR,
+	WORKSPACE_PACKAGE_IDS.ACCOUNTING
 ]);
 
 export const workspacePackageIdsSchema = z.array(workspacePackageIdSchema);
@@ -41,6 +45,12 @@ export const WORKSPACE_PACKAGE_CATALOG: WorkspacePackageMeta[] = [
 		label: 'DTR',
 		description:
 			'Track daily time records, work schedules, and attendance linked to payroll employees.'
+	},
+	{
+		id: WORKSPACE_PACKAGE_IDS.ACCOUNTING,
+		label: 'Accounting',
+		description:
+			'Manage your chart of accounts, post manual journals, and run trial balances for PH compliance.'
 	}
 ];
 

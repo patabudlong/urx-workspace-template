@@ -29,6 +29,12 @@ export const CollectionNames = {
 	dtrWorkSchedules: 'dtr_work_schedules',
 	dtrHolidayCalendars: 'dtr_holiday_calendars',
 // urixoft-workspace-dtr:collections:end
+// urixoft-workspace-accounting:collections:start
+	accountingSettings: 'accounting_settings',
+	accountingPeriods: 'accounting_periods',
+	accountingAccounts: 'accounting_accounts',
+	accountingJournalEntries: 'accounting_journal_entries'
+// urixoft-workspace-accounting:collections:end
 } as const;
 
 type CollectionName = keyof typeof CollectionNames;
@@ -140,3 +146,20 @@ export async function getDtrHolidayCalendarsCollection<T extends Document = Docu
 	return getCollection<T>('dtrHolidayCalendars');
 }
 // urixoft-workspace-dtr:getter:end
+// urixoft-workspace-accounting:getter:start
+export async function getAccountingSettingsCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('accountingSettings');
+}
+
+export async function getAccountingPeriodsCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('accountingPeriods');
+}
+
+export async function getAccountingAccountsCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('accountingAccounts');
+}
+
+export async function getAccountingJournalEntriesCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('accountingJournalEntries');
+}
+// urixoft-workspace-accounting:getter:end

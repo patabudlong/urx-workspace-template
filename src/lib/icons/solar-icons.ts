@@ -5,6 +5,9 @@ export const SOLAR = {
 	mailbox: 'solar:letter-linear',
 	payroll: 'solar:wallet-money-linear',
 	dtr: 'solar:clock-circle-linear',
+// urixoft-workspace-accounting:icons:start
+	accounting: 'solar:calculator-minimalistic-linear',
+// urixoft-workspace-accounting:icons:end
 	apiDocs: 'solar:book-bookmark-linear',
 	health: 'solar:pulse-2-linear',
 	account: 'solar:user-circle-linear',
