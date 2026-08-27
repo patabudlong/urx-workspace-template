@@ -1,0 +1,47 @@
+<script lang="ts">
+	import AppIcon from '$lib/components/app-icon.svelte';
+	import { page } from '$app/state';
+	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import { SOLAR } from '$lib/icons/solar-icons';
+	import { isAppNavActive, type AppNavItem } from '$lib/navigation/app-nav';
+
+	let { items }: { items: AppNavItem[] } = $props();
+</script>
+
+<Sidebar.Header class="border-sidebar-border shrink-0 gap-1 border-b p-4">
+	<div class="flex items-center gap-2">
+		<AppIcon
+			icon={SOLAR.crm}
+			size="lg"
+			class="text-sky-600 dark:text-sky-400"
+			aria-hidden="true"
+		/>
+		<h2 class="text-sm font-semibold">CRM</h2>
+	</div>
+	<p class="text-muted-foreground mt-1 text-sm leading-relaxed">
+		Manage contacts, companies, and deals for this workspace.
+	</p>
+</Sidebar.Header>
+
+<Sidebar.Content class="min-h-0 flex-1 gap-1 overflow-visible ps-1 pt-1">
+	<Sidebar.Group>
+		<Sidebar.GroupLabel class="text-sm">Manage</Sidebar.GroupLabel>
+		<Sidebar.Menu>
+			{#each items as item (item.href)}
+				<Sidebar.MenuItem>
+					<Sidebar.MenuButton
+						isActive={isAppNavActive(page.url.pathname, item)}
+						tooltipContent={item.title}
+					>
+						{#snippet child({ props })}
+							<a href={item.href} {...props}>
+								<AppIcon icon={item.icon} />
+								<span>{item.title}</span>
+							</a>
+						{/snippet}
+					</Sidebar.MenuButton>
+				</Sidebar.MenuItem>
+			{/each}
+		</Sidebar.Menu>
+	</Sidebar.Group>
+</Sidebar.Content>

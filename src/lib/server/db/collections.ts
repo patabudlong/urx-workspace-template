@@ -14,6 +14,7 @@ export const CollectionNames = {
 	twoFactorOtpTokens: 'two_factor_otp_tokens',
 	securityEvents: 'security_events',
 	notifications: 'notifications',
+	workspaceModuleIntegrationCredentials: 'workspace_module_integration_credentials',
 // urixoft-workspace-mailbox:collections:start
 	userMailboxCredentials: 'user_mailbox_credentials',
 // urixoft-workspace-mailbox:collections:end
@@ -33,8 +34,13 @@ export const CollectionNames = {
 	accountingSettings: 'accounting_settings',
 	accountingPeriods: 'accounting_periods',
 	accountingAccounts: 'accounting_accounts',
-	accountingJournalEntries: 'accounting_journal_entries'
+	accountingJournalEntries: 'accounting_journal_entries',
 // urixoft-workspace-accounting:collections:end
+// urixoft-workspace-crm:collections:start
+	crmContacts: 'crm_contacts',
+	crmCompanies: 'crm_companies',
+	crmDeals: 'crm_deals'
+// urixoft-workspace-crm:collections:end
 } as const;
 
 type CollectionName = keyof typeof CollectionNames;
@@ -107,6 +113,12 @@ export async function getNotificationsCollection<T extends Document = Document>(
 > {
 	return getCollection<T>('notifications');
 }
+
+export async function getWorkspaceModuleIntegrationCredentialsCollection<
+	T extends Document = Document
+>(): Promise<Collection<T>> {
+	return getCollection<T>('workspaceModuleIntegrationCredentials');
+}
 // urixoft-workspace-mailbox:getter:start
 export async function getUserMailboxCredentialsCollection<T extends Document = Document>(): Promise<Collection<T>> {
 	return getCollection<T>('userMailboxCredentials');
@@ -163,3 +175,16 @@ export async function getAccountingJournalEntriesCollection<T extends Document =
 	return getCollection<T>('accountingJournalEntries');
 }
 // urixoft-workspace-accounting:getter:end
+// urixoft-workspace-crm:getter:start
+export async function getCrmContactsCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('crmContacts');
+}
+
+export async function getCrmCompaniesCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('crmCompanies');
+}
+
+export async function getCrmDealsCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('crmDeals');
+}
+// urixoft-workspace-crm:getter:end

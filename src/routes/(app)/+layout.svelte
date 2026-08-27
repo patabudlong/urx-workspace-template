@@ -35,8 +35,11 @@
 	// urixoft-workspace-accounting:layout:start
 	const isAccountingSection = $derived(pathname === '/accounting' || pathname.startsWith('/accounting/'));
 	// urixoft-workspace-accounting:layout:end
+	// urixoft-workspace-crm:layout:start
+	const isCrmSection = $derived(pathname === '/crm' || pathname.startsWith('/crm/'));
+	// urixoft-workspace-crm:layout:end
 	const isNestedAppSection = $derived(
-		isTeamSection || isSettingsSection || isMailboxSection || isPayrollSection || isDtrSection || isAccountingSection
+		isTeamSection || isSettingsSection || isMailboxSection || isPayrollSection || isDtrSection || isAccountingSection || isCrmSection
 	);
 </script>
 

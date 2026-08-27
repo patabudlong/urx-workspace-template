@@ -89,6 +89,15 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
 				packageId: 'urixoft-workspace-accounting'
 			},
 // urixoft-workspace-accounting:end
+// urixoft-workspace-crm:start
+			{
+				title: 'CRM',
+				href: '/crm',
+				icon: SOLAR.crm,
+				match: 'prefix',
+				packageId: 'urixoft-workspace-crm'
+			},
+// urixoft-workspace-crm:end
 		]
 	},
 	{

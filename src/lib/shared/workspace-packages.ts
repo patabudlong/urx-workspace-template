@@ -5,8 +5,11 @@ export const WORKSPACE_PACKAGE_IDS = {
 	PAYROLL: 'urixoft-workspace-payroll',
 	DTR: 'urixoft-workspace-dtr',
 // urixoft-workspace-accounting:workspace-packages:start
-	ACCOUNTING: 'urixoft-workspace-accounting'
+	ACCOUNTING: 'urixoft-workspace-accounting',
 // urixoft-workspace-accounting:workspace-packages:end
+// urixoft-workspace-crm:workspace-packages:start
+	CRM: 'urixoft-workspace-crm'
+// urixoft-workspace-crm:workspace-packages:end
 } as const;
 
 export type WorkspacePackageId =
@@ -16,7 +19,8 @@ export const workspacePackageIdSchema = z.enum([
 	WORKSPACE_PACKAGE_IDS.MAILBOX,
 	WORKSPACE_PACKAGE_IDS.PAYROLL,
 	WORKSPACE_PACKAGE_IDS.DTR,
-	WORKSPACE_PACKAGE_IDS.ACCOUNTING
+	WORKSPACE_PACKAGE_IDS.ACCOUNTING,
+	WORKSPACE_PACKAGE_IDS.CRM
 ]);
 
 export const workspacePackageIdsSchema = z.array(workspacePackageIdSchema);
@@ -51,6 +55,12 @@ export const WORKSPACE_PACKAGE_CATALOG: WorkspacePackageMeta[] = [
 		label: 'Accounting',
 		description:
 			'Manage your chart of accounts, post manual journals, and run trial balances for PH compliance.'
+	},
+	{
+		id: WORKSPACE_PACKAGE_IDS.CRM,
+		label: 'CRM',
+		description:
+			'Track contacts, companies, and deals to manage customer relationships in your workspace.'
 	}
 ];
 

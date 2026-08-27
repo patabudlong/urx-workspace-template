@@ -68,6 +68,14 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 			{
 				name: 'Accounting',
 				description: 'PH general ledger: chart of accounts, journals, fiscal periods, and trial balance'
+			},
+			{
+				name: 'CRM',
+				description: 'Contacts, companies, and deals pipeline for customer relationship management'
+			},
+			{
+				name: 'Modules',
+				description: 'Workspace module integration credentials'
 			}
 		],
 		paths: {
@@ -2510,6 +2518,171 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 					}
 				}
 			},
+			'/modules/integrations/{packageId}': {
+				get: {
+					tags: ['Modules'],
+					summary: 'Get module integration credentials',
+					description:
+						'Returns stored integration credential metadata for a workspace module. Client secrets are never returned.',
+					operationId: 'getModuleIntegrationCredentials',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{
+							name: 'packageId',
+							in: 'path',
+							required: true,
+							schema: { type: 'string' }
+						}
+					],
+					responses: {
+						'200': {
+							description: 'Integration credential status',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ModuleIntegrationCredentialsSuccessResponse'
+									}
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Workspace owner access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				post: {
+					tags: ['Modules'],
+					summary: 'Generate module integration credentials',
+					description:
+						'Generates a new client ID and client secret for a workspace module. Regenerating invalidates the previous secret. The plaintext secret is returned once in the response.',
+					operationId: 'generateModuleIntegrationCredentials',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{
+							name: 'packageId',
+							in: 'path',
+							required: true,
+							schema: { type: 'string' }
+						}
+					],
+					responses: {
+						'200': {
+							description: 'Regenerated integration credentials',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ModuleIntegrationCredentialsGenerateSuccessResponse'
+									}
+								}
+							}
+						},
+						'201': {
+							description: 'Generated integration credentials',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ModuleIntegrationCredentialsGenerateSuccessResponse'
+									}
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Workspace owner access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				put: {
+					tags: ['Modules'],
+					summary: 'Update module integration auth base URI',
+					description:
+						'Updates the authentication base URI for an existing workspace module integration.',
+					operationId: 'updateModuleIntegrationAuthBaseUri',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{
+							name: 'packageId',
+							in: 'path',
+							required: true,
+							schema: { type: 'string' }
+						}
+					],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: {
+									$ref: '#/components/schemas/ModuleIntegrationAuthBaseUriRequest'
+								}
+							}
+						}
+					},
+					responses: {
+						'200': {
+							description: 'Saved integration credential status',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ModuleIntegrationCredentialsSuccessResponse'
+									}
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Workspace owner access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
 			'/notifications/{id}/read': {
 				patch: {
 					tags: ['Notifications'],
@@ -3073,6 +3246,508 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						},
 						'403': {
 							description: 'Accounting access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/crm/status': {
+				get: {
+					tags: ['CRM'],
+					summary: 'CRM module status',
+					description:
+						'Returns CRM record counts for the active workspace. Requires workspace owner or admin role.',
+					operationId: 'getCrmStatus',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'CRM status',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmStatusSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/crm/contacts': {
+				get: {
+					tags: ['CRM'],
+					summary: 'List contacts',
+					operationId: 'listCrmContacts',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'page', in: 'query', schema: { type: 'integer', minimum: 1, default: 1 } },
+						{ name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 } },
+						{ name: 'search', in: 'query', schema: { type: 'string' } }
+					],
+					responses: {
+						'200': {
+							description: 'Paginated contacts',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmContactsPaginatedResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				post: {
+					tags: ['CRM'],
+					summary: 'Create contact',
+					operationId: 'createCrmContact',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/CrmContactCreateRequest' }
+							}
+						}
+					},
+					responses: {
+						'201': {
+							description: 'Contact created',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmContactSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/crm/contacts/{id}': {
+				get: {
+					tags: ['CRM'],
+					summary: 'Get contact',
+					operationId: 'getCrmContact',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+					],
+					responses: {
+						'200': {
+							description: 'Contact',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmContactSuccessResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'Contact not found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/crm/companies': {
+				get: {
+					tags: ['CRM'],
+					summary: 'List companies',
+					operationId: 'listCrmCompanies',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'page', in: 'query', schema: { type: 'integer', minimum: 1, default: 1 } },
+						{ name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 } },
+						{ name: 'search', in: 'query', schema: { type: 'string' } }
+					],
+					responses: {
+						'200': {
+							description: 'Paginated companies',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmCompaniesPaginatedResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				post: {
+					tags: ['CRM'],
+					summary: 'Create company',
+					operationId: 'createCrmCompany',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/CrmCompanyCreateRequest' }
+							}
+						}
+					},
+					responses: {
+						'201': {
+							description: 'Company created',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmCompanySuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/crm/companies/{id}': {
+				get: {
+					tags: ['CRM'],
+					summary: 'Get company',
+					operationId: 'getCrmCompany',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+					],
+					responses: {
+						'200': {
+							description: 'Company',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmCompanySuccessResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'Company not found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/crm/deals': {
+				get: {
+					tags: ['CRM'],
+					summary: 'List deals',
+					operationId: 'listCrmDeals',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'page', in: 'query', schema: { type: 'integer', minimum: 1, default: 1 } },
+						{ name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 } },
+						{ name: 'search', in: 'query', schema: { type: 'string' } }
+					],
+					responses: {
+						'200': {
+							description: 'Paginated deals',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmDealsPaginatedResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				post: {
+					tags: ['CRM'],
+					summary: 'Create deal',
+					operationId: 'createCrmDeal',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/CrmDealCreateRequest' }
+							}
+						}
+					},
+					responses: {
+						'201': {
+							description: 'Deal created',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmDealSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/crm/deals/{id}': {
+				get: {
+					tags: ['CRM'],
+					summary: 'Get deal',
+					operationId: 'getCrmDeal',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+					],
+					responses: {
+						'200': {
+							description: 'Deal',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmDealSuccessResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'Deal not found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				patch: {
+					tags: ['CRM'],
+					summary: 'Update deal',
+					operationId: 'updateCrmDeal',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+					],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/CrmDealUpdateRequest' }
+							}
+						}
+					},
+					responses: {
+						'200': {
+							description: 'Updated deal',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmDealSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'Deal not found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
 							content: {
 								'application/json': {
 									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
@@ -4948,6 +5623,282 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 								updatedCount: { type: 'integer', minimum: 0 }
 							}
 						},
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				ModuleIntegrationCredentialsStatus: {
+					type: 'object',
+					required: ['packageId', 'configured'],
+					properties: {
+						packageId: { type: 'string' },
+						configured: { type: 'boolean' },
+						clientId: { type: 'string' },
+						authBaseUri: { type: 'string', format: 'uri' },
+						hasClientSecret: { type: 'boolean' },
+						updatedAt: { type: 'string', format: 'date-time' }
+					}
+				},
+				ModuleIntegrationAuthBaseUriRequest: {
+					type: 'object',
+					required: ['authBaseUri'],
+					properties: {
+						authBaseUri: { type: 'string', format: 'uri' }
+					}
+				},
+				ModuleIntegrationCredentialsGenerateResult: {
+					allOf: [
+						{ $ref: '#/components/schemas/ModuleIntegrationCredentialsStatus' },
+						{
+							type: 'object',
+							properties: {
+								clientSecret: { type: 'string' }
+							}
+						}
+					]
+				},
+				ModuleIntegrationCredentialsGenerateSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/ModuleIntegrationCredentialsGenerateResult' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				ModuleIntegrationCredentialsSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/ModuleIntegrationCredentialsStatus' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				CrmStatus: {
+					type: 'object',
+					required: [
+						'enabled',
+						'workspaceId',
+						'contactCount',
+						'companyCount',
+						'dealCount',
+						'openDealCount'
+					],
+					properties: {
+						enabled: { type: 'boolean' },
+						workspaceId: { type: 'string' },
+						contactCount: { type: 'integer', minimum: 0 },
+						companyCount: { type: 'integer', minimum: 0 },
+						dealCount: { type: 'integer', minimum: 0 },
+						openDealCount: { type: 'integer', minimum: 0 }
+					}
+				},
+				CrmStatusSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/CrmStatus' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				CrmContact: {
+					type: 'object',
+					required: [
+						'id',
+						'workspaceId',
+						'firstName',
+						'lastName',
+						'email',
+						'phone',
+						'title',
+						'companyId',
+						'notes',
+						'createdAt',
+						'updatedAt'
+					],
+					properties: {
+						id: { type: 'string' },
+						workspaceId: { type: 'string' },
+						firstName: { type: 'string' },
+						lastName: { type: 'string' },
+						email: { type: 'string', nullable: true },
+						phone: { type: 'string', nullable: true },
+						title: { type: 'string', nullable: true },
+						companyId: { type: 'string', nullable: true },
+						notes: { type: 'string', nullable: true },
+						createdAt: { type: 'string', format: 'date-time' },
+						updatedAt: { type: 'string', format: 'date-time' }
+					}
+				},
+				CrmContactCreateRequest: {
+					type: 'object',
+					required: ['firstName', 'lastName'],
+					properties: {
+						firstName: { type: 'string', maxLength: 100 },
+						lastName: { type: 'string', maxLength: 100 },
+						email: { type: 'string', format: 'email', nullable: true },
+						phone: { type: 'string', nullable: true },
+						title: { type: 'string', nullable: true },
+						companyId: { type: 'string', nullable: true },
+						notes: { type: 'string', nullable: true }
+					}
+				},
+				CrmContactSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/CrmContact' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				CrmContactsPaginatedResponse: {
+					type: 'object',
+					required: ['data', 'pagination', 'meta'],
+					properties: {
+						data: {
+							type: 'array',
+							items: { $ref: '#/components/schemas/CrmContact' }
+						},
+						pagination: { $ref: '#/components/schemas/PaginationMeta' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				CrmCompany: {
+					type: 'object',
+					required: [
+						'id',
+						'workspaceId',
+						'name',
+						'domain',
+						'industry',
+						'phone',
+						'notes',
+						'createdAt',
+						'updatedAt'
+					],
+					properties: {
+						id: { type: 'string' },
+						workspaceId: { type: 'string' },
+						name: { type: 'string' },
+						domain: { type: 'string', nullable: true },
+						industry: { type: 'string', nullable: true },
+						phone: { type: 'string', nullable: true },
+						notes: { type: 'string', nullable: true },
+						createdAt: { type: 'string', format: 'date-time' },
+						updatedAt: { type: 'string', format: 'date-time' }
+					}
+				},
+				CrmCompanyCreateRequest: {
+					type: 'object',
+					required: ['name'],
+					properties: {
+						name: { type: 'string', maxLength: 200 },
+						domain: { type: 'string', nullable: true },
+						industry: { type: 'string', nullable: true },
+						phone: { type: 'string', nullable: true },
+						notes: { type: 'string', nullable: true }
+					}
+				},
+				CrmCompanySuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/CrmCompany' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				CrmCompaniesPaginatedResponse: {
+					type: 'object',
+					required: ['data', 'pagination', 'meta'],
+					properties: {
+						data: {
+							type: 'array',
+							items: { $ref: '#/components/schemas/CrmCompany' }
+						},
+						pagination: { $ref: '#/components/schemas/PaginationMeta' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				CrmDeal: {
+					type: 'object',
+					required: [
+						'id',
+						'workspaceId',
+						'title',
+						'stage',
+						'value',
+						'currency',
+						'contactId',
+						'companyId',
+						'expectedCloseDate',
+						'notes',
+						'createdAt',
+						'updatedAt'
+					],
+					properties: {
+						id: { type: 'string' },
+						workspaceId: { type: 'string' },
+						title: { type: 'string' },
+						stage: {
+							type: 'string',
+							enum: ['lead', 'qualified', 'proposal', 'negotiation', 'won', 'lost']
+						},
+						value: { type: 'number', nullable: true },
+						currency: { type: 'string', minLength: 3, maxLength: 3 },
+						contactId: { type: 'string', nullable: true },
+						companyId: { type: 'string', nullable: true },
+						expectedCloseDate: { type: 'string', format: 'date-time', nullable: true },
+						notes: { type: 'string', nullable: true },
+						createdAt: { type: 'string', format: 'date-time' },
+						updatedAt: { type: 'string', format: 'date-time' }
+					}
+				},
+				CrmDealCreateRequest: {
+					type: 'object',
+					required: ['title'],
+					properties: {
+						title: { type: 'string', maxLength: 200 },
+						stage: {
+							type: 'string',
+							enum: ['lead', 'qualified', 'proposal', 'negotiation', 'won', 'lost'],
+							default: 'lead'
+						},
+						value: { type: 'number', minimum: 0, nullable: true },
+						currency: { type: 'string', minLength: 3, maxLength: 3, default: 'PHP' },
+						contactId: { type: 'string', nullable: true },
+						companyId: { type: 'string', nullable: true },
+						expectedCloseDate: { type: 'string', format: 'date', nullable: true },
+						notes: { type: 'string', nullable: true }
+					}
+				},
+				CrmDealUpdateRequest: {
+					type: 'object',
+					properties: {
+						stage: {
+							type: 'string',
+							enum: ['lead', 'qualified', 'proposal', 'negotiation', 'won', 'lost']
+						},
+						value: { type: 'number', minimum: 0, nullable: true },
+						currency: { type: 'string', minLength: 3, maxLength: 3 },
+						expectedCloseDate: { type: 'string', format: 'date', nullable: true },
+						notes: { type: 'string', nullable: true }
+					}
+				},
+				CrmDealSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/CrmDeal' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				CrmDealsPaginatedResponse: {
+					type: 'object',
+					required: ['data', 'pagination', 'meta'],
+					properties: {
+						data: {
+							type: 'array',
+							items: { $ref: '#/components/schemas/CrmDeal' }
+						},
+						pagination: { $ref: '#/components/schemas/PaginationMeta' },
 						meta: { $ref: '#/components/schemas/ApiMeta' }
 					}
 				}

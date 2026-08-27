@@ -7,6 +7,9 @@ export const SOLAR = {
 	dtr: 'solar:clock-circle-linear',
 // urixoft-workspace-accounting:icons:start
 	accounting: 'solar:calculator-minimalistic-linear',
+// urixoft-workspace-crm:icons:start
+	crm: 'lucide:handshake',
+// urixoft-workspace-crm:icons:end
 // urixoft-workspace-accounting:icons:end
 	apiDocs: 'solar:book-bookmark-linear',
 	health: 'solar:pulse-2-linear',

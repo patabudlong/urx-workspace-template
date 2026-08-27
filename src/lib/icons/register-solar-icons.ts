@@ -6,6 +6,7 @@ import calendarLinear from '@iconify-icons/solar/calendar-linear';
 import calendarDateLinear from '@iconify-icons/solar/calendar-date-linear';
 import calendarMarkLinear from '@iconify-icons/solar/calendar-mark-linear';
 import calculatorMinimalisticLinear from '@iconify-icons/solar/calculator-minimalistic-linear';
+import handshakeLinear from '@iconify-icons/lucide/handshake';
 import cardLinear from '@iconify-icons/solar/card-linear';
 import caseLinear from '@iconify-icons/solar/case-linear';
 import chatRoundCallLinear from '@iconify-icons/solar/chat-round-call-linear';
@@ -77,7 +78,10 @@ const registry: [string, typeof widget2Linear][] = [
 	['solar:arrow-right-linear', arrowRightLinear],
 	['solar:magnifer-linear', magniferLinear],
 // urixoft-workspace-accounting:icon-registry:start
-	['solar:calculator-minimalistic-linear', calculatorMinimalisticLinear]
+	['solar:calculator-minimalistic-linear', calculatorMinimalisticLinear],
+// urixoft-workspace-crm:icon-registry:start
+	['lucide:handshake', handshakeLinear]
+// urixoft-workspace-crm:icon-registry:end
 // urixoft-workspace-accounting:icon-registry:end
 ];
 
