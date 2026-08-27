@@ -3,7 +3,10 @@ import { z } from 'zod';
 export const WORKSPACE_PACKAGE_IDS = {
 	MAILBOX: 'urixoft-workspace-mailbox',
 	PAYROLL: 'urixoft-workspace-payroll',
-	DTR: 'urixoft-workspace-dtr'
+	DTR: 'urixoft-workspace-dtr',
+// urixoft-workspace-sms:workspace-packages:start
+	SMS: 'urixoft-workspace-sms'
+// urixoft-workspace-sms:workspace-packages:end
 } as const;
 
 export type WorkspacePackageId =
@@ -12,7 +15,8 @@ export type WorkspacePackageId =
 export const workspacePackageIdSchema = z.enum([
 	WORKSPACE_PACKAGE_IDS.MAILBOX,
 	WORKSPACE_PACKAGE_IDS.PAYROLL,
-	WORKSPACE_PACKAGE_IDS.DTR
+	WORKSPACE_PACKAGE_IDS.DTR,
+	WORKSPACE_PACKAGE_IDS.SMS
 ]);
 
 export const workspacePackageIdsSchema = z.array(workspacePackageIdSchema);
@@ -41,6 +45,12 @@ export const WORKSPACE_PACKAGE_CATALOG: WorkspacePackageMeta[] = [
 		label: 'DTR',
 		description:
 			'Track daily time records, work schedules, and attendance linked to payroll employees.'
+	},
+	{
+		id: WORKSPACE_PACKAGE_IDS.SMS,
+		label: 'SMS',
+		description:
+			'Send text messages to customers and team members from your workspace using Twilio.'
 	}
 ];
 

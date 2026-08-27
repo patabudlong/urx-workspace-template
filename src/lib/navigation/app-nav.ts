@@ -39,6 +39,15 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
 	{
 		label: 'Workspace',
 		items: [
+// urixoft-workspace-sms:start
+			{
+				title: 'SMS',
+				href: '/sms',
+				icon: SOLAR.sms,
+				match: 'prefix',
+				packageId: 'urixoft-workspace-sms'
+			},
+// urixoft-workspace-sms:end
 			{
 				title: 'Overview',
 				href: '/',

@@ -1,0 +1,30 @@
+{
+  "id": "urixoft-workspace-sms",
+  "version": "0.1.0",
+  "installedAt": "2026-08-26T12:15:39.246Z",
+  "files": [
+    "src/lib/components/sms/sms-sidebar-panel.svelte",
+    "src/lib/navigation/sms-nav.ts",
+    "src/lib/server/repositories/workspace-sms-messages.ts",
+    "src/lib/server/workspace-sms/api-context.ts",
+    "src/lib/server/workspace-sms/config.ts",
+    "src/lib/server/workspace-sms/index.ts",
+    "src/lib/server/workspace-sms/send.ts",
+    "src/lib/server/workspace-sms/twilio.ts",
+    "src/lib/shared/models/workspace-sms-message.ts",
+    "src/lib/shared/workspace-sms/access.ts",
+    "src/lib/shared/workspace-sms/messages.ts",
+    "src/lib/shared/workspace-sms/schemas.ts",
+    "src/routes/(app)/sms/+layout.server.ts",
+    "src/routes/(app)/sms/+layout.svelte",
+    "src/routes/(app)/sms/+page.server.ts",
+    "src/routes/(app)/sms/+page.svelte",
+    "src/routes/(app)/sms/messages/+page.server.ts",
+    "src/routes/(app)/sms/messages/+page.svelte",
+    "src/routes/(app)/sms/send/+page.server.ts",
+    "src/routes/(app)/sms/send/+page.svelte",
+    "src/routes/api/v1/sms/messages/+server.ts",
+    "src/routes/api/v1/sms/send/+server.ts",
+    "src/routes/api/v1/sms/status/+server.ts"
+  ]
+}

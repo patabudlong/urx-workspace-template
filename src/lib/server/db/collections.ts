@@ -27,8 +27,11 @@ export const CollectionNames = {
 	dtrSettings: 'dtr_settings',
 	dtrDays: 'dtr_days',
 	dtrWorkSchedules: 'dtr_work_schedules',
-	dtrHolidayCalendars: 'dtr_holiday_calendars'
+	dtrHolidayCalendars: 'dtr_holiday_calendars',
 // urixoft-workspace-dtr:collections:end
+// urixoft-workspace-sms:collections:start
+	workspaceSmsMessages: 'workspace_sms_messages'
+// urixoft-workspace-sms:collections:end
 } as const;
 
 type CollectionName = keyof typeof CollectionNames;
@@ -140,3 +143,8 @@ export async function getDtrHolidayCalendarsCollection<T extends Document = Docu
 	return getCollection<T>('dtrHolidayCalendars');
 }
 // urixoft-workspace-dtr:getter:end
+// urixoft-workspace-sms:getter:start
+export async function getWorkspaceSmsMessagesCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('workspaceSmsMessages');
+}
+// urixoft-workspace-sms:getter:end

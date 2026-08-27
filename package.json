@@ -35,7 +35,10 @@
 		"workspace:payroll:uninstall": "node ../urx-workspace-payroll/bin/cli.mjs uninstall",
 		"workspace:dtr:install": "node ../urx-workspace-dtr/bin/cli.mjs install",
 		"workspace:dtr:sync": "node ../urx-workspace-dtr/bin/cli.mjs sync",
-		"workspace:dtr:uninstall": "node ../urx-workspace-dtr/bin/cli.mjs uninstall"
+		"workspace:dtr:uninstall": "node ../urx-workspace-dtr/bin/cli.mjs uninstall",
+		"workspace:sms:install": "node ../urx-sms-package/bin/cli.mjs install",
+		"workspace:sms:sync": "node ../urx-sms-package/bin/cli.mjs sync",
+		"workspace:sms:uninstall": "node ../urx-sms-package/bin/cli.mjs uninstall"
 	},
 	"devDependencies": {
 		"@internationalized/date": "^3.12.2",
