@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const WORKSPACE_PACKAGE_IDS = {
 	MAILBOX: 'urixoft-workspace-mailbox',
 	PAYROLL: 'urixoft-workspace-payroll',
-	DTR: 'urixoft-workspace-dtr'
+	DTR: 'urixoft-workspace-dtr',
 } as const;
 
 export type WorkspacePackageId =

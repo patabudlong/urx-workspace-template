@@ -1,5 +1,6 @@
 import type { UserDocument } from '$lib/shared/models/user';
 import type { SecurityProfile, TrustedDeviceSummary } from '$lib/shared/schemas/security';
+import { isTwoFactorSmsSetupAvailable } from '$lib/shared/two-factor-availability';
 import { getUserTwoFactor } from '$lib/server/repositories/user-two-factor';
 import { isUserEmailVerified, isUserPhoneVerified } from '$lib/server/repositories/users';
 
@@ -45,7 +46,10 @@ export function toSecurityProfile(user: UserDocument): SecurityProfile {
 			hasBackupCodes: twoFactor.backupCodeHashes.length > 0,
 			backupCodesRemaining: twoFactor.backupCodeHashes.length,
 			trustedDevices: twoFactor.trustedDevices.map(toTrustedDeviceSummary),
-			smsAvailable: Boolean(user.phoneNumber) && isUserPhoneVerified(user),
+			smsAvailable:
+				isTwoFactorSmsSetupAvailable() &&
+				Boolean(user.phoneNumber) &&
+				isUserPhoneVerified(user),
 			emailAvailable: isUserEmailVerified(user),
 			totpEnabled: Boolean(twoFactor.methods.totp),
 			smsEnabled: Boolean(twoFactor.methods.sms),

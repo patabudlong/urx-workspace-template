@@ -27,7 +27,7 @@ export const CollectionNames = {
 	dtrSettings: 'dtr_settings',
 	dtrDays: 'dtr_days',
 	dtrWorkSchedules: 'dtr_work_schedules',
-	dtrHolidayCalendars: 'dtr_holiday_calendars'
+	dtrHolidayCalendars: 'dtr_holiday_calendars',
 // urixoft-workspace-dtr:collections:end
 } as const;
 

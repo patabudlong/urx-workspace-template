@@ -13,6 +13,8 @@ export const TWO_FACTOR_CODE_SENT_MESSAGE = 'Verification code sent.';
 export const TWO_FACTOR_SEND_FAILED_MESSAGE = 'We could not send a verification code. Try again.';
 export const TWO_FACTOR_SMS_NOT_CONFIGURED_MESSAGE =
 	'SMS verification is not available. Contact your administrator.';
+export const TWO_FACTOR_SMS_SETUP_UNAVAILABLE_MESSAGE =
+	'SMS verification is temporarily unavailable. Use an authenticator app or email instead.';
 export const TWO_FACTOR_PHONE_REQUIRED_MESSAGE =
 	'Add and verify a contact number before enabling SMS verification.';
 export const TWO_FACTOR_ALREADY_ENABLED_MESSAGE = 'This verification method is already enabled.';

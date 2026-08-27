@@ -1,12 +1,18 @@
-import { getSmsPittConfig, getSmsProvider } from '$lib/server/sms/config';
+import { getSmsPittConfig, getSmsProvider, getTwilioConfig } from '$lib/server/sms/config';
 import { createLogSmsTransport } from '$lib/server/sms/transports/log';
 import { createSmsPittTransport } from '$lib/server/sms/transports/smspitt';
+import { createTwilioTransport } from '$lib/server/sms/transports/twilio';
 import type { SmsMessage, SmsTransport } from '$lib/server/sms/types';
 
 let transportPromise: Promise<SmsTransport | null> | null = null;
 
 function createTransport(): SmsTransport | null {
 	const provider = getSmsProvider();
+
+	if (provider === 'twilio') {
+		const config = getTwilioConfig();
+		return config ? createTwilioTransport(config) : null;
+	}
 
 	if (provider === 'smspitt') {
 		const config = getSmsPittConfig();
@@ -51,3 +57,6 @@ export async function sendSms(message: SmsMessage): Promise<void> {
 export async function isSmsConfigured(): Promise<boolean> {
 	return (await getTransport()) !== null;
 }
+
+export { getTwilioConfig } from '$lib/server/sms/config';
+export { sendTwilioSms } from '$lib/server/sms/twilio';
