@@ -16,6 +16,8 @@ import { ObjectId } from 'mongodb';
 let accountingJournalIndexesPromise: Promise<void> | null = null;
 
 const JOURNAL_PROJECTION = {
+	_id: 1,
+	workspaceId: 1,
 	periodId: 1,
 	entryDate: 1,
 	reference: 1,
@@ -150,6 +152,34 @@ export async function hasManualJournalsForPeriod(input: {
 	});
 
 	return count > 0;
+}
+
+export async function countJournalEntriesForPeriod(input: {
+	workspaceId: string;
+	periodId: string;
+}): Promise<number> {
+	await ensureAccountingJournalIndexes();
+	const collection = await getAccountingJournalEntriesCollection();
+
+	return collection.countDocuments({
+		workspaceId: new ObjectId(input.workspaceId),
+		periodId: new ObjectId(input.periodId)
+	});
+}
+
+export async function countJournalEntriesByPeriodForWorkspace(
+	workspaceId: string
+): Promise<Record<string, number>> {
+	await ensureAccountingJournalIndexes();
+	const collection = await getAccountingJournalEntriesCollection();
+	const rows = await collection
+		.aggregate<{ _id: ObjectId; count: number }>([
+			{ $match: { workspaceId: new ObjectId(workspaceId) } },
+			{ $group: { _id: '$periodId', count: { $sum: 1 } } }
+		])
+		.toArray();
+
+	return Object.fromEntries(rows.map((row) => [row._id.toString(), row.count]));
 }
 
 async function validateOpeningBalanceEntry(input: {

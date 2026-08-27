@@ -41,7 +41,7 @@
 		</Card.Content>
 	</Card.Root>
 
-	<Card.Root>
+	<Card.Root class="overflow-visible">
 		<Card.Header>
 			<Card.Title>Full permission matrix</Card.Title>
 			<Card.Description>

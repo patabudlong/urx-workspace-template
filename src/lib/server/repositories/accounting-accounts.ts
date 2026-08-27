@@ -12,6 +12,8 @@ let accountingAccountsIndexesPromise: Promise<void> | null = null;
 let accountingPeriodsIndexesPromise: Promise<void> | null = null;
 
 const ACCOUNT_PROJECTION = {
+	_id: 1,
+	workspaceId: 1,
 	code: 1,
 	name: 1,
 	type: 1,

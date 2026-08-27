@@ -20,6 +20,8 @@
 
 	const superform = superForm(untrack(() => data.form), {
 		validators: zod4Client(journalFormSchema),
+		dataType: 'json',
+		validationMethod: 'onsubmit',
 		resetForm: false,
 		onSubmit: () => {
 			submitting = true;

@@ -1,4 +1,3 @@
-import 'iconify-icon';
 import { addIcon } from 'iconify-icon';
 import activityLinear from '@iconify-icons/solar/pulse-2-linear';
 import arrowRightLinear from '@iconify-icons/solar/arrow-right-linear';
@@ -6,11 +5,13 @@ import bookBookmarkLinear from '@iconify-icons/solar/book-bookmark-linear';
 import calendarLinear from '@iconify-icons/solar/calendar-linear';
 import calendarDateLinear from '@iconify-icons/solar/calendar-date-linear';
 import calendarMarkLinear from '@iconify-icons/solar/calendar-mark-linear';
+import calculatorMinimalisticLinear from '@iconify-icons/solar/calculator-minimalistic-linear';
 import cardLinear from '@iconify-icons/solar/card-linear';
 import caseLinear from '@iconify-icons/solar/case-linear';
 import chatRoundCallLinear from '@iconify-icons/solar/chat-round-call-linear';
 import clockCircleLinear from '@iconify-icons/solar/clock-circle-linear';
 import devicesLinear from '@iconify-icons/solar/devices-linear';
+import documentTextLinear from '@iconify-icons/solar/document-text-linear';
 import fingerprintLinear from '@iconify-icons/lucide/fingerprint';
 import historyLinear from '@iconify-icons/solar/history-linear';
 import homeSmileLinear from '@iconify-icons/solar/home-smile-linear';
@@ -61,6 +62,7 @@ const registry: [string, typeof widget2Linear][] = [
 	['solar:settings-linear', settingsLinear],
 	['solar:user-id-linear', userIdLinear],
 	['solar:calendar-linear', calendarLinear],
+	['solar:document-text-linear', documentTextLinear],
 	['solar:history-linear', historyLinear],
 	['solar:upload-linear', uploadLinear],
 	['solar:case-linear', caseLinear],
@@ -73,7 +75,10 @@ const registry: [string, typeof widget2Linear][] = [
 	['solar:layers-linear', layersLinear],
 	['solar:user-plus-linear', userPlusLinear],
 	['solar:arrow-right-linear', arrowRightLinear],
-	['solar:magnifer-linear', magniferLinear]
+	['solar:magnifer-linear', magniferLinear],
+// urixoft-workspace-accounting:icon-registry:start
+	['solar:calculator-minimalistic-linear', calculatorMinimalisticLinear]
+// urixoft-workspace-accounting:icon-registry:end
 ];
 
 for (const [name, data] of registry) {

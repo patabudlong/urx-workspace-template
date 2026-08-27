@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { invalidateAll } from '$app/navigation';
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
@@ -17,38 +18,58 @@
 	import { untrack } from 'svelte';
 	import { superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
+	import { toast } from 'svelte-sonner';
 
 	let { data } = $props();
 
 	let submitting = $state(false);
-	let showSuccess = $state(false);
 
 	const superform = superForm(untrack(() => data.form), {
 		validators: zod4Client(accountingSettingsSchema),
 		resetForm: false,
 		onSubmit: () => {
 			submitting = true;
-			showSuccess = false;
 		},
-		onUpdated: ({ form: updatedForm }) => {
+		onUpdated: async ({ form: updatedForm }) => {
 			submitting = false;
 
 			if (updatedForm.message === ACCOUNTING_SETTINGS_SAVED_MESSAGE) {
-				showSuccess = true;
+				toast.success('Settings saved', {
+					description: 'Your chart of accounts and fiscal periods are ready.'
+				});
+				await invalidateAll();
+				return;
+			}
+
+			if (
+				typeof updatedForm.message === 'string' &&
+				updatedForm.message.length > 0 &&
+				updatedForm.message !== ACCOUNTING_SETTINGS_SAVED_MESSAGE
+			) {
+				toast.error('Could not save settings', {
+					description:
+						updatedForm.message === ACCOUNTING_SETTINGS_SAVE_FAILED_MESSAGE
+							? ACCOUNTING_SETTINGS_SAVE_FAILED_MESSAGE
+							: updatedForm.message
+				});
+				return;
+			}
+
+			if (!updatedForm.valid) {
+				toast.error('Could not save settings', {
+					description: 'Check the highlighted fields and try again.'
+				});
 			}
 		},
 		onError: () => {
 			submitting = false;
+			toast.error('Could not save settings', {
+				description: ACCOUNTING_SETTINGS_SAVE_FAILED_MESSAGE
+			});
 		}
 	});
 
-	const { enhance, form, message: formMessage } = superform;
-
-	const formError = $derived(
-		typeof $formMessage === 'string' &&
-			$formMessage.length > 0 &&
-			$formMessage !== ACCOUNTING_SETTINGS_SAVED_MESSAGE
-	);
+	const { enhance, form } = superform;
 </script>
 
 <div class="flex w-full min-w-0 flex-col gap-8">
@@ -72,150 +93,117 @@
 			<Card.Description>Used on reports and future BIR-ready exports.</Card.Description>
 		</Card.Header>
 		<Card.Content>
-			{#if showSuccess}
-				<StatusAlert
-					variant="success"
-					title="Settings saved"
-					description="Your chart of accounts and fiscal periods are ready."
-					class="mb-6"
-				/>
-			{:else if formError}
-				<StatusAlert
-					variant="danger"
-					title="Could not save settings"
-					description={typeof $formMessage === 'string' &&
-					$formMessage === ACCOUNTING_SETTINGS_SAVE_FAILED_MESSAGE
-						? ACCOUNTING_SETTINGS_SAVE_FAILED_MESSAGE
-						: String($formMessage ?? 'Could not save settings')}
-					class="mb-6"
-				/>
-			{/if}
-
 			<form method="POST" use:enhance class="space-y-6">
+				<input type="hidden" name="timezone" value={$form.timezone} />
+				<input type="hidden" name="baseCurrency" value={$form.baseCurrency} />
+
 				<div class="grid gap-4 md:grid-cols-2">
 					<Form.Field form={superform} name="companyName">
-						{#snippet children({ constraints })}
-							<Form.Control>
-								{#snippet children({ props })}
-									<Label for="companyName">Registered company name</Label>
-									<Input
-										{...props}
-										{...constraints}
-										id="companyName"
-										bind:value={$form.companyName}
-										autocomplete="organization"
-									/>
-								{/snippet}
-							</Form.Control>
-							<SingleFieldErrors />
-						{/snippet}
+						<Form.Control>
+							{#snippet children({ props })}
+								<Form.Label required>Registered company name</Form.Label>
+								<Input
+									{...props}
+									bind:value={$form.companyName}
+									autocomplete="organization"
+								/>
+							{/snippet}
+						</Form.Control>
+						<SingleFieldErrors />
 					</Form.Field>
 
 					<Form.Field form={superform} name="tin">
-						{#snippet children({ constraints })}
-							<Form.Control>
-								{#snippet children({ props })}
-									<Label for="tin">TIN (optional)</Label>
-									<Input {...props} {...constraints} id="tin" bind:value={$form.tin} />
-								{/snippet}
-							</Form.Control>
-							<SingleFieldErrors />
-						{/snippet}
+						<Form.Control>
+							{#snippet children({ props })}
+								<Form.Label>TIN (optional)</Form.Label>
+								<Input {...props} bind:value={$form.tin} />
+							{/snippet}
+						</Form.Control>
+						<SingleFieldErrors />
 					</Form.Field>
 				</div>
 
 				<div class="grid gap-4 md:grid-cols-2">
 					<Form.Field form={superform} name="addressLine1">
-						{#snippet children({ constraints })}
-							<Form.Control>
-								{#snippet children({ props })}
-									<Label for="addressLine1">Address line 1</Label>
-									<Input
-										{...props}
-										{...constraints}
-										id="addressLine1"
-										bind:value={$form.addressLine1}
-									/>
-								{/snippet}
-							</Form.Control>
-						{/snippet}
+						<Form.Control>
+							{#snippet children({ props })}
+								<Form.Label>Address line 1</Form.Label>
+								<Input {...props} bind:value={$form.addressLine1} />
+							{/snippet}
+						</Form.Control>
+						<SingleFieldErrors />
 					</Form.Field>
 
 					<Form.Field form={superform} name="addressLine2">
-						{#snippet children({ constraints })}
-							<Form.Control>
-								{#snippet children({ props })}
-									<Label for="addressLine2">Address line 2</Label>
-									<Input
-										{...props}
-										{...constraints}
-										id="addressLine2"
-										bind:value={$form.addressLine2}
-									/>
-								{/snippet}
-							</Form.Control>
-						{/snippet}
+						<Form.Control>
+							{#snippet children({ props })}
+								<Form.Label>Address line 2</Form.Label>
+								<Input {...props} bind:value={$form.addressLine2} />
+							{/snippet}
+						</Form.Control>
+						<SingleFieldErrors />
 					</Form.Field>
 				</div>
 
 				<div class="grid gap-4 md:grid-cols-2">
 					<Form.Field form={superform} name="city">
-						{#snippet children({ constraints })}
-							<Form.Control>
-								{#snippet children({ props })}
-									<Label for="city">City</Label>
-									<Input {...props} {...constraints} id="city" bind:value={$form.city} />
-								{/snippet}
-							</Form.Control>
-						{/snippet}
+						<Form.Control>
+							{#snippet children({ props })}
+								<Form.Label>City</Form.Label>
+								<Input {...props} bind:value={$form.city} />
+							{/snippet}
+						</Form.Control>
+						<SingleFieldErrors />
 					</Form.Field>
 
 					<Form.Field form={superform} name="province">
-						{#snippet children({ constraints })}
-							<Form.Control>
-								{#snippet children({ props })}
-									<Label for="province">Province</Label>
-									<Input {...props} {...constraints} id="province" bind:value={$form.province} />
-								{/snippet}
-							</Form.Control>
-						{/snippet}
+						<Form.Control>
+							{#snippet children({ props })}
+								<Form.Label>Province</Form.Label>
+								<Input {...props} bind:value={$form.province} />
+							{/snippet}
+						</Form.Control>
+						<SingleFieldErrors />
 					</Form.Field>
 				</div>
 
 				<div class="grid gap-4 md:grid-cols-2">
 					<Form.Field form={superform} name="fiscalYearStartMonth">
-						{#snippet children()}
-							<Form.Control>
-								{#snippet children({ props })}
-									<Label for="fiscalYearStartMonth">Fiscal year starts</Label>
-									<Select.Root
-										type="single"
-										value={String($form.fiscalYearStartMonth)}
-										onValueChange={(value) => {
-											if (value) {
-												$form.fiscalYearStartMonth = Number(value);
-											}
-										}}
-									>
-										<Select.Trigger {...props} id="fiscalYearStartMonth" class="w-full">
+						<Form.Control>
+							{#snippet children({ props })}
+								<Form.Label required>Fiscal year starts</Form.Label>
+								<Select.Root
+									type="single"
+									value={String($form.fiscalYearStartMonth)}
+									onValueChange={(value) => {
+										if (value) {
+											$form.fiscalYearStartMonth = Number(value);
+										}
+									}}
+								>
+									<Select.Trigger class="h-10 w-full">
+										<span class="truncate">
 											{data.fiscalMonths.find((month) => month.value === $form.fiscalYearStartMonth)
 												?.label ?? 'Select month'}
-										</Select.Trigger>
-										<Select.Content>
-											{#each data.fiscalMonths as month (month.value)}
-												<Select.Item value={String(month.value)}>{month.label}</Select.Item>
-											{/each}
-										</Select.Content>
-									</Select.Root>
-								{/snippet}
-							</Form.Control>
-							<SingleFieldErrors />
-						{/snippet}
+										</span>
+									</Select.Trigger>
+									<Select.Content>
+										{#each data.fiscalMonths as month (month.value)}
+											<Select.Item value={String(month.value)} label={month.label}>
+												{month.label}
+											</Select.Item>
+										{/each}
+									</Select.Content>
+								</Select.Root>
+								<input type="hidden" name={props.name} value={$form.fiscalYearStartMonth} />
+							{/snippet}
+						</Form.Control>
+						<SingleFieldErrors />
 					</Form.Field>
 
 					<div class="space-y-2">
-						<Label for="baseCurrency">Base currency</Label>
-						<Input id="baseCurrency" value="PHP" disabled />
+						<Label>Base currency</Label>
+						<Input value="PHP" disabled />
 						<p class="text-muted-foreground text-sm">Phase 1 supports Philippine Peso only.</p>
 					</div>
 				</div>

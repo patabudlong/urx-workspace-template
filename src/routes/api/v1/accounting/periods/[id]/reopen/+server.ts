@@ -3,7 +3,7 @@ import { jsonError, jsonOk } from '$lib/server/api/response';
 import { requireAccountingWorkspace } from '$lib/server/accounting/api-context';
 import {
 	AccountingPeriodActionError,
-	closeAccountingPeriodForWorkspace
+	reopenAccountingPeriodForWorkspace
 } from '$lib/server/repositories/accounting-periods';
 import { closePeriodSchema } from '$lib/shared/accounting/schemas';
 
@@ -22,14 +22,11 @@ export const POST: RequestHandler = async ({ locals, request, url, params }) => 
 	const parsed = closePeriodSchema.safeParse({ periodId: params.id });
 
 	if (!parsed.success) {
-		return jsonError('BAD_REQUEST', 'Invalid request body', {
-			details: { issues: parsed.error.flatten() },
-			requestId
-		});
+		return jsonError('BAD_REQUEST', 'Invalid period id', { requestId });
 	}
 
 	try {
-		const period = await closeAccountingPeriodForWorkspace({
+		const period = await reopenAccountingPeriodForWorkspace({
 			workspaceId: context.workspace.workspaceId,
 			periodId: parsed.data.periodId
 		});
@@ -38,7 +35,7 @@ export const POST: RequestHandler = async ({ locals, request, url, params }) => 
 	} catch (error) {
 		return jsonError(
 			'BAD_REQUEST',
-			error instanceof AccountingPeriodActionError ? error.message : 'Could not close fiscal period',
+			error instanceof AccountingPeriodActionError ? error.message : 'Could not reopen fiscal period',
 			{ requestId }
 		);
 	}

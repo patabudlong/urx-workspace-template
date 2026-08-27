@@ -183,7 +183,7 @@
 		</Card.Content>
 	</Card.Root>
 
-	<Card.Root>
+	<Card.Root class="overflow-visible">
 		<Card.Header>
 			<Card.Title>Pending invitations</Card.Title>
 			<Card.Description>{TEAM_PENDING_INVITATIONS_DESCRIPTION}</Card.Description>
