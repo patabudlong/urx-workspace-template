@@ -160,3 +160,78 @@ export async function getAccountingAccountsByIds(input: {
 
 	return new Map(docs.map((doc) => [doc._id.toString(), toAccountDto(doc)]));
 }
+
+export async function getAccountingAccountsByCodes(input: {
+	workspaceId: string;
+	codes: string[];
+}): Promise<Map<string, AccountingAccountDto>> {
+	await ensureAccountingAccountsIndexes();
+	const collection = await getAccountingAccountsCollection<AccountingAccountDocument>();
+	const uniqueCodes = [...new Set(input.codes)];
+
+	if (uniqueCodes.length === 0) {
+		return new Map();
+	}
+
+	const docs = await collection
+		.find(
+			{
+				workspaceId: new ObjectId(input.workspaceId),
+				code: { $in: uniqueCodes },
+				isActive: true
+			},
+			{ projection: ACCOUNT_PROJECTION }
+		)
+		.toArray();
+
+	return new Map(docs.map((doc) => [doc.code, toAccountDto(doc)]));
+}
+
+export async function seedFiscalYearPeriodsIfMissing(input: {
+	workspaceId: string;
+	anchorYear: number;
+	fiscalYearStartMonth: number;
+}): Promise<number> {
+	await ensureAccountingPeriodsIndexes();
+
+	const workspaceObjectId = new ObjectId(input.workspaceId);
+	const periodsCollection = await getAccountingPeriodsCollection<AccountingPeriodDocument>();
+	const periods = buildFiscalYearPeriods({
+		year: input.anchorYear,
+		fiscalYearStartMonth: input.fiscalYearStartMonth
+	});
+
+	if (periods.length === 0) {
+		return 0;
+	}
+
+	const firstPeriod = periods[0];
+	const existing = await periodsCollection.countDocuments({
+		workspaceId: workspaceObjectId,
+		year: firstPeriod.year,
+		month: firstPeriod.month
+	});
+
+	if (existing > 0) {
+		return 0;
+	}
+
+	const now = new Date();
+
+	await periodsCollection.insertMany(
+		periods.map((period) => ({
+			_id: new ObjectId(),
+			workspaceId: workspaceObjectId,
+			year: period.year,
+			month: period.month,
+			label: period.label,
+			status: 'open' as const,
+			startDate: period.startDate,
+			endDate: period.endDate,
+			createdAt: now,
+			updatedAt: now
+		}))
+	);
+
+	return periods.length;
+}

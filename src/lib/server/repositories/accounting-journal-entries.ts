@@ -9,8 +9,10 @@ import {
 	getFirstFiscalPeriodForWorkspace
 } from '$lib/server/repositories/accounting-periods';
 import { isDateWithinPeriod } from '$lib/server/accounting/periods';
-import type { CreateJournalEntryInput } from '$lib/shared/accounting/core/journal-validation';
-import type { AccountingJournalSource } from '$lib/shared/accounting/journal-sources';
+import type { PostJournalEntryInput } from '$lib/shared/accounting/core/journal-validation';
+import {
+	type AccountingJournalSource
+} from '$lib/shared/accounting/journal-sources';
 import { ObjectId } from 'mongodb';
 
 let accountingJournalIndexesPromise: Promise<void> | null = null;
@@ -59,6 +61,7 @@ async function ensureAccountingJournalIndexes(): Promise<void> {
 			await collection.createIndex({ workspaceId: 1, periodId: 1, entryDate: -1 });
 			await collection.createIndex({ workspaceId: 1, createdAt: -1 });
 			await collection.createIndex({ workspaceId: 1, source: 1, periodId: 1 });
+			await collection.createIndex({ workspaceId: 1, source: 1, reference: 1 });
 		})();
 	}
 
@@ -201,10 +204,26 @@ async function validateOpeningBalanceEntry(input: {
 	}
 }
 
+export async function hasAccountingJournalForReference(input: {
+	workspaceId: string;
+	source: AccountingJournalSource;
+	reference: string;
+}): Promise<boolean> {
+	await ensureAccountingJournalIndexes();
+	const collection = await getAccountingJournalEntriesCollection();
+	const count = await collection.countDocuments({
+		workspaceId: new ObjectId(input.workspaceId),
+		source: input.source,
+		reference: input.reference
+	});
+
+	return count > 0;
+}
+
 export async function createAccountingJournalEntryForWorkspace(input: {
 	workspaceId: string;
 	userId: string;
-	data: CreateJournalEntryInput;
+	data: PostJournalEntryInput;
 }): Promise<AccountingJournalEntryDto> {
 	await ensureAccountingJournalIndexes();
 

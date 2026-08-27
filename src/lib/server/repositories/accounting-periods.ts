@@ -1,6 +1,8 @@
 import type { AccountingPeriodDocument, AccountingPeriodDto } from '$lib/shared/models/accounting-period';
+import { getFiscalYearAnchorYear } from '$lib/shared/accounting/fiscal-year';
 import { getAccountingPeriodsCollection } from '$lib/server/db/collections';
 import { validateAccountingPeriodClose } from '$lib/server/accounting/period-close-validation';
+import { handleFiscalYearRolloverOnPeriodClose } from '$lib/server/accounting/fiscal-year-rollover';
 import { ObjectId } from 'mongodb';
 
 export class AccountingPeriodActionError extends Error {
@@ -62,14 +64,63 @@ export async function getAccountingPeriodForWorkspace(input: {
 	return doc ? toPeriodDto(doc) : null;
 }
 
+export async function findAccountingPeriodForDate(input: {
+	workspaceId: string;
+	date: string;
+}): Promise<AccountingPeriodDto | null> {
+	const collection = await getAccountingPeriodsCollection<AccountingPeriodDocument>();
+	const doc = await collection.findOne(
+		{
+			workspaceId: new ObjectId(input.workspaceId),
+			startDate: { $lte: input.date },
+			endDate: { $gte: input.date }
+		},
+		{ projection: PERIOD_PROJECTION }
+	);
+
+	return doc ? toPeriodDto(doc) : null;
+}
+
+export async function listAccountingPeriodIdsForFiscalYear(input: {
+	workspaceId: string;
+	anchorYear: number;
+	fiscalYearStartMonth: number;
+}): Promise<string[]> {
+	const periods = await listAccountingPeriodsForWorkspace(input.workspaceId);
+
+	return periods
+		.filter(
+			(period) =>
+				getFiscalYearAnchorYear(period.year, period.month, input.fiscalYearStartMonth) ===
+				input.anchorYear
+		)
+		.map((period) => period.id);
+}
+
 export async function closeAccountingPeriodForWorkspace(input: {
 	workspaceId: string;
 	periodId: string;
+	userId?: string;
 }): Promise<AccountingPeriodDto> {
 	const validation = await validateAccountingPeriodClose(input);
 
 	if (!validation.ok) {
 		throw new AccountingPeriodActionError(validation.message);
+	}
+
+	const periodBeforeClose = await getAccountingPeriodForWorkspace(input);
+
+	if (!periodBeforeClose) {
+		throw new AccountingPeriodActionError('Fiscal period not found.');
+	}
+
+	if (input.userId) {
+		await handleFiscalYearRolloverOnPeriodClose({
+			workspaceId: input.workspaceId,
+			period: periodBeforeClose,
+			userId: input.userId,
+			phase: 'before_close'
+		});
 	}
 
 	const collection = await getAccountingPeriodsCollection<AccountingPeriodDocument>();
@@ -92,7 +143,16 @@ export async function closeAccountingPeriodForWorkspace(input: {
 		throw new AccountingPeriodActionError('Could not close fiscal period.');
 	}
 
-	return toPeriodDto(result);
+	const closedPeriod = toPeriodDto(result);
+
+	await handleFiscalYearRolloverOnPeriodClose({
+		workspaceId: input.workspaceId,
+		period: closedPeriod,
+		userId: input.userId,
+		phase: 'after_close'
+	});
+
+	return closedPeriod;
 }
 
 export async function reopenAccountingPeriodForWorkspace(input: {

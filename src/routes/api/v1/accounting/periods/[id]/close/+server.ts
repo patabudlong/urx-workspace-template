@@ -31,7 +31,8 @@ export const POST: RequestHandler = async ({ locals, request, url, params }) => 
 	try {
 		const period = await closeAccountingPeriodForWorkspace({
 			workspaceId: context.workspace.workspaceId,
-			periodId: parsed.data.periodId
+			periodId: parsed.data.periodId,
+			userId: locals.user?.id
 		});
 
 		return jsonOk({ period }, { requestId });

@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import { ACCOUNTING_JOURNAL_SOURCES } from '$lib/shared/accounting/journal-sources';
+import {
+	USER_CREATABLE_JOURNAL_SOURCES,
+	type AccountingJournalSource
+} from '$lib/shared/accounting/journal-sources';
 
 export const journalLineInputSchema = z.object({
 	accountId: z.string().trim().min(1, 'Account is required'),
@@ -14,7 +17,7 @@ export const createJournalEntrySchema = z
 		entryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD'),
 		reference: z.string().trim().max(64).optional().default(''),
 		memo: z.string().trim().max(1000).optional().default(''),
-		source: z.enum(ACCOUNTING_JOURNAL_SOURCES).optional().default('manual'),
+		source: z.enum(USER_CREATABLE_JOURNAL_SOURCES).optional().default('manual'),
 		lines: z.array(journalLineInputSchema).min(2, 'At least two lines are required')
 	})
 	.superRefine((value, ctx) => {
@@ -56,6 +59,15 @@ export const createJournalEntrySchema = z
 
 export type JournalLineInput = z.infer<typeof journalLineInputSchema>;
 export type CreateJournalEntryInput = z.infer<typeof createJournalEntrySchema>;
+
+export type PostJournalEntryInput = {
+	periodId: string;
+	entryDate: string;
+	reference?: string;
+	memo?: string;
+	source?: AccountingJournalSource;
+	lines: JournalLineInput[];
+};
 
 export function sumJournalLineDebits(lines: readonly { debitCents: number }[]): number {
 	return lines.reduce((sum, line) => sum + line.debitCents, 0);

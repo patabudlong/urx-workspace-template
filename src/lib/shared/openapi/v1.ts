@@ -64,6 +64,10 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 			{
 				name: 'Notifications',
 				description: 'In-app notifications for team activity and account security'
+			},
+			{
+				name: 'Accounting',
+				description: 'PH general ledger: chart of accounts, journals, fiscal periods, and trial balance'
 			}
 		],
 		paths: {
@@ -2543,6 +2547,540 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						}
 					}
 				}
+			},
+			'/accounting/status': {
+				get: {
+					tags: ['Accounting'],
+					summary: 'Accounting module status',
+					description:
+						'Returns accounting configuration and counts for the active workspace. Requires workspace owner or admin role.',
+					operationId: 'getAccountingStatus',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Accounting status',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/AccountingStatusSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Accounting access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/accounting/settings': {
+				get: {
+					tags: ['Accounting'],
+					summary: 'Get accounting settings',
+					operationId: 'getAccountingSettings',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Accounting settings',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/AccountingSettingsSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Accounting access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				put: {
+					tags: ['Accounting'],
+					summary: 'Update accounting settings',
+					description: 'First save seeds the PH chart of accounts and fiscal periods.',
+					operationId: 'updateAccountingSettings',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/AccountingSettingsUpdateRequest' }
+							}
+						}
+					},
+					responses: {
+						'200': {
+							description: 'Updated settings',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/AccountingSettingsSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Accounting access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/accounting/chart-of-accounts': {
+				get: {
+					tags: ['Accounting'],
+					summary: 'List chart of accounts',
+					operationId: 'listAccountingAccounts',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Chart of accounts',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/AccountingAccountsSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Accounting access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/accounting/journals': {
+				get: {
+					tags: ['Accounting'],
+					summary: 'List journal entries',
+					operationId: 'listAccountingJournals',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{
+							name: 'periodId',
+							in: 'query',
+							schema: { type: 'string' },
+							description: 'Filter by fiscal period id'
+						},
+						{
+							name: 'source',
+							in: 'query',
+							schema: {
+								type: 'string',
+								enum: ['manual', 'opening_balance', 'payroll', 'fiscal_year_close']
+							},
+							description: 'Filter by journal source'
+						}
+					],
+					responses: {
+						'200': {
+							description: 'Journal entries (max 100)',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/AccountingJournalsSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Accounting access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				post: {
+					tags: ['Accounting'],
+					summary: 'Post journal entry',
+					description: 'Creates a balanced manual or opening-balance journal in an open fiscal period.',
+					operationId: 'createAccountingJournal',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/AccountingJournalCreateRequest' }
+							}
+						}
+					},
+					responses: {
+						'201': {
+							description: 'Journal posted',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/AccountingJournalSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body or business rule violation',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Accounting access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/accounting/journals/{id}': {
+				get: {
+					tags: ['Accounting'],
+					summary: 'Get journal entry',
+					operationId: 'getAccountingJournal',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+					],
+					responses: {
+						'200': {
+							description: 'Journal entry',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/AccountingJournalSuccessResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'Journal not found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Accounting access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/accounting/periods': {
+				get: {
+					tags: ['Accounting'],
+					summary: 'List fiscal periods',
+					operationId: 'listAccountingPeriods',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Fiscal periods',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/AccountingPeriodsSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Accounting access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/accounting/periods/{id}/close': {
+				post: {
+					tags: ['Accounting'],
+					summary: 'Close fiscal period',
+					description:
+						'Closes an open period. On fiscal year-end close, posts P&L to retained earnings and seeds next-year periods.',
+					operationId: 'closeAccountingPeriod',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+					],
+					responses: {
+						'200': {
+							description: 'Period closed',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/AccountingPeriodSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Close validation failed',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Accounting access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/accounting/periods/{id}/lock': {
+				post: {
+					tags: ['Accounting'],
+					summary: 'Lock fiscal period',
+					description: 'Permanently locks a closed period.',
+					operationId: 'lockAccountingPeriod',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+					],
+					responses: {
+						'200': {
+							description: 'Period locked',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/AccountingPeriodSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Lock failed',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Accounting access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/accounting/periods/{id}/reopen': {
+				post: {
+					tags: ['Accounting'],
+					summary: 'Reopen fiscal period',
+					description: 'Reopens a closed period. Locked periods cannot be reopened.',
+					operationId: 'reopenAccountingPeriod',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+					],
+					responses: {
+						'200': {
+							description: 'Period reopened',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/AccountingPeriodSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Reopen failed',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Accounting access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/accounting/trial-balance': {
+				get: {
+					tags: ['Accounting'],
+					summary: 'Trial balance for a fiscal period',
+					operationId: 'getAccountingTrialBalance',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{
+							name: 'periodId',
+							in: 'query',
+							required: true,
+							schema: { type: 'string' },
+							description: 'Fiscal period id'
+						}
+					],
+					responses: {
+						'200': {
+							description: 'Trial balance',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/AccountingTrialBalanceSuccessResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'Period not found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Accounting access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
 			}
 		},
 		components: {
@@ -3330,6 +3868,357 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 					required: ['data', 'meta'],
 					properties: {
 						data: { $ref: '#/components/schemas/PayrollStatus' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				AccountingStatus: {
+					type: 'object',
+					required: [
+						'enabled',
+						'workspaceId',
+						'configured',
+						'accountCount',
+						'journalCount',
+						'openPeriodCount'
+					],
+					properties: {
+						enabled: { type: 'boolean' },
+						workspaceId: { type: 'string' },
+						configured: { type: 'boolean' },
+						accountCount: { type: 'integer', minimum: 0 },
+						journalCount: { type: 'integer', minimum: 0 },
+						openPeriodCount: { type: 'integer', minimum: 0 }
+					}
+				},
+				AccountingStatusSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/AccountingStatus' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				AccountingSettings: {
+					type: 'object',
+					required: [
+						'workspaceId',
+						'companyName',
+						'tin',
+						'addressLine1',
+						'addressLine2',
+						'city',
+						'province',
+						'fiscalYearStartMonth',
+						'timezone',
+						'baseCurrency',
+						'jurisdiction',
+						'configured',
+						'updatedAt'
+					],
+					properties: {
+						workspaceId: { type: 'string' },
+						companyName: { type: 'string' },
+						tin: { type: 'string', nullable: true },
+						addressLine1: { type: 'string', nullable: true },
+						addressLine2: { type: 'string', nullable: true },
+						city: { type: 'string', nullable: true },
+						province: { type: 'string', nullable: true },
+						fiscalYearStartMonth: { type: 'integer', minimum: 1, maximum: 12 },
+						timezone: { type: 'string' },
+						baseCurrency: { type: 'string', enum: ['PHP'] },
+						jurisdiction: { type: 'string', enum: ['PH'] },
+						configured: { type: 'boolean' },
+						updatedAt: { type: 'string', format: 'date-time', nullable: true }
+					}
+				},
+				AccountingSettingsUpdateRequest: {
+					type: 'object',
+					required: [
+						'companyName',
+						'fiscalYearStartMonth',
+						'timezone',
+						'baseCurrency'
+					],
+					properties: {
+						companyName: { type: 'string', minLength: 1, maxLength: 200 },
+						tin: { type: 'string', maxLength: 32 },
+						addressLine1: { type: 'string', maxLength: 200 },
+						addressLine2: { type: 'string', maxLength: 200 },
+						city: { type: 'string', maxLength: 120 },
+						province: { type: 'string', maxLength: 120 },
+						fiscalYearStartMonth: { type: 'integer', minimum: 1, maximum: 12 },
+						timezone: { type: 'string', minLength: 1, maxLength: 64 },
+						baseCurrency: { type: 'string', enum: ['PHP'] }
+					}
+				},
+				AccountingSettingsSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/AccountingSettings' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				AccountingAccount: {
+					type: 'object',
+					required: [
+						'id',
+						'workspaceId',
+						'code',
+						'name',
+						'type',
+						'description',
+						'isActive',
+						'isSystem'
+					],
+					properties: {
+						id: { type: 'string' },
+						workspaceId: { type: 'string' },
+						code: { type: 'string' },
+						name: { type: 'string' },
+						type: {
+							type: 'string',
+							enum: ['asset', 'liability', 'equity', 'revenue', 'expense']
+						},
+						description: { type: 'string', nullable: true },
+						isActive: { type: 'boolean' },
+						isSystem: { type: 'boolean' }
+					}
+				},
+				AccountingAccountsSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							type: 'object',
+							required: ['accounts'],
+							properties: {
+								accounts: {
+									type: 'array',
+									items: { $ref: '#/components/schemas/AccountingAccount' }
+								}
+							}
+						},
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				AccountingJournalLine: {
+					type: 'object',
+					required: [
+						'accountId',
+						'accountCode',
+						'accountName',
+						'description',
+						'debitCents',
+						'creditCents'
+					],
+					properties: {
+						accountId: { type: 'string' },
+						accountCode: { type: 'string' },
+						accountName: { type: 'string' },
+						description: { type: 'string', nullable: true },
+						debitCents: { type: 'integer', minimum: 0 },
+						creditCents: { type: 'integer', minimum: 0 }
+					}
+				},
+				AccountingJournalLineInput: {
+					type: 'object',
+					required: ['accountId', 'debitCents', 'creditCents'],
+					properties: {
+						accountId: { type: 'string' },
+						description: { type: 'string', maxLength: 500 },
+						debitCents: { type: 'integer', minimum: 0 },
+						creditCents: { type: 'integer', minimum: 0 }
+					}
+				},
+				AccountingJournal: {
+					type: 'object',
+					required: [
+						'id',
+						'workspaceId',
+						'periodId',
+						'entryDate',
+						'reference',
+						'memo',
+						'source',
+						'status',
+						'lines',
+						'createdByUserId',
+						'createdAt'
+					],
+					properties: {
+						id: { type: 'string' },
+						workspaceId: { type: 'string' },
+						periodId: { type: 'string' },
+						entryDate: { type: 'string', format: 'date' },
+						reference: { type: 'string', nullable: true },
+						memo: { type: 'string', nullable: true },
+						source: {
+							type: 'string',
+							enum: ['manual', 'opening_balance', 'payroll', 'fiscal_year_close']
+						},
+						status: { type: 'string', enum: ['posted'] },
+						lines: {
+							type: 'array',
+							items: { $ref: '#/components/schemas/AccountingJournalLine' }
+						},
+						createdByUserId: { type: 'string' },
+						createdAt: { type: 'string', format: 'date-time' }
+					}
+				},
+				AccountingJournalCreateRequest: {
+					type: 'object',
+					required: ['periodId', 'entryDate', 'lines'],
+					properties: {
+						periodId: { type: 'string' },
+						entryDate: { type: 'string', format: 'date' },
+						reference: { type: 'string', maxLength: 64 },
+						memo: { type: 'string', maxLength: 1000 },
+						source: {
+							type: 'string',
+							enum: ['manual', 'opening_balance']
+						},
+						lines: {
+							type: 'array',
+							minItems: 2,
+							items: { $ref: '#/components/schemas/AccountingJournalLineInput' }
+						}
+					}
+				},
+				AccountingJournalSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							type: 'object',
+							required: ['entry'],
+							properties: {
+								entry: { $ref: '#/components/schemas/AccountingJournal' }
+							}
+						},
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				AccountingJournalsSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							type: 'object',
+							required: ['entries'],
+							properties: {
+								entries: {
+									type: 'array',
+									items: { $ref: '#/components/schemas/AccountingJournal' }
+								}
+							}
+						},
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				AccountingPeriod: {
+					type: 'object',
+					required: [
+						'id',
+						'workspaceId',
+						'year',
+						'month',
+						'label',
+						'status',
+						'startDate',
+						'endDate'
+					],
+					properties: {
+						id: { type: 'string' },
+						workspaceId: { type: 'string' },
+						year: { type: 'integer' },
+						month: { type: 'integer', minimum: 1, maximum: 12 },
+						label: { type: 'string' },
+						status: { type: 'string', enum: ['open', 'closed', 'locked'] },
+						startDate: { type: 'string', format: 'date' },
+						endDate: { type: 'string', format: 'date' }
+					}
+				},
+				AccountingPeriodSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							type: 'object',
+							required: ['period'],
+							properties: {
+								period: { $ref: '#/components/schemas/AccountingPeriod' }
+							}
+						},
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				AccountingPeriodsSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							type: 'object',
+							required: ['periods'],
+							properties: {
+								periods: {
+									type: 'array',
+									items: { $ref: '#/components/schemas/AccountingPeriod' }
+								}
+							}
+						},
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				AccountingTrialBalanceRow: {
+					type: 'object',
+					required: [
+						'accountId',
+						'accountCode',
+						'accountName',
+						'accountType',
+						'debitCents',
+						'creditCents',
+						'balanceCents'
+					],
+					properties: {
+						accountId: { type: 'string' },
+						accountCode: { type: 'string' },
+						accountName: { type: 'string' },
+						accountType: {
+							type: 'string',
+							enum: ['asset', 'liability', 'equity', 'revenue', 'expense']
+						},
+						debitCents: { type: 'integer', minimum: 0 },
+						creditCents: { type: 'integer', minimum: 0 },
+						balanceCents: { type: 'integer' }
+					}
+				},
+				AccountingTrialBalance: {
+					type: 'object',
+					required: [
+						'periodId',
+						'periodLabel',
+						'rows',
+						'totalDebitCents',
+						'totalCreditCents'
+					],
+					properties: {
+						periodId: { type: 'string' },
+						periodLabel: { type: 'string' },
+						rows: {
+							type: 'array',
+							items: { $ref: '#/components/schemas/AccountingTrialBalanceRow' }
+						},
+						totalDebitCents: { type: 'integer', minimum: 0 },
+						totalCreditCents: { type: 'integer', minimum: 0 }
+					}
+				},
+				AccountingTrialBalanceSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/AccountingTrialBalance' },
 						meta: { $ref: '#/components/schemas/ApiMeta' }
 					}
 				},

@@ -95,7 +95,8 @@ export const actions: Actions = {
 		try {
 			await closeAccountingPeriodForWorkspace({
 				workspaceId: context.workspace.workspaceId,
-				periodId: parsed.data.periodId
+				periodId: parsed.data.periodId,
+				userId: locals.user?.id
 			});
 		} catch (error) {
 			return fail(400, {

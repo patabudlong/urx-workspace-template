@@ -84,7 +84,8 @@ export const actions: Actions = {
 
 		const result = await processPayrollRunForWorkspace({
 			workspaceId: workspace.workspaceId,
-			runId: params.id
+			runId: params.id,
+			userId: locals.user.id
 		});
 
 		if (!result.ok) {
