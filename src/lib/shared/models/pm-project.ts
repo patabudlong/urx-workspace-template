@@ -25,6 +25,8 @@ export type PmProjectDocument = {
 	websiteUrl?: string | null;
 	crmCompanyId: ObjectId | null;
 	crmContactId: ObjectId | null;
+	crmDealId: ObjectId | null;
+	assignedMemberId: ObjectId | null;
 	dueDate: Date | null;
 	notes: string | null;
 	onboarding: PmProjectOnboardingDocument | null;
@@ -44,6 +46,8 @@ export type PmProjectDto = {
 	projectUrl: string | null;
 	crmCompanyId: string | null;
 	crmContactId: string | null;
+	crmDealId: string | null;
+	assignedMemberId: string | null;
 	dueDate: string | null;
 	notes: string | null;
 	onboarding: PmProjectOnboarding | null;

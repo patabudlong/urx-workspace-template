@@ -11,10 +11,12 @@
 
 	let {
 		form = $bindable<PmProjectFormInput>(),
-		idPrefix = ''
+		idPrefix = '',
+		members = []
 	}: {
 		form: PmProjectFormInput;
 		idPrefix?: string;
+		members?: Array<{ id: string; name: string }>;
 	} = $props();
 </script>
 
@@ -82,6 +84,21 @@
 		description="Track where this project sits in your workflow."
 	>
 		<PmProjectStatusPicker bind:status={form.status} {idPrefix} />
+
+		<div class="space-y-2">
+			<Label for="{idPrefix}assignedMemberId">Assignee (optional)</Label>
+			<select
+				id="{idPrefix}assignedMemberId"
+				name="assignedMemberId"
+				bind:value={form.assignedMemberId}
+				class="border-input bg-background h-10 w-full max-w-md rounded-md border px-3 text-sm"
+			>
+				<option value="">Unassigned</option>
+				{#each members as member (member.id)}
+					<option value={member.id}>{member.name}</option>
+				{/each}
+			</select>
+		</div>
 
 		<Separator />
 

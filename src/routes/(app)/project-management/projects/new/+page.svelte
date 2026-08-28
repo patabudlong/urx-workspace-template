@@ -75,7 +75,7 @@
 			title="Set up your project"
 			description="Organize the engagement in a few quick sections. You can invite the client for onboarding after the project is created."
 		>
-			<PmProjectFormFields bind:form={$form} idPrefix="new-" />
+			<PmProjectFormFields bind:form={$form} idPrefix="new-" members={data.members} />
 			{#snippet actions()}
 				<p class="text-muted-foreground text-sm">All fields save to this workspace immediately.</p>
 				<div class="flex flex-wrap gap-2">

@@ -2,9 +2,10 @@ import { createHash, randomBytes } from 'node:crypto';
 import { getPmClientInvitationsCollection } from '$lib/server/db/collections';
 import type {
 	PmClientInvitationDocument,
-	PmClientInvitationDto
+	PmClientInvitationDto,
+	PmClientInvitationPurpose
 } from '$lib/shared/models/pm-client-invitation';
-import { PM_CLIENT_INVITATION_STATUSES } from '$lib/shared/models/pm-client-invitation';
+import { PM_CLIENT_INVITATION_PURPOSES, PM_CLIENT_INVITATION_STATUSES } from '$lib/shared/models/pm-client-invitation';
 import { ObjectId } from 'mongodb';
 
 const TOKEN_BYTES = 16;
@@ -25,6 +26,7 @@ const invitationProjection = {
 	clientName: 1,
 	tokenHash: 1,
 	invitedByUserId: 1,
+	purpose: 1,
 	status: 1,
 	expiresAt: 1,
 	completedAt: 1,
@@ -46,6 +48,7 @@ function toPmClientInvitationDto(doc: PmClientInvitationDocument): PmClientInvit
 		projectId: doc.projectId.toString(),
 		clientEmail: doc.clientEmail,
 		clientName: doc.clientName,
+		purpose: doc.purpose ?? PM_CLIENT_INVITATION_PURPOSES.ONBOARDING,
 		status: doc.status,
 		expiresAt: doc.expiresAt.toISOString(),
 		completedAt: doc.completedAt?.toISOString() ?? null,
@@ -77,18 +80,29 @@ export async function ensurePmClientInvitationIndexes(): Promise<void> {
 export async function listPmClientInvitationsForProject(input: {
 	workspaceId: string;
 	projectId: string;
+	purpose?: PmClientInvitationPurpose;
 }): Promise<PmClientInvitationDto[]> {
 	await ensurePmClientInvitationIndexes();
 
+	const filter: Record<string, unknown> = {
+		workspaceId: new ObjectId(input.workspaceId),
+		projectId: new ObjectId(input.projectId)
+	};
+
+	if (input.purpose) {
+		if (input.purpose === PM_CLIENT_INVITATION_PURPOSES.ONBOARDING) {
+			filter.$or = [
+				{ purpose: PM_CLIENT_INVITATION_PURPOSES.ONBOARDING },
+				{ purpose: { $exists: false } }
+			];
+		} else {
+			filter.purpose = input.purpose;
+		}
+	}
+
 	const collection = await getPmClientInvitationsCollection<PmClientInvitationDocument>();
 	const docs = await collection
-		.find(
-			{
-				workspaceId: new ObjectId(input.workspaceId),
-				projectId: new ObjectId(input.projectId)
-			},
-			{ projection: invitationProjection }
-		)
+		.find(filter, { projection: invitationProjection })
 		.sort({ createdAt: -1 })
 		.limit(20)
 		.toArray();
@@ -132,26 +146,36 @@ export async function createPmClientInvitation(input: {
 	tokenHash: string;
 	invitedByUserId: string;
 	expiresAt: Date;
+	purpose?: PmClientInvitationPurpose;
 }): Promise<PmClientInvitationDocument> {
 	await ensurePmClientInvitationIndexes();
 
 	const now = new Date();
+	const purpose = input.purpose ?? PM_CLIENT_INVITATION_PURPOSES.ONBOARDING;
 	const collection = await getPmClientInvitationsCollection<PmClientInvitationDocument>();
 
-	await collection.updateMany(
-		{
-			workspaceId: new ObjectId(input.workspaceId),
-			projectId: new ObjectId(input.projectId),
-			clientEmail: input.clientEmail.trim().toLowerCase(),
-			...openInvitationFilter(now)
-		},
-		{
-			$set: {
-				status: PM_CLIENT_INVITATION_STATUSES.REVOKED,
-				updatedAt: now
-			}
+	const revokeFilter: Record<string, unknown> = {
+		workspaceId: new ObjectId(input.workspaceId),
+		projectId: new ObjectId(input.projectId),
+		clientEmail: input.clientEmail.trim().toLowerCase(),
+		...openInvitationFilter(now)
+	};
+
+	if (purpose === PM_CLIENT_INVITATION_PURPOSES.ONBOARDING) {
+		revokeFilter.$or = [
+			{ purpose: PM_CLIENT_INVITATION_PURPOSES.ONBOARDING },
+			{ purpose: { $exists: false } }
+		];
+	} else {
+		revokeFilter.purpose = purpose;
+	}
+
+	await collection.updateMany(revokeFilter, {
+		$set: {
+			status: PM_CLIENT_INVITATION_STATUSES.REVOKED,
+			updatedAt: now
 		}
-	);
+	});
 
 	const doc: PmClientInvitationDocument = {
 		_id: new ObjectId(),
@@ -161,6 +185,7 @@ export async function createPmClientInvitation(input: {
 		clientName: input.clientName,
 		tokenHash: input.tokenHash,
 		invitedByUserId: new ObjectId(input.invitedByUserId),
+		purpose,
 		status: PM_CLIENT_INVITATION_STATUSES.PENDING,
 		expiresAt: input.expiresAt,
 		createdAt: now,

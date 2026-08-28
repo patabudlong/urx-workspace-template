@@ -1,7 +1,7 @@
 import type { RequestHandler } from './$types';
 import { jsonError, jsonOk } from '$lib/server/api/response';
 import { requireProjectManagementWorkspace } from '$lib/server/project-management/api-context';
-import { deletePmClientInvitationsForProject } from '$lib/server/repositories/pm-client-invitations';
+import { deletePmProjectArtifacts } from '$lib/server/project-management/delete-project-artifacts';
 import {
 	deletePmProjectForWorkspace,
 	getPmProjectForWorkspace,
@@ -95,7 +95,7 @@ export const DELETE: RequestHandler = async ({ locals, request, url, params }) =
 		return jsonError('NOT_FOUND', PM_PROJECT_NOT_FOUND_MESSAGE, { requestId });
 	}
 
-	await deletePmClientInvitationsForProject({
+	await deletePmProjectArtifacts({
 		workspaceId: context.workspace.workspaceId,
 		projectId: params.id
 	});

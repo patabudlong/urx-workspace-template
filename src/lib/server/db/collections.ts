@@ -43,7 +43,11 @@ export const CollectionNames = {
 // urixoft-workspace-crm:collections:end
 // urx-project_management-package:collections:start
 	pmProjects: 'pm_projects',
-	pmClientInvitations: 'pm_client_invitations'
+	pmClientInvitations: 'pm_client_invitations',
+	pmDocumentChecklistItems: 'pm_document_checklist_items',
+	pmProjectFiles: 'pm_project_files',
+	pmProjectMilestones: 'pm_project_milestones',
+	pmProjectActivity: 'pm_project_activity'
 // urx-project_management-package:collections:end
 } as const;
 
@@ -201,5 +205,29 @@ export async function getPmClientInvitationsCollection<T extends Document = Docu
 	Collection<T>
 > {
 	return getCollection<T>('pmClientInvitations');
+}
+
+export async function getPmDocumentChecklistItemsCollection<T extends Document = Document>(): Promise<
+	Collection<T>
+> {
+	return getCollection<T>('pmDocumentChecklistItems');
+}
+
+export async function getPmProjectFilesCollection<T extends Document = Document>(): Promise<
+	Collection<T>
+> {
+	return getCollection<T>('pmProjectFiles');
+}
+
+export async function getPmProjectMilestonesCollection<T extends Document = Document>(): Promise<
+	Collection<T>
+> {
+	return getCollection<T>('pmProjectMilestones');
+}
+
+export async function getPmProjectActivityCollection<T extends Document = Document>(): Promise<
+	Collection<T>
+> {
+	return getCollection<T>('pmProjectActivity');
 }
 // urx-project_management-package:getter:end

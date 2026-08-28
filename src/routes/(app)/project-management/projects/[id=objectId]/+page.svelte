@@ -1,5 +1,8 @@
 <script lang="ts">
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
+	import PmDocumentChecklistCard from '$lib/components/project-management/pm-document-checklist-card.svelte';
+	import PmDeliveryActivityCard from '$lib/components/project-management/pm-delivery-activity-card.svelte';
+	import PmDeliveryMilestonesCard from '$lib/components/project-management/pm-delivery-milestones-card.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
@@ -10,6 +13,11 @@
 		PM_CLIENT_INVITE_FAILED_MESSAGE,
 		PM_CLIENT_INVITE_MAIL_NOT_CONFIGURED_MESSAGE,
 		PM_CLIENT_INVITE_SENT_MESSAGE,
+		PM_DOCUMENT_INVITE_FAILED_MESSAGE,
+		PM_DOCUMENT_INVITE_MAIL_NOT_CONFIGURED_MESSAGE,
+		PM_DOCUMENT_INVITE_SENT_MESSAGE,
+		PM_DOCUMENT_REMINDER_FAILED_MESSAGE,
+		PM_DOCUMENT_REMINDER_SENT_MESSAGE,
 		PM_PROJECT_UPDATE_FAILED_MESSAGE,
 		PM_PROJECT_UPDATED_MESSAGE
 	} from '$lib/shared/project-management/messages';
@@ -29,6 +37,7 @@
 	import MailIcon from '@lucide/svelte/icons/mail';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import { invalidateAll } from '$app/navigation';
+	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
 	import { untrack } from 'svelte';
 	import { superForm } from 'sveltekit-superforms';
@@ -39,6 +48,8 @@
 
 	let statusSubmitting = $state(false);
 	let inviteSubmitting = $state(false);
+	let documentInviteSubmitting = $state(false);
+	let documentReminderSubmitting = $state(false);
 
 	const statusLabels: Record<string, string> = {
 		[PM_PROJECT_STATUSES.PLANNING]: 'Planning',
@@ -128,6 +139,44 @@
 	const { enhance: enhanceStatus, form: statusForm, message: statusMessage } = statusSuperform;
 	const { enhance: enhanceInvite, form: inviteForm, message: inviteMessage } = inviteSuperform;
 
+	const documentInviteSuperform = superForm(untrack(() => data.documentInviteForm), {
+		validators: zod4Client(pmClientInviteFormSchema),
+		resetForm: false,
+		onSubmit: () => {
+			documentInviteSubmitting = true;
+		},
+		onUpdated: async ({ form }) => {
+			documentInviteSubmitting = false;
+			if (form.message === PM_DOCUMENT_INVITE_SENT_MESSAGE) {
+				toast.success('Document invitation sent', {
+					description: PM_DOCUMENT_INVITE_SENT_MESSAGE
+				});
+				await invalidateAll();
+				return;
+			}
+
+			if (typeof form.message === 'string' && form.message.length > 0) {
+				toast.error('Could not send document invitation', {
+					description:
+						form.message === PM_DOCUMENT_INVITE_MAIL_NOT_CONFIGURED_MESSAGE
+							? PM_DOCUMENT_INVITE_MAIL_NOT_CONFIGURED_MESSAGE
+							: form.message === PM_DOCUMENT_INVITE_FAILED_MESSAGE
+								? PM_DOCUMENT_INVITE_FAILED_MESSAGE
+								: form.message
+				});
+			}
+		},
+		onError: () => {
+			documentInviteSubmitting = false;
+		}
+	});
+
+	const {
+		enhance: enhanceDocumentInvite,
+		form: documentInviteForm,
+		message: documentInviteMessage
+	} = documentInviteSuperform;
+
 	function formatDate(value: string | null): string {
 		if (!value) {
 			return '—';
@@ -162,6 +211,12 @@
 	$effect(() => {
 		if (page.url.searchParams.get('updated') === '1') {
 			toast.success('Project updated', { description: PM_PROJECT_UPDATED_MESSAGE });
+		}
+
+		if (page.url.searchParams.get('fromCrmDeal') === '1') {
+			toast.success('Project created', {
+				description: 'This project was created from a won CRM deal.'
+			});
 		}
 	});
 </script>
@@ -236,6 +291,21 @@
 						<span class="text-muted-foreground">Client</span>
 						<span>{data.project.clientName ?? '—'}</span>
 					</div>
+					<div class="flex items-center justify-between gap-4">
+						<span class="text-muted-foreground">Assignee</span>
+						<span>{data.assignee?.name ?? 'Unassigned'}</span>
+					</div>
+					{#if data.crmActive && data.project.crmDealId}
+						<div class="flex items-center justify-between gap-4">
+							<span class="text-muted-foreground">CRM deal</span>
+							<a
+								class="text-primary hover:underline"
+								href="/crm/deals/{data.project.crmDealId}"
+							>
+								View deal
+							</a>
+						</div>
+					{/if}
 					<div class="space-y-2">
 						<p class="text-muted-foreground">Project types</p>
 						<div class="flex flex-wrap gap-2">
@@ -325,9 +395,122 @@
 					</Card.Content>
 				</Card.Root>
 			{/if}
+
+			<PmDocumentChecklistCard
+				projectId={data.project.id}
+				items={data.checklistItems}
+				checklistForm={data.checklistForm}
+				filesByItem={data.filesByItem}
+			/>
+
+			<PmDeliveryMilestonesCard milestones={data.milestones} milestoneForm={data.milestoneForm} />
+
+			<PmDeliveryActivityCard activity={data.activity} activityCommentForm={data.activityCommentForm} />
 		</div>
 
 		<div class="flex flex-col gap-6">
+			<Card.Root>
+				<Card.Header>
+					<Card.Title>Document portal</Card.Title>
+					<Card.Description>
+						Email your client a secure link to upload checklist documents.
+					</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					<form method="POST" action="?/sendDocumentInvite" use:enhanceDocumentInvite class="space-y-4">
+						<div class="space-y-2">
+							<Label for="documentClientEmail">Client email</Label>
+							<Input
+								id="documentClientEmail"
+								name="clientEmail"
+								type="email"
+								bind:value={$documentInviteForm.clientEmail}
+							/>
+						</div>
+						<div class="space-y-2">
+							<Label for="documentClientName">Client name (optional)</Label>
+							<Input
+								id="documentClientName"
+								name="clientName"
+								bind:value={$documentInviteForm.clientName}
+							/>
+						</div>
+						<Button type="submit" class="h-10 w-full" disabled={documentInviteSubmitting}>
+							{documentInviteSubmitting ? 'Sending…' : 'Send document portal invite'}
+						</Button>
+					</form>
+
+					{#if data.checklistItems.length > 0}
+						<form
+							method="POST"
+							action="?/sendDocumentReminder"
+							use:enhance={() => {
+								documentReminderSubmitting = true;
+								return async ({ result }) => {
+									documentReminderSubmitting = false;
+									if (result.type === 'success') {
+										toast.success('Reminder sent', {
+											description: PM_DOCUMENT_REMINDER_SENT_MESSAGE
+										});
+										await invalidateAll();
+									} else if (result.type === 'failure') {
+										toast.error('Could not send reminder', {
+											description: PM_DOCUMENT_REMINDER_FAILED_MESSAGE
+										});
+									}
+								};
+							}}
+							class="mt-3"
+						>
+							<input type="hidden" name="clientEmail" value={$documentInviteForm.clientEmail} />
+							<input type="hidden" name="clientName" value={$documentInviteForm.clientName} />
+							<Button
+								type="submit"
+								variant="outline"
+								class="h-10 w-full"
+								disabled={documentReminderSubmitting || !$documentInviteForm.clientEmail}
+							>
+								{documentReminderSubmitting ? 'Sending…' : 'Send reminder'}
+							</Button>
+						</form>
+					{/if}
+
+					{#if typeof $documentInviteMessage === 'string' && $documentInviteMessage.length > 0}
+						<div class="mt-4">
+							{#if $documentInviteMessage === PM_DOCUMENT_INVITE_SENT_MESSAGE}
+								<StatusAlert
+									variant="success"
+									title="Invitation sent"
+									description={PM_DOCUMENT_INVITE_SENT_MESSAGE}
+								/>
+							{:else}
+								<StatusAlert
+									variant="danger"
+									title="Could not send invitation"
+									description={$documentInviteMessage}
+								/>
+							{/if}
+						</div>
+					{/if}
+
+					{#if data.documentInvitations.length > 0}
+						<div class="mt-6 space-y-3">
+							<p class="text-muted-foreground text-sm font-medium">Recent document invitations</p>
+							{#each data.documentInvitations as invitation (invitation.id)}
+								<div class="rounded-lg border p-3 text-sm">
+									<p class="font-medium">{invitation.clientEmail}</p>
+									<p class="text-muted-foreground mt-1">
+										{invitationStatusLabels[invitation.status]} · expires {formatDateTime(
+											invitation.expiresAt
+										)}
+									</p>
+								</div>
+							{/each}
+						</div>
+					{/if}
+				</Card.Content>
+			</Card.Root>
+
 			<Card.Root>
 				<Card.Header>
 					<Card.Title>Client onboarding</Card.Title>

@@ -2,12 +2,13 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import { message, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import type { Actions, PageServerLoad } from './$types';
-import { deletePmClientInvitationsForProject } from '$lib/server/repositories/pm-client-invitations';
+import { deletePmProjectArtifacts } from '$lib/server/project-management/delete-project-artifacts';
 import {
 	deletePmProjectForWorkspace,
 	getPmProjectForWorkspace,
 	updatePmProjectForWorkspace
 } from '$lib/server/repositories/pm-projects';
+import { listWorkspaceMembersForDisplay } from '$lib/server/team/workspace-member-directory';
 import {
 	listUserWorkspaceContexts,
 	resolveActiveWorkspaceContext
@@ -44,6 +45,7 @@ export const load: PageServerLoad = async ({ parent, params }) => {
 
 	return {
 		project,
+		members: await listWorkspaceMembersForDisplay(workspace.workspaceId),
 		form: await superValidate(zod4(pmProjectFormSchema), {
 			defaults: mapPmProjectDtoToFormInput(project)
 		})
@@ -112,7 +114,7 @@ export const actions: Actions = {
 			error(404, PM_PROJECT_NOT_FOUND_MESSAGE);
 		}
 
-		await deletePmClientInvitationsForProject({
+		await deletePmProjectArtifacts({
 			workspaceId: workspace.workspaceId,
 			projectId: params.id
 		});

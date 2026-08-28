@@ -60,6 +60,8 @@ export async function seedPmWorkspace(workspaceId: string): Promise<PmSeedStatus
 			projectUrl: project.projectUrl,
 			crmCompanyId: null,
 			crmContactId: null,
+			crmDealId: null,
+			assignedMemberId: null,
 			dueDate,
 			notes: project.notes,
 			isSeed: true,

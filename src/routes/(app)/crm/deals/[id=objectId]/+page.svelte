@@ -179,5 +179,32 @@
 				</form>
 			</Card.Content>
 		</Card.Root>
+
+		{#if data.projectHandoffAvailable && data.deal.stage === CRM_DEAL_STAGES.WON}
+			<Card.Root>
+				<Card.Header>
+					<Card.Title>Project handoff</Card.Title>
+					<Card.Description>
+						Create a delivery project from this won deal when Project Management is enabled.
+					</Card.Description>
+				</Card.Header>
+				<Card.Content class="space-y-4">
+					{#if data.linkedProjectId}
+						<StatusAlert
+							variant="success"
+							title="Project linked"
+							description="A project already exists for this deal."
+						/>
+						<Button href="/project-management/projects/{data.linkedProjectId}" class="h-10 w-full">
+							Open project
+						</Button>
+					{:else}
+						<form method="POST" action="?/createProject">
+							<Button type="submit" class="h-10 w-full">Create project from deal</Button>
+						</form>
+					{/if}
+				</Card.Content>
+			</Card.Root>
+		{/if}
 	</div>
 </div>

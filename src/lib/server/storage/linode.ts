@@ -1,4 +1,4 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand, PutObjectCommand, DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { env } from '$env/dynamic/private';
 import { ensurePublicWorkspaceBrandLogoPolicy } from '$lib/server/storage/linode-bucket-policy';
 import {
@@ -74,6 +74,87 @@ export async function uploadPublicObject(
 	);
 
 	return `${resolved.publicBase}/${input.key}`;
+}
+
+export async function uploadPrivateObject(
+	input: {
+		key: string;
+		body: Buffer;
+		contentType: string;
+	},
+	config?: LinodeObjectStorageConfig
+): Promise<string> {
+	const resolved = config ?? getLinodeObjectStorageConfig();
+
+	if (!resolved) {
+		throw new Error('LINODE_NOT_CONFIGURED');
+	}
+
+	const client = getS3Client(resolved);
+
+	await client.send(
+		new PutObjectCommand({
+			Bucket: resolved.bucket,
+			Key: input.key,
+			Body: input.body,
+			ContentType: input.contentType
+		})
+	);
+
+	return input.key;
+}
+
+export async function getPrivateObject(input: {
+	key: string;
+}): Promise<{ body: Buffer; contentType: string } | null> {
+	const config = getLinodeObjectStorageConfig();
+
+	if (!config) {
+		return null;
+	}
+
+	const client = getS3Client(config);
+
+	try {
+		const response = await client.send(
+			new GetObjectCommand({
+				Bucket: config.bucket,
+				Key: input.key
+			})
+		);
+
+		if (!response.Body) {
+			return null;
+		}
+
+		return {
+			body: Buffer.from(await response.Body.transformToByteArray()),
+			contentType: response.ContentType ?? 'application/octet-stream'
+		};
+	} catch {
+		return null;
+	}
+}
+
+export async function deletePrivateObjects(keys: string[]): Promise<void> {
+	const config = getLinodeObjectStorageConfig();
+
+	if (!config || keys.length === 0) {
+		return;
+	}
+
+	const client = getS3Client(config);
+
+	await Promise.all(
+		keys.map((key) =>
+			client.send(
+				new DeleteObjectCommand({
+					Bucket: config.bucket,
+					Key: key
+				})
+			)
+		)
+	);
 }
 
 const LOGO_EXTENSIONS = ['png', 'jpg', 'webp', 'svg'] as const;

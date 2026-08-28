@@ -6,6 +6,8 @@ import {
 	PM_ONBOARDING_HOSTING_PREFERENCES
 } from '$lib/shared/models/pm-project-onboarding';
 import { PM_PROJECT_TYPES } from '$lib/shared/project-management/project-types';
+import { PM_DOCUMENT_CHECKLIST_STATUSES } from '$lib/shared/models/pm-document-checklist-item';
+import { PM_PROJECT_MILESTONE_STATUSES } from '$lib/shared/models/pm-project-milestone';
 
 const optionalTrimmedString = z
 	.string()
@@ -69,6 +71,8 @@ export const createPmProjectSchema = z.object({
 	projectUrl: nullableTrimmedString,
 	crmCompanyId: nullableTrimmedString,
 	crmContactId: nullableTrimmedString,
+	crmDealId: nullableTrimmedString,
+	assignedMemberId: nullableTrimmedString,
 	dueDate: z
 		.string()
 		.trim()
@@ -84,6 +88,7 @@ export const updatePmProjectSchema = z.object({
 	clientName: z.string().trim().optional().nullable(),
 	projectTypes: pmProjectTypesSchema.optional(),
 	projectUrl: z.string().trim().optional().nullable(),
+	assignedMemberId: z.string().trim().optional().nullable(),
 	dueDate: z.string().trim().optional().nullable(),
 	notes: z.string().trim().optional().nullable()
 });
@@ -100,6 +105,7 @@ export const pmProjectFormDefaults: PmProjectFormInput = {
 	clientName: '',
 	projectTypes: [PM_PROJECT_TYPES.PROJECT],
 	projectUrl: '',
+	assignedMemberId: '',
 	dueDate: '',
 	notes: ''
 };
@@ -111,6 +117,7 @@ export const pmProjectFormSchema = z.object({
 	clientName: optionalFormString,
 	projectTypes: pmProjectTypesSchema,
 	projectUrl: optionalFormString,
+	assignedMemberId: optionalFormString,
 	dueDate: optionalFormString,
 	notes: optionalFormString
 });
@@ -131,6 +138,8 @@ export function mapPmProjectFormToCreateInput(data: PmProjectFormInput): CreateP
 		projectUrl: data.projectUrl && data.projectUrl.length > 0 ? data.projectUrl : null,
 		crmCompanyId: null,
 		crmContactId: null,
+		crmDealId: null,
+		assignedMemberId: data.assignedMemberId && data.assignedMemberId.length > 0 ? data.assignedMemberId : null,
 		dueDate: data.dueDate && data.dueDate.length > 0 ? data.dueDate : null,
 		notes: data.notes && data.notes.length > 0 ? data.notes : null
 	};
@@ -144,6 +153,7 @@ export function mapPmProjectDtoToFormInput(project: PmProjectDto): PmProjectForm
 		clientName: project.clientName ?? '',
 		projectTypes: [...project.projectTypes],
 		projectUrl: project.projectUrl ?? '',
+		assignedMemberId: project.assignedMemberId ?? '',
 		dueDate: project.dueDate ? project.dueDate.slice(0, 10) : '',
 		notes: project.notes ?? ''
 	};
@@ -157,6 +167,8 @@ export function mapPmProjectFormToUpdateInput(data: PmProjectFormInput): UpdateP
 		clientName: data.clientName && data.clientName.length > 0 ? data.clientName : null,
 		projectTypes: data.projectTypes,
 		projectUrl: data.projectUrl && data.projectUrl.length > 0 ? data.projectUrl : null,
+		assignedMemberId:
+			data.assignedMemberId && data.assignedMemberId.length > 0 ? data.assignedMemberId : null,
 		dueDate: data.dueDate && data.dueDate.length > 0 ? data.dueDate : null,
 		notes: data.notes && data.notes.length > 0 ? data.notes : null
 	};
@@ -210,3 +222,54 @@ export const pmClientOnboardingFormSchema = z.object({
 
 export type PmClientInviteFormInput = z.infer<typeof pmClientInviteFormSchema>;
 export type PmClientOnboardingFormInput = z.infer<typeof pmClientOnboardingFormSchema>;
+
+export const pmDocumentChecklistItemFormDefaults = {
+	title: '',
+	description: '',
+	required: true
+} as const;
+
+export const pmDocumentChecklistItemFormSchema = z.object({
+	title: z.string().trim().min(1, 'Title is required').max(200),
+	description: z.string().trim().max(500).optional(),
+	required: z
+		.union([z.boolean(), z.literal('true'), z.literal('false')])
+		.transform((value) => value === true || value === 'true')
+});
+
+export const pmDocumentReviewFormSchema = z.object({
+	itemId: z.string().trim().min(1),
+	status: z.enum([
+		PM_DOCUMENT_CHECKLIST_STATUSES.APPROVED,
+		PM_DOCUMENT_CHECKLIST_STATUSES.REJECTED
+	])
+});
+
+export type PmDocumentChecklistItemFormInput = z.infer<typeof pmDocumentChecklistItemFormSchema>;
+export type PmDocumentReviewFormInput = z.infer<typeof pmDocumentReviewFormSchema>;
+
+export const pmMilestoneFormDefaults = {
+	title: '',
+	description: ''
+} as const;
+
+export const pmMilestoneFormSchema = z.object({
+	title: z.string().trim().min(1, 'Milestone title is required').max(200),
+	description: z.string().trim().max(500).optional()
+});
+
+export const pmMilestoneStatusFormSchema = z.object({
+	milestoneId: z.string().trim().min(1),
+	status: z.enum([
+		PM_PROJECT_MILESTONE_STATUSES.PENDING,
+		PM_PROJECT_MILESTONE_STATUSES.IN_PROGRESS,
+		PM_PROJECT_MILESTONE_STATUSES.COMPLETED
+	])
+});
+
+export const pmActivityCommentFormSchema = z.object({
+	body: z.string().trim().min(1, 'Comment is required').max(2000)
+});
+
+export type PmMilestoneFormInput = z.infer<typeof pmMilestoneFormSchema>;
+export type PmActivityCommentFormInput = z.infer<typeof pmActivityCommentFormSchema>;

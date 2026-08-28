@@ -1,5 +1,13 @@
 import type { ObjectId } from 'mongodb';
 
+export const PM_CLIENT_INVITATION_PURPOSES = {
+	ONBOARDING: 'onboarding',
+	DOCUMENTS: 'documents'
+} as const;
+
+export type PmClientInvitationPurpose =
+	(typeof PM_CLIENT_INVITATION_PURPOSES)[keyof typeof PM_CLIENT_INVITATION_PURPOSES];
+
 export const PM_CLIENT_INVITATION_STATUSES = {
 	PENDING: 'pending',
 	COMPLETED: 'completed',
@@ -18,6 +26,7 @@ export type PmClientInvitationDocument = {
 	clientName: string | null;
 	tokenHash: string;
 	invitedByUserId: ObjectId;
+	purpose: PmClientInvitationPurpose;
 	status: PmClientInvitationStatus;
 	expiresAt: Date;
 	completedAt?: Date;
@@ -31,6 +40,7 @@ export type PmClientInvitationDto = {
 	projectId: string;
 	clientEmail: string;
 	clientName: string | null;
+	purpose: PmClientInvitationPurpose;
 	status: PmClientInvitationStatus;
 	expiresAt: string;
 	completedAt: string | null;

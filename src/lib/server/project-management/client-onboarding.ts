@@ -13,7 +13,7 @@ import {
 } from '$lib/server/repositories/pm-client-invitations';
 import { findWorkspaceById } from '$lib/server/repositories/workspaces';
 import type { PmClientInvitationDto } from '$lib/shared/models/pm-client-invitation';
-import { PM_CLIENT_INVITATION_STATUSES } from '$lib/shared/models/pm-client-invitation';
+import { PM_CLIENT_INVITATION_PURPOSES, PM_CLIENT_INVITATION_STATUSES } from '$lib/shared/models/pm-client-invitation';
 import type { PmClientOnboardingPreview } from '$lib/shared/models/pm-project-onboarding';
 import type { PmProjectOnboarding } from '$lib/shared/models/pm-project-onboarding';
 import { PM_CLIENT_ONBOARDING_TTL_MS } from '$lib/shared/project-management/invitation-ttl';
@@ -94,7 +94,8 @@ export async function sendPmClientOnboardingInvite(input: {
 		clientName: input.clientName,
 		tokenHash,
 		invitedByUserId: input.invitedByUserId,
-		expiresAt
+		expiresAt,
+		purpose: PM_CLIENT_INVITATION_PURPOSES.ONBOARDING
 	});
 
 	const onboardingUrl = buildPlatformWorkspaceUrl(
@@ -120,6 +121,7 @@ export async function sendPmClientOnboardingInvite(input: {
 			projectId: invitation.projectId.toString(),
 			clientEmail: invitation.clientEmail,
 			clientName: invitation.clientName,
+			purpose: PM_CLIENT_INVITATION_PURPOSES.ONBOARDING,
 			status: invitation.status,
 			expiresAt: invitation.expiresAt.toISOString(),
 			completedAt: null,
@@ -132,7 +134,10 @@ export async function listPmClientOnboardingInvitesForProject(input: {
 	workspaceId: string;
 	projectId: string;
 }): Promise<PmClientInvitationDto[]> {
-	return listPmClientInvitationsForProject(input);
+	return listPmClientInvitationsForProject({
+		...input,
+		purpose: PM_CLIENT_INVITATION_PURPOSES.ONBOARDING
+	});
 }
 
 export async function getPmClientOnboardingPreview(
@@ -152,6 +157,11 @@ export async function getPmClientOnboardingPreview(
 		invitation.status !== PM_CLIENT_INVITATION_STATUSES.PENDING ||
 		invitation.expiresAt <= now
 	) {
+		return null;
+	}
+
+	const purpose = invitation.purpose ?? PM_CLIENT_INVITATION_PURPOSES.ONBOARDING;
+	if (purpose !== PM_CLIENT_INVITATION_PURPOSES.ONBOARDING) {
 		return null;
 	}
 
@@ -196,6 +206,11 @@ export async function submitPmClientOnboarding(input: {
 		invitation.status !== PM_CLIENT_INVITATION_STATUSES.PENDING ||
 		invitation.expiresAt <= now
 	) {
+		return { ok: false, reason: 'INVALID_TOKEN' };
+	}
+
+	const purpose = invitation.purpose ?? PM_CLIENT_INVITATION_PURPOSES.ONBOARDING;
+	if (purpose !== PM_CLIENT_INVITATION_PURPOSES.ONBOARDING) {
 		return { ok: false, reason: 'INVALID_TOKEN' };
 	}
 

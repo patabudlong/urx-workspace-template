@@ -6,6 +6,11 @@ export const CRM_CONTACT_CREATE_FAILED_MESSAGE = 'Could not create contact.';
 export const CRM_COMPANY_CREATE_FAILED_MESSAGE = 'Could not create company.';
 export const CRM_DEAL_CREATE_FAILED_MESSAGE = 'Could not create deal.';
 export const CRM_DEAL_UPDATE_FAILED_MESSAGE = 'Could not update deal.';
+export const CRM_DEAL_PROJECT_CREATED_MESSAGE = 'Project created from deal.';
+export const CRM_DEAL_PROJECT_LINKED_MESSAGE = 'This deal already has a linked project.';
+export const CRM_DEAL_PROJECT_CREATE_FAILED_MESSAGE = 'Could not create project from deal.';
+export const CRM_DEAL_PROJECT_HANDOFF_UNAVAILABLE_MESSAGE =
+	'Project Management is not available in this workspace.';
 export const CRM_SEED_CREATED_MESSAGE = 'Sample CRM data loaded.';
 export const CRM_SEED_DELETED_MESSAGE = 'Sample CRM data removed.';
 export const CRM_SEED_ALREADY_EXISTS_MESSAGE = 'Sample data is already loaded for this workspace.';

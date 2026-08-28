@@ -3,6 +3,7 @@ import { message, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import type { Actions, PageServerLoad } from './$types';
 import { createPmProject } from '$lib/server/repositories/pm-projects';
+import { listWorkspaceMembersForDisplay } from '$lib/server/team/workspace-member-directory';
 import {
 	listUserWorkspaceContexts,
 	resolveActiveWorkspaceContext
@@ -17,8 +18,14 @@ import {
 	pmProjectFormSchema
 } from '$lib/shared/project-management/schemas';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ parent }) => {
+	const { workspace } = await parent();
+	const members = workspace
+		? await listWorkspaceMembersForDisplay(workspace.workspaceId)
+		: [];
+
 	return {
+		members,
 		form: await superValidate(zod4(pmProjectFormSchema), { defaults: pmProjectFormDefaults })
 	};
 };

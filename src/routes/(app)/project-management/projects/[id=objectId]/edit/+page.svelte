@@ -89,7 +89,7 @@
 			title="Edit project details"
 			description="Changes apply immediately across the workspace and update what clients see on onboarding."
 		>
-			<PmProjectFormFields bind:form={$form} idPrefix="edit-" />
+			<PmProjectFormFields bind:form={$form} idPrefix="edit-" members={data.members} />
 			{#snippet actions()}
 				<PmDeleteProjectDialog
 					bind:open={deleteDialogOpen}

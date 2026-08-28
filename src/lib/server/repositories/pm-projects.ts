@@ -20,6 +20,8 @@ const PM_PROJECT_PROJECTION = {
 	websiteUrl: 1,
 	crmCompanyId: 1,
 	crmContactId: 1,
+	crmDealId: 1,
+	assignedMemberId: 1,
 	dueDate: 1,
 	notes: 1,
 	onboarding: 1,
@@ -58,6 +60,8 @@ function toPmProjectDto(doc: PmProjectDocument): PmProjectDto {
 		projectUrl: legacyUrl,
 		crmCompanyId: doc.crmCompanyId?.toString() ?? null,
 		crmContactId: doc.crmContactId?.toString() ?? null,
+		crmDealId: doc.crmDealId?.toString() ?? null,
+		assignedMemberId: doc.assignedMemberId?.toString() ?? null,
 		dueDate: doc.dueDate?.toISOString() ?? null,
 		notes: doc.notes,
 		onboarding: doc.onboarding ? mapOnboarding(doc.onboarding) : null,
@@ -72,6 +76,8 @@ async function ensurePmProjectIndexes(): Promise<void> {
 			const collection = await getPmProjectsCollection();
 			await collection.createIndex({ workspaceId: 1, status: 1, updatedAt: -1 });
 			await collection.createIndex({ workspaceId: 1, title: 1 });
+			await collection.createIndex({ workspaceId: 1, crmDealId: 1 }, { sparse: true });
+			await collection.createIndex({ workspaceId: 1, assignedMemberId: 1 }, { sparse: true });
 		})();
 	}
 
@@ -158,6 +164,10 @@ export async function createPmProject(input: {
 		projectUrl: input.data.projectUrl ?? null,
 		crmCompanyId: input.data.crmCompanyId ? new ObjectId(input.data.crmCompanyId) : null,
 		crmContactId: input.data.crmContactId ? new ObjectId(input.data.crmContactId) : null,
+		crmDealId: input.data.crmDealId ? new ObjectId(input.data.crmDealId) : null,
+		assignedMemberId: input.data.assignedMemberId
+			? new ObjectId(input.data.assignedMemberId)
+			: null,
 		dueDate: input.data.dueDate ? new Date(input.data.dueDate) : null,
 		notes: input.data.notes ?? null,
 		onboarding: null,
@@ -231,6 +241,12 @@ export async function updatePmProjectForWorkspace(input: {
 		updates.projectUrl = input.data.projectUrl;
 	}
 
+	if (input.data.assignedMemberId !== undefined) {
+		updates.assignedMemberId = input.data.assignedMemberId
+			? new ObjectId(input.data.assignedMemberId)
+			: null;
+	}
+
 	if (input.data.notes !== undefined) {
 		updates.notes = input.data.notes;
 	}
@@ -302,3 +318,23 @@ export async function deletePmProjectForWorkspace(input: {
 
 	return result.deletedCount === 1;
 }
+
+export async function findPmProjectByCrmDealId(input: {
+	workspaceId: string;
+	crmDealId: string;
+}): Promise<PmProjectDto | null> {
+	await ensurePmProjectIndexes();
+
+	const collection = await getPmProjectsCollection<PmProjectDocument>();
+	const doc = await collection.findOne(
+		{
+			workspaceId: new ObjectId(input.workspaceId),
+			crmDealId: new ObjectId(input.crmDealId)
+		},
+		{ projection: PM_PROJECT_PROJECTION }
+	);
+
+	return doc ? toPmProjectDto(doc) : null;
+}
+
+export { logPmProjectActivity, listPmProjectActivityForProject } from '$lib/server/repositories/pm-project-activity';
