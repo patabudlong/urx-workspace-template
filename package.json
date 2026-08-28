@@ -38,7 +38,13 @@
 		"workspace:dtr:uninstall": "node ../urx-workspace-dtr/bin/cli.mjs uninstall",
 		"workspace:sms:install": "node ../urx-sms-package/bin/cli.mjs install",
 		"workspace:sms:sync": "node ../urx-sms-package/bin/cli.mjs sync",
-		"workspace:sms:uninstall": "node ../urx-sms-package/bin/cli.mjs uninstall"
+		"workspace:sms:uninstall": "node ../urx-sms-package/bin/cli.mjs uninstall",
+		"workspace:accounting:install": "node ../urx-accounting-package/bin/cli.mjs install",
+		"workspace:accounting:sync": "node ../urx-accounting-package/bin/cli.mjs sync",
+		"workspace:accounting:uninstall": "node ../urx-accounting-package/bin/cli.mjs uninstall",
+		"workspace:crm:install": "node ../urx-crm-package/bin/cli.mjs install",
+		"workspace:crm:sync": "node ../urx-crm-package/bin/cli.mjs sync",
+		"workspace:crm:uninstall": "node ../urx-crm-package/bin/cli.mjs uninstall"
 	},
 	"devDependencies": {
 		"@internationalized/date": "^3.12.2",

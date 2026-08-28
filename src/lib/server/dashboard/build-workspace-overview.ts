@@ -19,7 +19,13 @@ import {
 const PACKAGE_MODULE_HREFS: Record<WorkspacePackageId, string> = {
 	[WORKSPACE_PACKAGE_IDS.MAILBOX]: '/mailbox/INBOX',
 	[WORKSPACE_PACKAGE_IDS.PAYROLL]: '/payroll',
-	[WORKSPACE_PACKAGE_IDS.DTR]: '/dtr'
+	[WORKSPACE_PACKAGE_IDS.DTR]: '/dtr',
+// urixoft-workspace-accounting:dashboard-href:start
+	[WORKSPACE_PACKAGE_IDS.ACCOUNTING]: '/accounting',
+// urixoft-workspace-crm:dashboard-href:start
+	[WORKSPACE_PACKAGE_IDS.CRM]: '/crm'
+// urixoft-workspace-crm:dashboard-href:end
+// urixoft-workspace-accounting:dashboard-href:end
 };
 
 const GROWTH_MONTHS = 6;

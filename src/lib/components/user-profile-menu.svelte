@@ -81,6 +81,7 @@
 		{#snippet child({ props })}
 			<Button
 				variant="ghost"
+				type="button"
 				class="h-9 max-w-[12rem] gap-2 rounded-full px-2 sm:pl-1 sm:pr-3"
 				aria-label={`${userDisplay.fullName}, ${PRESENCE_STATUS_LABELS[presenceStatus]}`}
 				{...props}
@@ -100,10 +101,7 @@
 	<Sheet.Content
 		side="right"
 		showCloseButton={false}
-		overlayProps={{
-			class: 'bg-background/40 backdrop-blur-md'
-		}}
-		class="bg-popover/80 data-[side=right]:w-80 data-[side=right]:sm:max-w-80 gap-0 p-0 backdrop-blur-xl"
+		class="bg-popover data-[side=right]:w-80 data-[side=right]:sm:max-w-80 gap-0 p-0"
 	>
 		<div class="relative px-6 pt-8 pb-6">
 			<Sheet.Close>
@@ -111,6 +109,7 @@
 					<Button
 						variant="ghost"
 						size="icon-sm"
+						type="button"
 						class="absolute top-4 right-4 rounded-full"
 						aria-label="Close profile menu"
 						{...props}
@@ -172,6 +171,7 @@
 			{#each PRESENCE_STATUS_OPTIONS as status (status)}
 				<Button
 					variant="ghost"
+					type="button"
 					class={cn(
 						'h-10 w-full justify-start gap-3 px-3 font-medium',
 						updatingPresence && 'pointer-events-none opacity-60'
@@ -200,7 +200,7 @@
 			<p class="text-muted-foreground max-w-xs text-center text-xs leading-relaxed">
 				Sign out to leave this workspace. You can sign back in anytime.
 			</p>
-			<Button variant="secondary" size="lg" class="mt-2 w-full" onclick={handleLogout}>
+			<Button variant="secondary" size="lg" type="button" class="mt-2 w-full" onclick={handleLogout}>
 				Log Out
 			</Button>
 		</Sheet.Footer>

@@ -91,6 +91,32 @@ import { cn } from '$lib/utils.js';
 - **Active nav**: `isActive={page.url.pathname === href}` from `$app/state`.
 - **Dialogs / sheets**: one overlay at a time — use shadcn `Dialog` or `Sheet`; don’t stack custom `fixed inset-0 z-50` divs.
 
+### Sheet & Dialog (bits-ui)
+
+Use the shadcn primitives end-to-end — don’t hand-roll portaled side panels.
+
+```svelte
+<!-- ✅ Trigger inside Sheet.Root — child snippet forwards bits-ui props -->
+<Sheet.Root bind:open>
+	<Sheet.Trigger>
+		{#snippet child({ props })}
+			<Button variant="ghost" type="button" {...props}>Open</Button>
+		{/snippet}
+	</Sheet.Trigger>
+	<Sheet.Content side="right" class="sm:max-w-md">
+		<!-- content -->
+	</Sheet.Content>
+</Sheet.Root>
+
+<!-- ❌ Trigger outside Root + manual open — breaks context/ARIA; avoid -->
+<Button onclick={() => (open = true)}>...</Button>
+<Sheet.Root bind:open>...</Sheet.Root>
+```
+
+- **Overlay:** Use the default sheet overlay unless there is a strong reason not to. Match existing panels (e.g. profile menu ↔ module Details in `workspace-module-card.svelte`). Default: `bg-black/10` + `backdrop-blur-xs` from `sheet-overlay.svelte` — not heavy `bg-black/40 backdrop-blur-md`.
+- **Portal wrappers:** If editing `sheet.svelte`, `dialog.svelte`, `sheet-portal.svelte`, or `dialog-portal.svelte`, explicitly pass `{children}` / `{child}` snippets to bits-ui — don’t rely on `{...restProps}` alone for snippet props.
+- **ObjectId route params:** Use `[id=objectId]` with `src/params/objectId.ts` — see **`sveltekit-mongodb-engineering.mdc`** (no `mongodb` in matchers).
+
 ## Avoid blocking & z-index wars
 
 | Do | Don't |

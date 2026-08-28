@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { buildIcon, getIcon } from 'iconify-icon';
 	import { cn } from '$lib/utils.js';
 
 	const sizePx = {
@@ -23,12 +24,29 @@
 	} = $props();
 
 	const dimension = $derived(sizePx[size]);
+
+	const svg = $derived.by(() => {
+		const iconData = getIcon(icon);
+		if (!iconData) {
+			return null;
+		}
+
+		return buildIcon(iconData, {
+			width: dimension,
+			height: dimension
+		});
+	});
 </script>
 
-<iconify-icon
-	{icon}
-	width={dimension}
-	height={dimension}
-	class={cn('inline-block shrink-0 align-[-0.125em]', className)}
-	aria-hidden={ariaHidden}
-></iconify-icon>
+{#if svg}
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		width={svg.attributes.width}
+		height={svg.attributes.height}
+		viewBox={svg.attributes.viewBox}
+		class={cn('inline-block shrink-0 align-[-0.125em]', className)}
+		aria-hidden={ariaHidden}
+	>
+		{@html svg.body}
+	</svg>
+{/if}

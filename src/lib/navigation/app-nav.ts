@@ -78,8 +78,26 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
 				icon: SOLAR.dtr,
 				match: 'prefix',
 				packageId: 'urixoft-workspace-dtr'
-			}
+			},
 // urixoft-workspace-dtr:end
+// urixoft-workspace-accounting:start
+			{
+				title: 'Accounting',
+				href: '/accounting',
+				icon: SOLAR.accounting,
+				match: 'prefix',
+				packageId: 'urixoft-workspace-accounting'
+			},
+// urixoft-workspace-accounting:end
+// urixoft-workspace-crm:start
+			{
+				title: 'CRM',
+				href: '/crm',
+				icon: SOLAR.crm,
+				match: 'prefix',
+				packageId: 'urixoft-workspace-crm'
+			},
+// urixoft-workspace-crm:end
 		]
 	},
 	{

@@ -1,0 +1,14 @@
+export const CRM_CONTACT_CREATED_MESSAGE = 'Contact created.';
+export const CRM_COMPANY_CREATED_MESSAGE = 'Company created.';
+export const CRM_DEAL_CREATED_MESSAGE = 'Deal created.';
+export const CRM_DEAL_UPDATED_MESSAGE = 'Deal updated.';
+export const CRM_CONTACT_CREATE_FAILED_MESSAGE = 'Could not create contact.';
+export const CRM_COMPANY_CREATE_FAILED_MESSAGE = 'Could not create company.';
+export const CRM_DEAL_CREATE_FAILED_MESSAGE = 'Could not create deal.';
+export const CRM_DEAL_UPDATE_FAILED_MESSAGE = 'Could not update deal.';
+export const CRM_SEED_CREATED_MESSAGE = 'Sample CRM data loaded.';
+export const CRM_SEED_DELETED_MESSAGE = 'Sample CRM data removed.';
+export const CRM_SEED_ALREADY_EXISTS_MESSAGE = 'Sample data is already loaded for this workspace.';
+export const CRM_SEED_NOT_FOUND_MESSAGE = 'No sample data found for this workspace.';
+export const CRM_SEED_CREATE_FAILED_MESSAGE = 'Could not load sample CRM data.';
+export const CRM_SEED_DELETE_FAILED_MESSAGE = 'Could not remove sample CRM data.';

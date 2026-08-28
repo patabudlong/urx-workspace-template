@@ -64,6 +64,18 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 			{
 				name: 'Notifications',
 				description: 'In-app notifications for team activity and account security'
+			},
+			{
+				name: 'Accounting',
+				description: 'PH general ledger: chart of accounts, journals, fiscal periods, and trial balance'
+			},
+			{
+				name: 'CRM',
+				description: 'Contacts, companies, and deals pipeline for customer relationship management'
+			},
+			{
+				name: 'Modules',
+				description: 'Workspace module integration credentials'
 			}
 		],
 		paths: {
@@ -2506,6 +2518,171 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 					}
 				}
 			},
+			'/modules/integrations/{packageId}': {
+				get: {
+					tags: ['Modules'],
+					summary: 'Get module integration credentials',
+					description:
+						'Returns stored integration credential metadata for a workspace module. Client secrets are never returned.',
+					operationId: 'getModuleIntegrationCredentials',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{
+							name: 'packageId',
+							in: 'path',
+							required: true,
+							schema: { type: 'string' }
+						}
+					],
+					responses: {
+						'200': {
+							description: 'Integration credential status',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ModuleIntegrationCredentialsSuccessResponse'
+									}
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Workspace owner access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				post: {
+					tags: ['Modules'],
+					summary: 'Generate module integration credentials',
+					description:
+						'Generates a new client ID and client secret for a workspace module. Regenerating invalidates the previous secret. The plaintext secret is returned once in the response.',
+					operationId: 'generateModuleIntegrationCredentials',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{
+							name: 'packageId',
+							in: 'path',
+							required: true,
+							schema: { type: 'string' }
+						}
+					],
+					responses: {
+						'200': {
+							description: 'Regenerated integration credentials',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ModuleIntegrationCredentialsGenerateSuccessResponse'
+									}
+								}
+							}
+						},
+						'201': {
+							description: 'Generated integration credentials',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ModuleIntegrationCredentialsGenerateSuccessResponse'
+									}
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Workspace owner access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				put: {
+					tags: ['Modules'],
+					summary: 'Update module integration auth base URI',
+					description:
+						'Updates the authentication base URI for an existing workspace module integration.',
+					operationId: 'updateModuleIntegrationAuthBaseUri',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{
+							name: 'packageId',
+							in: 'path',
+							required: true,
+							schema: { type: 'string' }
+						}
+					],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: {
+									$ref: '#/components/schemas/ModuleIntegrationAuthBaseUriRequest'
+								}
+							}
+						}
+					},
+					responses: {
+						'200': {
+							description: 'Saved integration credential status',
+							content: {
+								'application/json': {
+									schema: {
+										$ref: '#/components/schemas/ModuleIntegrationCredentialsSuccessResponse'
+									}
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Workspace owner access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
 			'/notifications/{id}/read': {
 				patch: {
 					tags: ['Notifications'],
@@ -2535,6 +2712,1165 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						},
 						'401': {
 							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/accounting/status': {
+				get: {
+					tags: ['Accounting'],
+					summary: 'Accounting module status',
+					description:
+						'Returns accounting configuration and counts for the active workspace. Requires workspace owner or admin role.',
+					operationId: 'getAccountingStatus',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Accounting status',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/AccountingStatusSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Accounting access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/accounting/settings': {
+				get: {
+					tags: ['Accounting'],
+					summary: 'Get accounting settings',
+					operationId: 'getAccountingSettings',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Accounting settings',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/AccountingSettingsSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Accounting access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				put: {
+					tags: ['Accounting'],
+					summary: 'Update accounting settings',
+					description: 'First save seeds the PH chart of accounts and fiscal periods.',
+					operationId: 'updateAccountingSettings',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/AccountingSettingsUpdateRequest' }
+							}
+						}
+					},
+					responses: {
+						'200': {
+							description: 'Updated settings',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/AccountingSettingsSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Accounting access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/accounting/chart-of-accounts': {
+				get: {
+					tags: ['Accounting'],
+					summary: 'List chart of accounts',
+					operationId: 'listAccountingAccounts',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Chart of accounts',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/AccountingAccountsSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Accounting access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/accounting/journals': {
+				get: {
+					tags: ['Accounting'],
+					summary: 'List journal entries',
+					operationId: 'listAccountingJournals',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{
+							name: 'periodId',
+							in: 'query',
+							schema: { type: 'string' },
+							description: 'Filter by fiscal period id'
+						},
+						{
+							name: 'source',
+							in: 'query',
+							schema: {
+								type: 'string',
+								enum: ['manual', 'opening_balance', 'payroll', 'fiscal_year_close']
+							},
+							description: 'Filter by journal source'
+						}
+					],
+					responses: {
+						'200': {
+							description: 'Journal entries (max 100)',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/AccountingJournalsSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Accounting access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				post: {
+					tags: ['Accounting'],
+					summary: 'Post journal entry',
+					description: 'Creates a balanced manual or opening-balance journal in an open fiscal period.',
+					operationId: 'createAccountingJournal',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/AccountingJournalCreateRequest' }
+							}
+						}
+					},
+					responses: {
+						'201': {
+							description: 'Journal posted',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/AccountingJournalSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body or business rule violation',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Accounting access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/accounting/journals/{id}': {
+				get: {
+					tags: ['Accounting'],
+					summary: 'Get journal entry',
+					operationId: 'getAccountingJournal',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+					],
+					responses: {
+						'200': {
+							description: 'Journal entry',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/AccountingJournalSuccessResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'Journal not found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Accounting access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/accounting/periods': {
+				get: {
+					tags: ['Accounting'],
+					summary: 'List fiscal periods',
+					operationId: 'listAccountingPeriods',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Fiscal periods',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/AccountingPeriodsSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Accounting access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/accounting/periods/{id}/close': {
+				post: {
+					tags: ['Accounting'],
+					summary: 'Close fiscal period',
+					description:
+						'Closes an open period. On fiscal year-end close, posts P&L to retained earnings and seeds next-year periods.',
+					operationId: 'closeAccountingPeriod',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+					],
+					responses: {
+						'200': {
+							description: 'Period closed',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/AccountingPeriodSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Close validation failed',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Accounting access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/accounting/periods/{id}/lock': {
+				post: {
+					tags: ['Accounting'],
+					summary: 'Lock fiscal period',
+					description: 'Permanently locks a closed period.',
+					operationId: 'lockAccountingPeriod',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+					],
+					responses: {
+						'200': {
+							description: 'Period locked',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/AccountingPeriodSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Lock failed',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Accounting access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/accounting/periods/{id}/reopen': {
+				post: {
+					tags: ['Accounting'],
+					summary: 'Reopen fiscal period',
+					description: 'Reopens a closed period. Locked periods cannot be reopened.',
+					operationId: 'reopenAccountingPeriod',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+					],
+					responses: {
+						'200': {
+							description: 'Period reopened',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/AccountingPeriodSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Reopen failed',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Accounting access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/accounting/trial-balance': {
+				get: {
+					tags: ['Accounting'],
+					summary: 'Trial balance for a fiscal period',
+					operationId: 'getAccountingTrialBalance',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{
+							name: 'periodId',
+							in: 'query',
+							required: true,
+							schema: { type: 'string' },
+							description: 'Fiscal period id'
+						}
+					],
+					responses: {
+						'200': {
+							description: 'Trial balance',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/AccountingTrialBalanceSuccessResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'Period not found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Accounting access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/crm/status': {
+				get: {
+					tags: ['CRM'],
+					summary: 'CRM module status',
+					description:
+						'Returns CRM record counts for the active workspace. Requires workspace owner or admin role.',
+					operationId: 'getCrmStatus',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'CRM status',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmStatusSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/crm/seed': {
+				get: {
+					tags: ['CRM'],
+					summary: 'CRM sample data status',
+					description:
+						'Returns whether sample CRM data is loaded for the active workspace and current seed record counts.',
+					operationId: 'getCrmSeedStatus',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'CRM sample data status',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmSeedStatusSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				post: {
+					tags: ['CRM'],
+					summary: 'Load CRM sample data',
+					description:
+						'Inserts tagged sample companies, contacts, and deals for the active workspace. Fails if sample data is already loaded.',
+					operationId: 'seedCrmWorkspace',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Sample data loaded',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmSeedStatusSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'409': {
+							description: 'Sample data already loaded',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				delete: {
+					tags: ['CRM'],
+					summary: 'Remove CRM sample data',
+					description:
+						'Deletes only tagged sample CRM records for the active workspace. User-created records are preserved.',
+					operationId: 'deleteCrmSeed',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Sample data removed',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmSeedStatusSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'No sample data found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/crm/contacts': {
+				get: {
+					tags: ['CRM'],
+					summary: 'List contacts',
+					operationId: 'listCrmContacts',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'page', in: 'query', schema: { type: 'integer', minimum: 1, default: 1 } },
+						{ name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 } },
+						{ name: 'search', in: 'query', schema: { type: 'string' } }
+					],
+					responses: {
+						'200': {
+							description: 'Paginated contacts',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmContactsPaginatedResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				post: {
+					tags: ['CRM'],
+					summary: 'Create contact',
+					operationId: 'createCrmContact',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/CrmContactCreateRequest' }
+							}
+						}
+					},
+					responses: {
+						'201': {
+							description: 'Contact created',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmContactSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/crm/contacts/{id}': {
+				get: {
+					tags: ['CRM'],
+					summary: 'Get contact',
+					operationId: 'getCrmContact',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+					],
+					responses: {
+						'200': {
+							description: 'Contact',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmContactSuccessResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'Contact not found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/crm/companies': {
+				get: {
+					tags: ['CRM'],
+					summary: 'List companies',
+					operationId: 'listCrmCompanies',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'page', in: 'query', schema: { type: 'integer', minimum: 1, default: 1 } },
+						{ name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 } },
+						{ name: 'search', in: 'query', schema: { type: 'string' } }
+					],
+					responses: {
+						'200': {
+							description: 'Paginated companies',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmCompaniesPaginatedResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				post: {
+					tags: ['CRM'],
+					summary: 'Create company',
+					operationId: 'createCrmCompany',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/CrmCompanyCreateRequest' }
+							}
+						}
+					},
+					responses: {
+						'201': {
+							description: 'Company created',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmCompanySuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/crm/companies/{id}': {
+				get: {
+					tags: ['CRM'],
+					summary: 'Get company',
+					operationId: 'getCrmCompany',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+					],
+					responses: {
+						'200': {
+							description: 'Company',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmCompanySuccessResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'Company not found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/crm/deals': {
+				get: {
+					tags: ['CRM'],
+					summary: 'List deals',
+					operationId: 'listCrmDeals',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'page', in: 'query', schema: { type: 'integer', minimum: 1, default: 1 } },
+						{ name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 } },
+						{ name: 'search', in: 'query', schema: { type: 'string' } }
+					],
+					responses: {
+						'200': {
+							description: 'Paginated deals',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmDealsPaginatedResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				post: {
+					tags: ['CRM'],
+					summary: 'Create deal',
+					operationId: 'createCrmDeal',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/CrmDealCreateRequest' }
+							}
+						}
+					},
+					responses: {
+						'201': {
+							description: 'Deal created',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmDealSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/crm/deals/{id}': {
+				get: {
+					tags: ['CRM'],
+					summary: 'Get deal',
+					operationId: 'getCrmDeal',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+					],
+					responses: {
+						'200': {
+							description: 'Deal',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmDealSuccessResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'Deal not found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				patch: {
+					tags: ['CRM'],
+					summary: 'Update deal',
+					operationId: 'updateCrmDeal',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+					],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/CrmDealUpdateRequest' }
+							}
+						}
+					},
+					responses: {
+						'200': {
+							description: 'Updated deal',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmDealSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'Deal not found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
 							content: {
 								'application/json': {
 									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
@@ -3333,6 +4669,357 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						meta: { $ref: '#/components/schemas/ApiMeta' }
 					}
 				},
+				AccountingStatus: {
+					type: 'object',
+					required: [
+						'enabled',
+						'workspaceId',
+						'configured',
+						'accountCount',
+						'journalCount',
+						'openPeriodCount'
+					],
+					properties: {
+						enabled: { type: 'boolean' },
+						workspaceId: { type: 'string' },
+						configured: { type: 'boolean' },
+						accountCount: { type: 'integer', minimum: 0 },
+						journalCount: { type: 'integer', minimum: 0 },
+						openPeriodCount: { type: 'integer', minimum: 0 }
+					}
+				},
+				AccountingStatusSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/AccountingStatus' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				AccountingSettings: {
+					type: 'object',
+					required: [
+						'workspaceId',
+						'companyName',
+						'tin',
+						'addressLine1',
+						'addressLine2',
+						'city',
+						'province',
+						'fiscalYearStartMonth',
+						'timezone',
+						'baseCurrency',
+						'jurisdiction',
+						'configured',
+						'updatedAt'
+					],
+					properties: {
+						workspaceId: { type: 'string' },
+						companyName: { type: 'string' },
+						tin: { type: 'string', nullable: true },
+						addressLine1: { type: 'string', nullable: true },
+						addressLine2: { type: 'string', nullable: true },
+						city: { type: 'string', nullable: true },
+						province: { type: 'string', nullable: true },
+						fiscalYearStartMonth: { type: 'integer', minimum: 1, maximum: 12 },
+						timezone: { type: 'string' },
+						baseCurrency: { type: 'string', enum: ['PHP'] },
+						jurisdiction: { type: 'string', enum: ['PH'] },
+						configured: { type: 'boolean' },
+						updatedAt: { type: 'string', format: 'date-time', nullable: true }
+					}
+				},
+				AccountingSettingsUpdateRequest: {
+					type: 'object',
+					required: [
+						'companyName',
+						'fiscalYearStartMonth',
+						'timezone',
+						'baseCurrency'
+					],
+					properties: {
+						companyName: { type: 'string', minLength: 1, maxLength: 200 },
+						tin: { type: 'string', maxLength: 32 },
+						addressLine1: { type: 'string', maxLength: 200 },
+						addressLine2: { type: 'string', maxLength: 200 },
+						city: { type: 'string', maxLength: 120 },
+						province: { type: 'string', maxLength: 120 },
+						fiscalYearStartMonth: { type: 'integer', minimum: 1, maximum: 12 },
+						timezone: { type: 'string', minLength: 1, maxLength: 64 },
+						baseCurrency: { type: 'string', enum: ['PHP'] }
+					}
+				},
+				AccountingSettingsSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/AccountingSettings' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				AccountingAccount: {
+					type: 'object',
+					required: [
+						'id',
+						'workspaceId',
+						'code',
+						'name',
+						'type',
+						'description',
+						'isActive',
+						'isSystem'
+					],
+					properties: {
+						id: { type: 'string' },
+						workspaceId: { type: 'string' },
+						code: { type: 'string' },
+						name: { type: 'string' },
+						type: {
+							type: 'string',
+							enum: ['asset', 'liability', 'equity', 'revenue', 'expense']
+						},
+						description: { type: 'string', nullable: true },
+						isActive: { type: 'boolean' },
+						isSystem: { type: 'boolean' }
+					}
+				},
+				AccountingAccountsSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							type: 'object',
+							required: ['accounts'],
+							properties: {
+								accounts: {
+									type: 'array',
+									items: { $ref: '#/components/schemas/AccountingAccount' }
+								}
+							}
+						},
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				AccountingJournalLine: {
+					type: 'object',
+					required: [
+						'accountId',
+						'accountCode',
+						'accountName',
+						'description',
+						'debitCents',
+						'creditCents'
+					],
+					properties: {
+						accountId: { type: 'string' },
+						accountCode: { type: 'string' },
+						accountName: { type: 'string' },
+						description: { type: 'string', nullable: true },
+						debitCents: { type: 'integer', minimum: 0 },
+						creditCents: { type: 'integer', minimum: 0 }
+					}
+				},
+				AccountingJournalLineInput: {
+					type: 'object',
+					required: ['accountId', 'debitCents', 'creditCents'],
+					properties: {
+						accountId: { type: 'string' },
+						description: { type: 'string', maxLength: 500 },
+						debitCents: { type: 'integer', minimum: 0 },
+						creditCents: { type: 'integer', minimum: 0 }
+					}
+				},
+				AccountingJournal: {
+					type: 'object',
+					required: [
+						'id',
+						'workspaceId',
+						'periodId',
+						'entryDate',
+						'reference',
+						'memo',
+						'source',
+						'status',
+						'lines',
+						'createdByUserId',
+						'createdAt'
+					],
+					properties: {
+						id: { type: 'string' },
+						workspaceId: { type: 'string' },
+						periodId: { type: 'string' },
+						entryDate: { type: 'string', format: 'date' },
+						reference: { type: 'string', nullable: true },
+						memo: { type: 'string', nullable: true },
+						source: {
+							type: 'string',
+							enum: ['manual', 'opening_balance', 'payroll', 'fiscal_year_close']
+						},
+						status: { type: 'string', enum: ['posted'] },
+						lines: {
+							type: 'array',
+							items: { $ref: '#/components/schemas/AccountingJournalLine' }
+						},
+						createdByUserId: { type: 'string' },
+						createdAt: { type: 'string', format: 'date-time' }
+					}
+				},
+				AccountingJournalCreateRequest: {
+					type: 'object',
+					required: ['periodId', 'entryDate', 'lines'],
+					properties: {
+						periodId: { type: 'string' },
+						entryDate: { type: 'string', format: 'date' },
+						reference: { type: 'string', maxLength: 64 },
+						memo: { type: 'string', maxLength: 1000 },
+						source: {
+							type: 'string',
+							enum: ['manual', 'opening_balance']
+						},
+						lines: {
+							type: 'array',
+							minItems: 2,
+							items: { $ref: '#/components/schemas/AccountingJournalLineInput' }
+						}
+					}
+				},
+				AccountingJournalSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							type: 'object',
+							required: ['entry'],
+							properties: {
+								entry: { $ref: '#/components/schemas/AccountingJournal' }
+							}
+						},
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				AccountingJournalsSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							type: 'object',
+							required: ['entries'],
+							properties: {
+								entries: {
+									type: 'array',
+									items: { $ref: '#/components/schemas/AccountingJournal' }
+								}
+							}
+						},
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				AccountingPeriod: {
+					type: 'object',
+					required: [
+						'id',
+						'workspaceId',
+						'year',
+						'month',
+						'label',
+						'status',
+						'startDate',
+						'endDate'
+					],
+					properties: {
+						id: { type: 'string' },
+						workspaceId: { type: 'string' },
+						year: { type: 'integer' },
+						month: { type: 'integer', minimum: 1, maximum: 12 },
+						label: { type: 'string' },
+						status: { type: 'string', enum: ['open', 'closed', 'locked'] },
+						startDate: { type: 'string', format: 'date' },
+						endDate: { type: 'string', format: 'date' }
+					}
+				},
+				AccountingPeriodSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							type: 'object',
+							required: ['period'],
+							properties: {
+								period: { $ref: '#/components/schemas/AccountingPeriod' }
+							}
+						},
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				AccountingPeriodsSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: {
+							type: 'object',
+							required: ['periods'],
+							properties: {
+								periods: {
+									type: 'array',
+									items: { $ref: '#/components/schemas/AccountingPeriod' }
+								}
+							}
+						},
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				AccountingTrialBalanceRow: {
+					type: 'object',
+					required: [
+						'accountId',
+						'accountCode',
+						'accountName',
+						'accountType',
+						'debitCents',
+						'creditCents',
+						'balanceCents'
+					],
+					properties: {
+						accountId: { type: 'string' },
+						accountCode: { type: 'string' },
+						accountName: { type: 'string' },
+						accountType: {
+							type: 'string',
+							enum: ['asset', 'liability', 'equity', 'revenue', 'expense']
+						},
+						debitCents: { type: 'integer', minimum: 0 },
+						creditCents: { type: 'integer', minimum: 0 },
+						balanceCents: { type: 'integer' }
+					}
+				},
+				AccountingTrialBalance: {
+					type: 'object',
+					required: [
+						'periodId',
+						'periodLabel',
+						'rows',
+						'totalDebitCents',
+						'totalCreditCents'
+					],
+					properties: {
+						periodId: { type: 'string' },
+						periodLabel: { type: 'string' },
+						rows: {
+							type: 'array',
+							items: { $ref: '#/components/schemas/AccountingTrialBalanceRow' }
+						},
+						totalDebitCents: { type: 'integer', minimum: 0 },
+						totalCreditCents: { type: 'integer', minimum: 0 }
+					}
+				},
+				AccountingTrialBalanceSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/AccountingTrialBalance' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
 				DtrLunchBreak: {
 					type: 'object',
 					required: ['startTime', 'endTime'],
@@ -4059,6 +5746,302 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 								updatedCount: { type: 'integer', minimum: 0 }
 							}
 						},
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				ModuleIntegrationCredentialsStatus: {
+					type: 'object',
+					required: ['packageId', 'configured'],
+					properties: {
+						packageId: { type: 'string' },
+						configured: { type: 'boolean' },
+						clientId: { type: 'string' },
+						authBaseUri: { type: 'string', format: 'uri' },
+						hasClientSecret: { type: 'boolean' },
+						updatedAt: { type: 'string', format: 'date-time' }
+					}
+				},
+				ModuleIntegrationAuthBaseUriRequest: {
+					type: 'object',
+					required: ['authBaseUri'],
+					properties: {
+						authBaseUri: { type: 'string', format: 'uri' }
+					}
+				},
+				ModuleIntegrationCredentialsGenerateResult: {
+					allOf: [
+						{ $ref: '#/components/schemas/ModuleIntegrationCredentialsStatus' },
+						{
+							type: 'object',
+							properties: {
+								clientSecret: { type: 'string' }
+							}
+						}
+					]
+				},
+				ModuleIntegrationCredentialsGenerateSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/ModuleIntegrationCredentialsGenerateResult' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				ModuleIntegrationCredentialsSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/ModuleIntegrationCredentialsStatus' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				CrmStatus: {
+					type: 'object',
+					required: [
+						'enabled',
+						'workspaceId',
+						'contactCount',
+						'companyCount',
+						'dealCount',
+						'openDealCount',
+						'seedStatus'
+					],
+					properties: {
+						enabled: { type: 'boolean' },
+						workspaceId: { type: 'string' },
+						contactCount: { type: 'integer', minimum: 0 },
+						companyCount: { type: 'integer', minimum: 0 },
+						dealCount: { type: 'integer', minimum: 0 },
+						openDealCount: { type: 'integer', minimum: 0 },
+						seedStatus: { $ref: '#/components/schemas/CrmSeedStatus' }
+					}
+				},
+				CrmSeedStatus: {
+					type: 'object',
+					required: ['seeded', 'companyCount', 'contactCount', 'dealCount'],
+					properties: {
+						seeded: { type: 'boolean' },
+						companyCount: { type: 'integer', minimum: 0 },
+						contactCount: { type: 'integer', minimum: 0 },
+						dealCount: { type: 'integer', minimum: 0 }
+					}
+				},
+				CrmSeedStatusSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/CrmSeedStatus' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				CrmStatusSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/CrmStatus' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				CrmContact: {
+					type: 'object',
+					required: [
+						'id',
+						'workspaceId',
+						'firstName',
+						'lastName',
+						'email',
+						'phone',
+						'title',
+						'companyId',
+						'notes',
+						'createdAt',
+						'updatedAt'
+					],
+					properties: {
+						id: { type: 'string' },
+						workspaceId: { type: 'string' },
+						firstName: { type: 'string' },
+						lastName: { type: 'string' },
+						email: { type: 'string', nullable: true },
+						phone: { type: 'string', nullable: true },
+						title: { type: 'string', nullable: true },
+						companyId: { type: 'string', nullable: true },
+						notes: { type: 'string', nullable: true },
+						createdAt: { type: 'string', format: 'date-time' },
+						updatedAt: { type: 'string', format: 'date-time' }
+					}
+				},
+				CrmContactCreateRequest: {
+					type: 'object',
+					required: ['firstName', 'lastName'],
+					properties: {
+						firstName: { type: 'string', maxLength: 100 },
+						lastName: { type: 'string', maxLength: 100 },
+						email: { type: 'string', format: 'email', nullable: true },
+						phone: { type: 'string', nullable: true },
+						title: { type: 'string', nullable: true },
+						companyId: { type: 'string', nullable: true },
+						notes: { type: 'string', nullable: true }
+					}
+				},
+				CrmContactSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/CrmContact' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				CrmContactsPaginatedResponse: {
+					type: 'object',
+					required: ['data', 'pagination', 'meta'],
+					properties: {
+						data: {
+							type: 'array',
+							items: { $ref: '#/components/schemas/CrmContact' }
+						},
+						pagination: { $ref: '#/components/schemas/PaginationMeta' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				CrmCompany: {
+					type: 'object',
+					required: [
+						'id',
+						'workspaceId',
+						'name',
+						'domain',
+						'industry',
+						'phone',
+						'notes',
+						'createdAt',
+						'updatedAt'
+					],
+					properties: {
+						id: { type: 'string' },
+						workspaceId: { type: 'string' },
+						name: { type: 'string' },
+						domain: { type: 'string', nullable: true },
+						industry: { type: 'string', nullable: true },
+						phone: { type: 'string', nullable: true },
+						notes: { type: 'string', nullable: true },
+						createdAt: { type: 'string', format: 'date-time' },
+						updatedAt: { type: 'string', format: 'date-time' }
+					}
+				},
+				CrmCompanyCreateRequest: {
+					type: 'object',
+					required: ['name'],
+					properties: {
+						name: { type: 'string', maxLength: 200 },
+						domain: { type: 'string', nullable: true },
+						industry: { type: 'string', nullable: true },
+						phone: { type: 'string', nullable: true },
+						notes: { type: 'string', nullable: true }
+					}
+				},
+				CrmCompanySuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/CrmCompany' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				CrmCompaniesPaginatedResponse: {
+					type: 'object',
+					required: ['data', 'pagination', 'meta'],
+					properties: {
+						data: {
+							type: 'array',
+							items: { $ref: '#/components/schemas/CrmCompany' }
+						},
+						pagination: { $ref: '#/components/schemas/PaginationMeta' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				CrmDeal: {
+					type: 'object',
+					required: [
+						'id',
+						'workspaceId',
+						'title',
+						'stage',
+						'value',
+						'currency',
+						'contactId',
+						'companyId',
+						'expectedCloseDate',
+						'notes',
+						'createdAt',
+						'updatedAt'
+					],
+					properties: {
+						id: { type: 'string' },
+						workspaceId: { type: 'string' },
+						title: { type: 'string' },
+						stage: {
+							type: 'string',
+							enum: ['lead', 'qualified', 'proposal', 'negotiation', 'won', 'lost']
+						},
+						value: { type: 'number', nullable: true },
+						currency: { type: 'string', minLength: 3, maxLength: 3 },
+						contactId: { type: 'string', nullable: true },
+						companyId: { type: 'string', nullable: true },
+						expectedCloseDate: { type: 'string', format: 'date-time', nullable: true },
+						notes: { type: 'string', nullable: true },
+						createdAt: { type: 'string', format: 'date-time' },
+						updatedAt: { type: 'string', format: 'date-time' }
+					}
+				},
+				CrmDealCreateRequest: {
+					type: 'object',
+					required: ['title'],
+					properties: {
+						title: { type: 'string', maxLength: 200 },
+						stage: {
+							type: 'string',
+							enum: ['lead', 'qualified', 'proposal', 'negotiation', 'won', 'lost'],
+							default: 'lead'
+						},
+						value: { type: 'number', minimum: 0, nullable: true },
+						currency: { type: 'string', minLength: 3, maxLength: 3, default: 'PHP' },
+						contactId: { type: 'string', nullable: true },
+						companyId: { type: 'string', nullable: true },
+						expectedCloseDate: { type: 'string', format: 'date', nullable: true },
+						notes: { type: 'string', nullable: true }
+					}
+				},
+				CrmDealUpdateRequest: {
+					type: 'object',
+					properties: {
+						stage: {
+							type: 'string',
+							enum: ['lead', 'qualified', 'proposal', 'negotiation', 'won', 'lost']
+						},
+						value: { type: 'number', minimum: 0, nullable: true },
+						currency: { type: 'string', minLength: 3, maxLength: 3 },
+						expectedCloseDate: { type: 'string', format: 'date', nullable: true },
+						notes: { type: 'string', nullable: true }
+					}
+				},
+				CrmDealSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/CrmDeal' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				CrmDealsPaginatedResponse: {
+					type: 'object',
+					required: ['data', 'pagination', 'meta'],
+					properties: {
+						data: {
+							type: 'array',
+							items: { $ref: '#/components/schemas/CrmDeal' }
+						},
+						pagination: { $ref: '#/components/schemas/PaginationMeta' },
 						meta: { $ref: '#/components/schemas/ApiMeta' }
 					}
 				}

@@ -20,6 +20,9 @@
 	import { formFieldProxy, superForm } from 'sveltekit-superforms';
 	import { zod4Client } from 'sveltekit-superforms/adapters';
 
+	const GOOGLE_AUTHENTICATOR_PLAY_STORE_URL =
+		'https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&hl=en';
+
 	let {
 		open = $bindable(false),
 		data,
@@ -149,8 +152,16 @@
 			<Dialog.Header class="space-y-2 text-center sm:text-center">
 				<Dialog.Title class="text-xl">Authenticator app</Dialog.Title>
 				<Dialog.Description class="text-muted-foreground text-sm leading-relaxed">
-					Scan the QR code with Google Authenticator or another TOTP app, then enter the 6-digit
-					code.
+					Scan the QR code with
+					<a
+						href={GOOGLE_AUTHENTICATOR_PLAY_STORE_URL}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="text-primary font-medium hover:underline"
+					>
+						Google Authenticator
+					</a>
+					or another TOTP app, then enter the 6-digit code.
 				</Dialog.Description>
 			</Dialog.Header>
 		</div>

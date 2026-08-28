@@ -16,7 +16,9 @@ import { resolveUserPresenceStatus } from '$lib/server/presence';
 import { findUserById } from '$lib/server/repositories/users';
 import { buildUserDisplay } from '$lib/shared/user-display';
 
-export const load: LayoutServerLoad = async ({ locals, url, untrack }) => {
+export const load: LayoutServerLoad = async ({ locals, url, untrack, depends }) => {
+	depends('app:shell');
+
 	if (!locals.user) {
 		const redirectTo = untrack(() => encodeURIComponent(url.pathname + url.search));
 		redirect(303, `/login?redirectTo=${redirectTo}`);

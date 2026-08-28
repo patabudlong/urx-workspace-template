@@ -52,6 +52,37 @@ import { jsonOk } from '$lib/server/api/response';
 - Mobile: HTTPS JSON to `/api/v1/*` with Bearer JWT (not cookie-only auth).
 - Shared contracts in `$lib/shared/**` for cross-platform type alignment.
 
+## Client bundle safety (critical)
+
+SvelteKit ships some server-adjacent code to the **browser**. A single bad import can break **all** client JS (clicks, sheets, client-side navigation).
+
+| Ships to client | Never import |
+|-----------------|--------------|
+| `src/params/**/*.ts` (route param matchers → `matchers.js`) | `mongodb`, `$lib/server/**`, Node built-ins |
+| `src/lib/shared/**` | `mongodb` (runtime), `$lib/server/**` |
+| `.svelte` / `+page.ts` / `+layout.ts` | `$lib/server/**`, `mongodb` |
+
+```typescript
+// ❌ BREAKS THE ENTIRE APP — matchers are bundled for the client
+// src/params/objectId.ts
+import { ObjectId } from 'mongodb';
+
+// ✅ Client-safe param matcher
+import { isObjectIdString } from '$lib/shared/object-id';
+
+export function match(param: string): boolean {
+	return isObjectIdString(param);
+}
+```
+
+**Symptoms of a server import in client code:**
+
+- Browser console: `Class extends value undefined is not a constructor or null` (often from `mongodb.js`)
+- Overlays/sheets/profile panels don’t open; buttons feel dead
+- Navigation falls back to full page reloads or the app shell “fully re-renders”
+
+**Layout loads:** In `+layout.server.ts`, wrap `url` reads in `untrack()` when pathname must not invalidate the layout (see `(app)/+layout.server.ts`). Otherwise Mongo/auth shell queries re-run on every client navigation.
+
 ## Database engineering (MongoDB)
 
 - Connection: `src/lib/server/db/client.ts` (singleton, hot-reload safe).
@@ -91,7 +122,7 @@ import { jsonOk } from '$lib/server/api/response';
 
 ## Definition of done
 
-1. No `$lib/server` or `mongodb` in client-eligible code.
+1. No `$lib/server` or `mongodb` in client-eligible code (including `src/params/**`).
 2. API responses use standard envelope. Inputs validated with Zod.
 3. Queries use projections; indexes considered; lists paginated.
 4. Mobile-breaking API changes require new version prefix (`v2`).

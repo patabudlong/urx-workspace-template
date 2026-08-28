@@ -37,7 +37,8 @@ export const POST: RequestHandler = async (event) => {
 
 	const result = await processPayrollRunForWorkspace({
 		workspaceId: context.workspace.workspaceId,
-		runId: parsedParams.data.id
+		runId: parsedParams.data.id,
+		userId: locals.user?.id
 	});
 
 	if (!result.ok) {

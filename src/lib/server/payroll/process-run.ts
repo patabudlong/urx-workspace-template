@@ -22,6 +22,7 @@ import {
 import type { PayrollPayslipDocument } from '$lib/shared/models/payroll-payslip';
 import type { PayrollRunDto } from '$lib/shared/models/payroll-run';
 import { ObjectId } from 'mongodb';
+import { postPayrollJournalForCompletedRun } from '$lib/server/accounting/post-payroll-journal';
 
 export type ProcessPayrollRunResult =
 	| { ok: true; run: PayrollRunDto }
@@ -30,6 +31,7 @@ export type ProcessPayrollRunResult =
 export async function processPayrollRunForWorkspace(input: {
 	workspaceId: string;
 	runId: string;
+	userId?: string;
 }): Promise<ProcessPayrollRunResult> {
 	const run = await getPayrollRunDocumentForWorkspace({
 		workspaceId: input.workspaceId,
@@ -167,6 +169,18 @@ export async function processPayrollRunForWorkspace(input: {
 
 		if (!completed) {
 			return { ok: false, code: 'FAILED' };
+		}
+
+		if (input.userId) {
+			try {
+				await postPayrollJournalForCompletedRun({
+					workspaceId: input.workspaceId,
+					runId: input.runId,
+					userId: input.userId
+				});
+			} catch {
+				// Payroll completion is authoritative; journal posting can be corrected manually.
+			}
 		}
 
 		return { ok: true, run: completed };

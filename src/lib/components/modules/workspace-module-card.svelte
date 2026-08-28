@@ -5,6 +5,7 @@
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import { Switch } from '$lib/components/ui/switch/index.js';
+	import ModuleIntegrationSettingsDialog from '$lib/components/modules/module-integration-settings-dialog.svelte';
 	import {
 		WORKSPACE_MODULE_TRIAL_NOTICE_DESCRIPTION,
 		WORKSPACE_MODULE_TRIAL_NOTICE_TITLE
@@ -22,7 +23,6 @@
 		icon: Icon,
 		iconClass,
 		enabled,
-		settingsHref,
 		moduleHref,
 		helperText,
 		onToggle
@@ -31,13 +31,13 @@
 		icon: Component;
 		iconClass: string;
 		enabled: boolean;
-		settingsHref: string;
 		moduleHref: string;
 		helperText?: string;
 		onToggle: (enabled: boolean) => void;
 	} = $props();
 
 	let detailsOpen = $state(false);
+	let integrationSettingsOpen = $state(false);
 </script>
 
 <Card.Root class="h-full gap-0 py-0">
@@ -92,9 +92,10 @@
 			<Button
 				variant="outline"
 				size="icon-sm"
-				href={enabled ? settingsHref : undefined}
+				type="button"
 				disabled={!enabled}
 				aria-label={`${workspacePackage.label} settings`}
+				onclick={() => (integrationSettingsOpen = true)}
 			>
 				<SettingsIcon class="size-4" />
 			</Button>
@@ -161,3 +162,5 @@
 		</div>
 	</Sheet.Content>
 </Sheet.Root>
+
+<ModuleIntegrationSettingsDialog bind:open={integrationSettingsOpen} {workspacePackage} />

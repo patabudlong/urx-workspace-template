@@ -14,6 +14,7 @@ export const CollectionNames = {
 	twoFactorOtpTokens: 'two_factor_otp_tokens',
 	securityEvents: 'security_events',
 	notifications: 'notifications',
+	workspaceModuleIntegrationCredentials: 'workspace_module_integration_credentials',
 // urixoft-workspace-mailbox:collections:start
 	userMailboxCredentials: 'user_mailbox_credentials',
 // urixoft-workspace-mailbox:collections:end
@@ -29,6 +30,17 @@ export const CollectionNames = {
 	dtrWorkSchedules: 'dtr_work_schedules',
 	dtrHolidayCalendars: 'dtr_holiday_calendars',
 // urixoft-workspace-dtr:collections:end
+// urixoft-workspace-accounting:collections:start
+	accountingSettings: 'accounting_settings',
+	accountingPeriods: 'accounting_periods',
+	accountingAccounts: 'accounting_accounts',
+	accountingJournalEntries: 'accounting_journal_entries',
+// urixoft-workspace-accounting:collections:end
+// urixoft-workspace-crm:collections:start
+	crmContacts: 'crm_contacts',
+	crmCompanies: 'crm_companies',
+	crmDeals: 'crm_deals'
+// urixoft-workspace-crm:collections:end
 } as const;
 
 type CollectionName = keyof typeof CollectionNames;
@@ -101,6 +113,12 @@ export async function getNotificationsCollection<T extends Document = Document>(
 > {
 	return getCollection<T>('notifications');
 }
+
+export async function getWorkspaceModuleIntegrationCredentialsCollection<
+	T extends Document = Document
+>(): Promise<Collection<T>> {
+	return getCollection<T>('workspaceModuleIntegrationCredentials');
+}
 // urixoft-workspace-mailbox:getter:start
 export async function getUserMailboxCredentialsCollection<T extends Document = Document>(): Promise<Collection<T>> {
 	return getCollection<T>('userMailboxCredentials');
@@ -140,3 +158,33 @@ export async function getDtrHolidayCalendarsCollection<T extends Document = Docu
 	return getCollection<T>('dtrHolidayCalendars');
 }
 // urixoft-workspace-dtr:getter:end
+// urixoft-workspace-accounting:getter:start
+export async function getAccountingSettingsCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('accountingSettings');
+}
+
+export async function getAccountingPeriodsCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('accountingPeriods');
+}
+
+export async function getAccountingAccountsCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('accountingAccounts');
+}
+
+export async function getAccountingJournalEntriesCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('accountingJournalEntries');
+}
+// urixoft-workspace-accounting:getter:end
+// urixoft-workspace-crm:getter:start
+export async function getCrmContactsCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('crmContacts');
+}
+
+export async function getCrmCompaniesCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('crmCompanies');
+}
+
+export async function getCrmDealsCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('crmDeals');
+}
+// urixoft-workspace-crm:getter:end
