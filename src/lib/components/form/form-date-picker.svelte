@@ -9,8 +9,6 @@
 	import { Calendar } from '$lib/components/ui/calendar/index.js';
 	import * as Popover from '$lib/components/ui/popover/index.js';
 	import { cn } from '$lib/utils.js';
-	import CalendarIcon from '@lucide/svelte/icons/calendar';
-	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import { tick } from 'svelte';
 
 	let {
@@ -41,7 +39,7 @@
 	let triggerRef = $state<HTMLButtonElement | null>(null);
 	let selected = $state<CalendarDate | undefined>();
 
-	function parsePayrollDate(value: string): CalendarDate | undefined {
+	function parseIsoDate(value: string): CalendarDate | undefined {
 		if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
 			return undefined;
 		}
@@ -54,7 +52,7 @@
 	}
 
 	$effect(() => {
-		const next = parsePayrollDate(value);
+		const next = parseIsoDate(value);
 
 		if ((next?.toString() ?? '') !== (selected?.toString() ?? '')) {
 			selected = next;
@@ -94,17 +92,13 @@
 				aria-invalid={ariaInvalid}
 				aria-describedby={ariaDescribedBy}
 				class={cn(
-					'h-10 w-full justify-between px-3 font-normal',
+					'h-10 w-full justify-start px-3 font-normal',
 					!selected && 'text-muted-foreground',
 					'aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40',
 					className
 				)}
 			>
-				<span class="flex min-w-0 items-center gap-2 truncate">
-					<CalendarIcon class="size-4 shrink-0 opacity-50" aria-hidden="true" />
-					{displayLabel}
-				</span>
-				<ChevronDownIcon class="size-4 shrink-0 opacity-50" aria-hidden="true" />
+				<span class="truncate">{displayLabel}</span>
 			</Button>
 		{/snippet}
 	</Popover.Trigger>

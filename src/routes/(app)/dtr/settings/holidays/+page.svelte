@@ -1,5 +1,6 @@
 <script lang="ts">
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
+	import FormDatePicker from '$lib/components/form/form-date-picker.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import DtrHolidayYearOverview from '$lib/components/dtr/dtr-holiday-year-overview.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -158,19 +159,6 @@
 			(holiday) => holiday.name.trim().length > 0 && holiday.date.trim().length > 0
 		);
 	}
-
-	function formatDisplayDate(date: string): string {
-		if (!date.trim()) {
-			return '—';
-		}
-
-		const [year, month, day] = date.split('-').map(Number);
-		return new Intl.DateTimeFormat(undefined, {
-			month: 'short',
-			day: 'numeric',
-			year: 'numeric'
-		}).format(new Date(year, month - 1, day));
-	}
 </script>
 
 <div class="flex w-full min-w-0 flex-col gap-8">
@@ -325,16 +313,11 @@
 									{@const index = row.originalIndex}
 									<Table.Row>
 										<Table.Cell class="align-top">
-											<Input
+											<FormDatePicker
 												bind:value={$form.holidays[index].date}
-												type="date"
-												class="h-10 bg-muted/30"
+												placeholder="Select date"
+												class="bg-muted/30"
 											/>
-											{#if $form.holidays[index].date.trim()}
-												<p class="text-muted-foreground mt-1 text-xs">
-													{formatDisplayDate($form.holidays[index].date)}
-												</p>
-											{/if}
 										</Table.Cell>
 										<Table.Cell class="align-top">
 											<Input bind:value={$form.holidays[index].name} class="h-10 bg-muted/30" />

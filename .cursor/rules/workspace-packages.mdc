@@ -64,6 +64,24 @@ Define needles/replacements in `package.manifest.json` — copy from an existing
 5. Update `src/lib/shared/openapi/v1.ts` in the **host** when adding API routes.
 6. After host edits, run `pnpm workspace:<module>:sync` to push changes back to the package repo.
 
+## Sample data (seeding) — required for list modules
+
+Modules with explorable records (CRM, Project Management, etc.) must ship **tagged sample data** like CRM:
+
+| Piece | Location |
+|-------|----------|
+| Seed templates | `$lib/server/<module>/seed-data.ts` |
+| Seed repository | `$lib/server/repositories/<module>-seed.ts` |
+| Shared types | `$lib/shared/<module>/seed.ts` (`*SeedStatus`, `*_SEED_SUMMARY`) |
+| Messages | `$lib/shared/<module>/messages.ts` (load/remove/fail copy) |
+| Settings UI | Load + remove buttons, confirm dialog, toasts |
+| API | `GET/POST/DELETE /api/v1/<module>/seed` |
+| Status API | Include `seedStatus` in `GET /api/v1/<module>/status` |
+| Client onboarding | Tokenized invite email + public form route + responses on project detail |
+| Documents | Tag inserts with `isSeed: true`; delete only `{ isSeed: true }` |
+
+Reference: `urx-crm-package` (`crm-seed.ts`, `crm-delete-seed-dialog.svelte`, `/api/v1/crm/seed`).
+
 ## Do not
 
 - Ship a module only in the template with no package repo.

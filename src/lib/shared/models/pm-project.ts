@@ -1,4 +1,6 @@
 import type { ObjectId } from 'mongodb';
+import type { PmProjectOnboarding, PmProjectOnboardingDocument } from '$lib/shared/models/pm-project-onboarding';
+import type { PmProjectType } from '$lib/shared/project-management/project-types';
 
 export const PM_PROJECT_STATUSES = {
 	PLANNING: 'planning',
@@ -17,11 +19,16 @@ export type PmProjectDocument = {
 	description: string | null;
 	status: PmProjectStatus;
 	clientName: string | null;
-	websiteUrl: string | null;
+	projectTypes: PmProjectType[];
+	projectUrl: string | null;
+	/** @deprecated Use projectUrl — kept for legacy documents */
+	websiteUrl?: string | null;
 	crmCompanyId: ObjectId | null;
 	crmContactId: ObjectId | null;
 	dueDate: Date | null;
 	notes: string | null;
+	onboarding: PmProjectOnboardingDocument | null;
+	isSeed?: boolean;
 	createdAt: Date;
 	updatedAt: Date;
 };
@@ -33,11 +40,13 @@ export type PmProjectDto = {
 	description: string | null;
 	status: PmProjectStatus;
 	clientName: string | null;
-	websiteUrl: string | null;
+	projectTypes: PmProjectType[];
+	projectUrl: string | null;
 	crmCompanyId: string | null;
 	crmContactId: string | null;
 	dueDate: string | null;
 	notes: string | null;
+	onboarding: PmProjectOnboarding | null;
 	createdAt: string;
 	updatedAt: string;
 };

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
+	import FormDatePicker from '$lib/components/form/form-date-picker.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -101,11 +102,11 @@
 
 				<div class="space-y-2">
 					<Label for="expectedCloseDate">Expected close date</Label>
-					<Input
+					<FormDatePicker
 						id="expectedCloseDate"
 						name="expectedCloseDate"
-						type="date"
 						bind:value={$form.expectedCloseDate}
+						placeholder="Select close date"
 					/>
 				</div>
 

@@ -5,6 +5,7 @@ import {
 	countActivePmProjectsForWorkspace,
 	countPmProjectsForWorkspace
 } from '$lib/server/repositories/pm-projects';
+import { getPmSeedStatusForWorkspace } from '$lib/server/repositories/pm-seed';
 
 export const GET: RequestHandler = async ({ locals, request, url }) => {
 	const requestId = request.headers.get('x-request-id') ?? undefined;
@@ -19,9 +20,10 @@ export const GET: RequestHandler = async ({ locals, request, url }) => {
 	}
 
 	const workspaceId = context.workspace.workspaceId;
-	const [projectCount, activeProjectCount] = await Promise.all([
+	const [projectCount, activeProjectCount, seedStatus] = await Promise.all([
 		countPmProjectsForWorkspace(workspaceId),
-		countActivePmProjectsForWorkspace(workspaceId)
+		countActivePmProjectsForWorkspace(workspaceId),
+		getPmSeedStatusForWorkspace(workspaceId)
 	]);
 
 	return jsonOk(
@@ -29,7 +31,8 @@ export const GET: RequestHandler = async ({ locals, request, url }) => {
 			enabled: true,
 			workspaceId,
 			projectCount,
-			activeProjectCount
+			activeProjectCount,
+			seedStatus
 		},
 		{ requestId }
 	);

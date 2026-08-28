@@ -35,7 +35,7 @@
 	<PageHeader
 		eyebrow="Project Management"
 		title="Overview"
-		description="Plan client website projects, track delivery status, and coordinate onboarding follow-ups."
+		description="Plan client projects, track delivery status, and coordinate onboarding follow-ups."
 	>
 		{#snippet actions()}
 			<Button href="/project-management/projects" variant="outline" class="h-10">Projects</Button>
@@ -50,7 +50,7 @@
 		<Card.Root>
 			<Card.Header>
 				<Card.Title>All projects</Card.Title>
-				<Card.Description>Client website and delivery projects in this workspace.</Card.Description>
+				<Card.Description>Client delivery projects in this workspace.</Card.Description>
 			</Card.Header>
 			<Card.Content>
 				{#if projectCount === null}

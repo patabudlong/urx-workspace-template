@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SingleFieldErrors from '$lib/components/auth/single-field-errors.svelte';
+	import FormDatePicker from '$lib/components/form/form-date-picker.svelte';
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -226,7 +227,13 @@
 							<Form.Control>
 								{#snippet children({ props })}
 									<Form.Label required>Period anchor date</Form.Label>
-									<Input {...props} bind:value={$form.periodAnchorDate} type="date" />
+									<FormDatePicker
+										id={props.id}
+										name={props.name}
+										aria-invalid={props['aria-invalid']}
+										aria-describedby={props['aria-describedby']}
+										bind:value={$form.periodAnchorDate}
+									/>
 								{/snippet}
 							</Form.Control>
 							<SingleFieldErrors />

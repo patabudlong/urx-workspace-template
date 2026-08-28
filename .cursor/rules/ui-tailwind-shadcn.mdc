@@ -289,6 +289,80 @@ import StatusAlert from '$lib/components/status-alert.svelte';
 - **Alert copy** — prefer structured `title` + `description` mappings in `$lib/shared/auth-messages.ts`. Title = short headline; description = supporting detail or next step. Unmapped messages fall back to `AUTH_ALERT_FALLBACK_TITLE` + message as description.
 - Icons: `class="size-4 shrink-0"` in the component; `aria-hidden="true"` on decorative icons. `role="alert"` for danger/warning; `role="status"` for info/success/plain.
 
+## Toast + StatusAlert (paired feedback)
+
+**Always pair `StatusAlert` with a toast** for action feedback on app pages (settings, forms, CRUD). Inline alerts scroll away; toasts stay visible without scrolling to the top.
+
+| Layer | Role |
+|-------|------|
+| **`StatusAlert`** | Persistent context on the page — headline + detail near the form or section |
+| **`toast` (`svelte-sonner`)** | Immediate, viewport-fixed confirmation or error — same title + description |
+
+**When to use both:**
+- Form save / update success or failure (superforms `onUpdated`, or `$effect` on `form.message`)
+- Query-param banners (`?updated=1`, `?deleted=1`) — show toast **and** keep the inline `StatusAlert`
+- Invite sent, seed loaded/removed, delete confirmed, etc.
+
+**When toast alone is enough:** Ephemeral actions with no lasting page state (e.g. copy-to-clipboard). Prefer both when an alert is already shown.
+
+```svelte
+import { toast } from 'svelte-sonner';
+import StatusAlert from '$lib/components/status-alert.svelte';
+
+// superforms success
+onUpdated: async ({ form: updatedForm }) => {
+	submitting = false;
+	if (updatedForm.message === SETTINGS_SAVED_MESSAGE) {
+		toast.success('Settings saved', { description: SETTINGS_SAVED_MESSAGE });
+		await invalidateAll();
+		return;
+	}
+	if (typeof updatedForm.message === 'string' && updatedForm.message.length > 0) {
+		toast.error('Could not save settings', { description: updatedForm.message });
+	}
+}
+
+// query-param success (keep StatusAlert in markup too)
+$effect(() => {
+	if (page.url.searchParams.get('updated') === '1') {
+		toast.success('Project updated', { description: PM_PROJECT_UPDATED_MESSAGE });
+	}
+});
+```
+
+```svelte
+<!-- ✅ Both — user sees toast immediately and alert in page context -->
+{#if showSuccess}
+	<StatusAlert variant="success" title="Project updated" description={PM_PROJECT_UPDATED_MESSAGE} />
+{/if}
+
+<!-- ❌ Alert only on long pages — easy to miss without scrolling up -->
+<StatusAlert variant="success" title="Invitation sent" description={PM_CLIENT_INVITE_SENT_MESSAGE} />
+```
+
+- Match toast **title** to `StatusAlert` `title`; put supporting copy in toast `description` / alert `description`.
+- Use `toast.success` for success/info confirmations, `toast.error` for failures, `toast.warning` for caution.
+- Do **not** remove `StatusAlert` when adding toasts — they complement each other.
+
+## Date fields (required)
+
+Never use native `<Input type="date" />` in app forms. Use **`FormDatePicker`** from `$lib/components/form/form-date-picker.svelte` (shadcn `Popover` + `Calendar` with month/year dropdowns).
+
+```svelte
+import FormDatePicker from '$lib/components/form/form-date-picker.svelte';
+
+<FormDatePicker
+	id="dueDate"
+	name="dueDate"
+	bind:value={$form.dueDate}
+	placeholder="Select date"
+/>
+```
+
+- Values are ISO strings (`YYYY-MM-DD`) for API/forms compatibility.
+- With `Form.Field`, pass through `id`, `name`, `aria-invalid`, and `aria-describedby` from `props`.
+- Use `minValue` / `maxValue` (`@internationalized/date`) for dependent ranges (see payroll runs).
+
 ## Red flags (reject in review)
 
 - New global CSS outside `layout.css`
@@ -303,6 +377,8 @@ import StatusAlert from '$lib/components/status-alert.svelte';
 - Auth alerts with unmapped copy and no entry in `$lib/shared/auth-messages.ts` when the message is reused
 - “Check your email” alerts using `variant="success"` or green styling — use `variant="info"`
 - Danger/error alerts using `circle-alert` — use `triangle-alert`
+- Action feedback with **only** `StatusAlert` and no matching `toast` — pair both per **Toast + StatusAlert** section
+- Native `type="date"` inputs — use `FormDatePicker` instead
 - `placeholder` on labeled `Input` / `Textarea` fields (use labels + helper text instead)
 - Multiple competing layout roots (second sidebar, second header provider)
 - `!` important utilities on shadcn components

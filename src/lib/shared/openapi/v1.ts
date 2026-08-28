@@ -75,7 +75,7 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 			},
 			{
 				name: 'Project Management',
-				description: 'Client website projects, delivery status, and onboarding follow-ups'
+				description: 'Client projects, delivery status, and onboarding follow-ups'
 			},
 			{
 				name: 'Modules',
@@ -3921,6 +3921,129 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 					}
 				}
 			},
+			'/project-management/seed': {
+				get: {
+					tags: ['Project Management'],
+					summary: 'Project Management sample data status',
+					description:
+						'Returns whether sample project data is loaded for the active workspace and current seed record counts.',
+					operationId: 'getPmSeedStatus',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Sample data status',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/PmSeedStatusSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Project Management access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				post: {
+					tags: ['Project Management'],
+					summary: 'Load Project Management sample data',
+					description:
+						'Inserts tagged sample projects for the active workspace. Fails if sample data is already loaded.',
+					operationId: 'seedPmWorkspace',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Sample data loaded',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/PmSeedStatusSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Project Management access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'409': {
+							description: 'Sample data already loaded',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				delete: {
+					tags: ['Project Management'],
+					summary: 'Remove Project Management sample data',
+					description:
+						'Deletes only tagged sample projects for the active workspace. User-created records are preserved.',
+					operationId: 'deletePmSeed',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Sample data removed',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/PmSeedStatusSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Project Management access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'No sample data found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
 			'/project-management/projects': {
 				get: {
 					tags: ['Project Management'],
@@ -4094,6 +4217,63 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 							content: {
 								'application/json': {
 									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'Project not found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Project Management access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				delete: {
+					tags: ['Project Management'],
+					summary: 'Delete project',
+					operationId: 'deletePmProject',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+					],
+					responses: {
+						'200': {
+							description: 'Project deleted',
+							content: {
+								'application/json': {
+									schema: {
+										type: 'object',
+										required: ['data', 'meta'],
+										properties: {
+											data: {
+												type: 'object',
+												required: ['deleted'],
+												properties: {
+													deleted: { type: 'boolean' }
+												}
+											},
+											meta: { $ref: '#/components/schemas/ApiMeta' }
+										}
+									}
 								}
 							}
 						},
@@ -6296,6 +6476,7 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						'workspaceId',
 						'title',
 						'status',
+						'projectTypes',
 						'createdAt',
 						'updatedAt'
 					],
@@ -6309,7 +6490,23 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 							enum: ['planning', 'active', 'on_hold', 'completed', 'cancelled']
 						},
 						clientName: { type: 'string', nullable: true },
-						websiteUrl: { type: 'string', nullable: true },
+						projectTypes: {
+							type: 'array',
+							items: {
+								type: 'string',
+								enum: [
+									'website',
+									'project',
+									'software',
+									'development',
+									'branding',
+									'marketing',
+									'consulting',
+									'other'
+								]
+							}
+						},
+						projectUrl: { type: 'string', nullable: true },
 						crmCompanyId: { type: 'string', nullable: true },
 						crmContactId: { type: 'string', nullable: true },
 						dueDate: { type: 'string', format: 'date-time', nullable: true },
@@ -6320,17 +6517,34 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 				},
 				PmStatus: {
 					type: 'object',
-					required: ['enabled', 'workspaceId', 'projectCount', 'activeProjectCount'],
+					required: ['enabled', 'workspaceId', 'projectCount', 'activeProjectCount', 'seedStatus'],
 					properties: {
 						enabled: { type: 'boolean' },
 						workspaceId: { type: 'string' },
 						projectCount: { type: 'integer', minimum: 0 },
-						activeProjectCount: { type: 'integer', minimum: 0 }
+						activeProjectCount: { type: 'integer', minimum: 0 },
+						seedStatus: { $ref: '#/components/schemas/PmSeedStatus' }
+					}
+				},
+				PmSeedStatus: {
+					type: 'object',
+					required: ['seeded', 'projectCount'],
+					properties: {
+						seeded: { type: 'boolean' },
+						projectCount: { type: 'integer', minimum: 0 }
+					}
+				},
+				PmSeedStatusSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/PmSeedStatus' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
 					}
 				},
 				PmProjectCreateRequest: {
 					type: 'object',
-					required: ['title'],
+					required: ['title', 'projectTypes'],
 					properties: {
 						title: { type: 'string', maxLength: 200 },
 						description: { type: 'string', nullable: true },
@@ -6340,7 +6554,24 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 							default: 'planning'
 						},
 						clientName: { type: 'string', nullable: true },
-						websiteUrl: { type: 'string', nullable: true },
+						projectTypes: {
+							type: 'array',
+							minItems: 1,
+							items: {
+								type: 'string',
+								enum: [
+									'website',
+									'project',
+									'software',
+									'development',
+									'branding',
+									'marketing',
+									'consulting',
+									'other'
+								]
+							}
+						},
+						projectUrl: { type: 'string', nullable: true },
 						crmCompanyId: { type: 'string', nullable: true },
 						crmContactId: { type: 'string', nullable: true },
 						dueDate: { type: 'string', format: 'date', nullable: true },
@@ -6357,7 +6588,24 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 							enum: ['planning', 'active', 'on_hold', 'completed', 'cancelled']
 						},
 						clientName: { type: 'string', nullable: true },
-						websiteUrl: { type: 'string', nullable: true },
+						projectTypes: {
+							type: 'array',
+							minItems: 1,
+							items: {
+								type: 'string',
+								enum: [
+									'website',
+									'project',
+									'software',
+									'development',
+									'branding',
+									'marketing',
+									'consulting',
+									'other'
+								]
+							}
+						},
+						projectUrl: { type: 'string', nullable: true },
 						dueDate: { type: 'string', format: 'date', nullable: true },
 						notes: { type: 'string', nullable: true }
 					}

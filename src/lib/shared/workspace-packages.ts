@@ -70,7 +70,7 @@ export const WORKSPACE_PACKAGE_CATALOG: WorkspacePackageMeta[] = [
 		id: WORKSPACE_PACKAGE_IDS.PROJECT_MANAGEMENT,
 		label: 'Project Management',
 		description:
-			'Plan client website projects, track delivery status, and manage onboarding follow-ups.'
+			'Plan client projects, track delivery status, and manage onboarding follow-ups.'
 	}
 ];
 

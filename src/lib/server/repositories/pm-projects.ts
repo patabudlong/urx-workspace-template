@@ -1,6 +1,8 @@
 import type { PmProjectDocument, PmProjectDto } from '$lib/shared/models/pm-project';
+import type { PmProjectOnboarding } from '$lib/shared/models/pm-project-onboarding';
 import { PM_PROJECT_STATUSES } from '$lib/shared/models/pm-project';
 import { getPmProjectsCollection } from '$lib/server/db/collections';
+import { normalizePmProjectTypes } from '$lib/shared/project-management/project-types';
 import { ObjectId } from 'mongodb';
 import type { CreatePmProjectInput, UpdatePmProjectInput } from '$lib/shared/project-management/schemas';
 
@@ -13,16 +15,38 @@ const PM_PROJECT_PROJECTION = {
 	description: 1,
 	status: 1,
 	clientName: 1,
+	projectTypes: 1,
+	projectUrl: 1,
 	websiteUrl: 1,
 	crmCompanyId: 1,
 	crmContactId: 1,
 	dueDate: 1,
 	notes: 1,
+	onboarding: 1,
 	createdAt: 1,
 	updatedAt: 1
 } as const;
 
+function mapOnboarding(
+	onboarding: NonNullable<PmProjectDocument['onboarding']>
+): PmProjectOnboarding {
+	return {
+		contactName: onboarding.contactName,
+		contactEmail: onboarding.contactEmail,
+		businessName: onboarding.businessName,
+		projectGoals: onboarding.projectGoals ?? onboarding.websiteGoals ?? '',
+		pagesNeeded: onboarding.pagesNeeded,
+		brandNotes: onboarding.brandNotes,
+		domainStatus: onboarding.domainStatus,
+		hostingPreference: onboarding.hostingPreference,
+		additionalNotes: onboarding.additionalNotes,
+		submittedAt: onboarding.submittedAt.toISOString()
+	};
+}
+
 function toPmProjectDto(doc: PmProjectDocument): PmProjectDto {
+	const legacyUrl = doc.projectUrl ?? doc.websiteUrl ?? null;
+
 	return {
 		id: doc._id.toString(),
 		workspaceId: doc.workspaceId.toString(),
@@ -30,11 +54,13 @@ function toPmProjectDto(doc: PmProjectDocument): PmProjectDto {
 		description: doc.description,
 		status: doc.status,
 		clientName: doc.clientName,
-		websiteUrl: doc.websiteUrl,
+		projectTypes: normalizePmProjectTypes(doc.projectTypes, legacyUrl),
+		projectUrl: legacyUrl,
 		crmCompanyId: doc.crmCompanyId?.toString() ?? null,
 		crmContactId: doc.crmContactId?.toString() ?? null,
 		dueDate: doc.dueDate?.toISOString() ?? null,
 		notes: doc.notes,
+		onboarding: doc.onboarding ? mapOnboarding(doc.onboarding) : null,
 		createdAt: doc.createdAt.toISOString(),
 		updatedAt: doc.updatedAt.toISOString()
 	};
@@ -90,6 +116,7 @@ export async function listPmProjects(input: {
 			{ title: pattern },
 			{ description: pattern },
 			{ clientName: pattern },
+			{ projectUrl: pattern },
 			{ websiteUrl: pattern },
 			{ notes: pattern }
 		];
@@ -127,11 +154,13 @@ export async function createPmProject(input: {
 		description: input.data.description ?? null,
 		status: input.data.status ?? PM_PROJECT_STATUSES.PLANNING,
 		clientName: input.data.clientName ?? null,
-		websiteUrl: input.data.websiteUrl ?? null,
+		projectTypes: input.data.projectTypes,
+		projectUrl: input.data.projectUrl ?? null,
 		crmCompanyId: input.data.crmCompanyId ? new ObjectId(input.data.crmCompanyId) : null,
 		crmContactId: input.data.crmContactId ? new ObjectId(input.data.crmContactId) : null,
 		dueDate: input.data.dueDate ? new Date(input.data.dueDate) : null,
 		notes: input.data.notes ?? null,
+		onboarding: null,
 		createdAt: now,
 		updatedAt: now
 	});
@@ -194,8 +223,12 @@ export async function updatePmProjectForWorkspace(input: {
 		updates.clientName = input.data.clientName;
 	}
 
-	if (input.data.websiteUrl !== undefined) {
-		updates.websiteUrl = input.data.websiteUrl;
+	if (input.data.projectTypes !== undefined) {
+		updates.projectTypes = input.data.projectTypes;
+	}
+
+	if (input.data.projectUrl !== undefined) {
+		updates.projectUrl = input.data.projectUrl;
 	}
 
 	if (input.data.notes !== undefined) {
@@ -217,4 +250,55 @@ export async function updatePmProjectForWorkspace(input: {
 	);
 
 	return result ? toPmProjectDto(result) : null;
+}
+
+export async function savePmProjectOnboarding(input: {
+	workspaceId: string;
+	projectId: string;
+	onboarding: PmProjectOnboarding;
+	clientName?: string | null;
+}): Promise<PmProjectDto | null> {
+	await ensurePmProjectIndexes();
+
+	const collection = await getPmProjectsCollection<PmProjectDocument>();
+	const now = new Date();
+	const onboardingDocument = {
+		...input.onboarding,
+		submittedAt: new Date(input.onboarding.submittedAt)
+	};
+
+	const updates: Partial<PmProjectDocument> = {
+		onboarding: onboardingDocument,
+		updatedAt: now
+	};
+
+	if (input.clientName) {
+		updates.clientName = input.clientName;
+	}
+
+	const result = await collection.findOneAndUpdate(
+		{
+			_id: new ObjectId(input.projectId),
+			workspaceId: new ObjectId(input.workspaceId)
+		},
+		{ $set: updates },
+		{ returnDocument: 'after', projection: PM_PROJECT_PROJECTION }
+	);
+
+	return result ? toPmProjectDto(result) : null;
+}
+
+export async function deletePmProjectForWorkspace(input: {
+	workspaceId: string;
+	projectId: string;
+}): Promise<boolean> {
+	await ensurePmProjectIndexes();
+
+	const collection = await getPmProjectsCollection();
+	const result = await collection.deleteOne({
+		_id: new ObjectId(input.projectId),
+		workspaceId: new ObjectId(input.workspaceId)
+	});
+
+	return result.deletedCount === 1;
 }

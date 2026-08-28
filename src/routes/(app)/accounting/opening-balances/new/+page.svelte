@@ -1,5 +1,6 @@
 <script lang="ts">
 	import PageHeader from '$lib/components/dashboard/page-header.svelte';
+	import FormDatePicker from '$lib/components/form/form-date-picker.svelte';
 	import StatusAlert from '$lib/components/status-alert.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -81,7 +82,7 @@
 
 				<div class="space-y-2">
 					<Label for="entryDate">Entry date</Label>
-					<Input id="entryDate" name="entryDate" type="date" bind:value={$form.entryDate} required />
+					<FormDatePicker id="entryDate" name="entryDate" bind:value={$form.entryDate} />
 				</div>
 
 				<div class="space-y-2">

@@ -20,7 +20,7 @@
 		<h2 class="text-sm font-semibold">Project Management</h2>
 	</div>
 	<p class="text-muted-foreground mt-1 text-sm leading-relaxed">
-		Plan client website projects and track delivery from kickoff to launch.
+		Plan client projects and track delivery from kickoff to completion.
 	</p>
 </Sidebar.Header>
 
