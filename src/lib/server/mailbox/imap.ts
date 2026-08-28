@@ -436,14 +436,17 @@ export async function getMailboxMessage(
 }
 
 const SPECIAL_FOLDER_FALLBACKS: Record<string, string[]> = {
+	'\\Sent': ['Sent', 'Sent Items', 'Sent Messages'],
 	'\\Archive': ['Archive', 'Archives'],
 	'\\Trash': ['Trash', 'Deleted', 'Deleted Messages'],
 	'\\Junk': ['Junk', 'Spam', 'Junk E-mail']
 };
 
+type ResolvableSpecialFolder = '\\Sent' | '\\Archive' | '\\Trash' | '\\Junk';
+
 function resolveSpecialFolderFromMailboxes(
 	mailboxes: { path?: string; name?: string; specialUse?: string | null }[],
-	specialUse: '\\Archive' | '\\Trash' | '\\Junk'
+	specialUse: ResolvableSpecialFolder
 ): string {
 	const match = mailboxes.find((mailbox) => mailbox.specialUse === specialUse);
 	if (match?.path) {
@@ -467,10 +470,19 @@ function resolveSpecialFolderFromMailboxes(
 
 async function resolveMailboxSpecialFolderPath(
 	userId: string,
-	specialUse: '\\Archive' | '\\Trash' | '\\Junk'
+	specialUse: Exclude<ResolvableSpecialFolder, '\\Sent'>
 ): Promise<string> {
 	const folders = await listMailboxFolders(userId);
 	return resolveSpecialFolderFromMailboxes(folders, specialUse);
+}
+
+/** Best-effort copy for outbound mail — delivery must not depend on this succeeding. */
+export async function appendMailboxSentMessage(userId: string, rawMessage: Buffer): Promise<void> {
+	return withImapClient(userId, async (client) => {
+		const mailboxes = await client.list();
+		const sentPath = resolveSpecialFolderFromMailboxes(mailboxes, '\\Sent');
+		await client.append(sentPath, rawMessage, ['\\Seen'], new Date());
+	});
 }
 
 export async function updateMailboxMessageFlags(

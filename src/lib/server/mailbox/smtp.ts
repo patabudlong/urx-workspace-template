@@ -1,4 +1,6 @@
+import nodemailer from 'nodemailer';
 import { getMailboxConfig } from './config';
+import { appendMailboxSentMessage } from './imap';
 import { createSmtpTransport } from './verify';
 import {
 	buildMailboxOutboundEmailHtml,
@@ -21,7 +23,6 @@ export async function sendMailboxMessage(
 		throw new Error('Mailbox is not configured');
 	}
 
-	const transport = createSmtpTransport(config);
 	const bodyHtml = input.html?.trim() || plainTextToMailboxBodyHtml(input.text);
 	const html = buildMailboxOutboundEmailHtml({
 		subject: input.subject,
@@ -29,8 +30,7 @@ export async function sendMailboxMessage(
 		requestOrigin: options.requestOrigin
 	});
 	const text = buildMailboxOutboundEmailText(input.text);
-
-	const info = await transport.sendMail({
+	const mailOptions = {
 		from: {
 			name: config.displayName,
 			address: config.email
@@ -42,7 +42,30 @@ export async function sendMailboxMessage(
 		subject: input.subject,
 		text,
 		html
+	};
+
+	const streamTransport = nodemailer.createTransport({
+		streamTransport: true,
+		buffer: true,
+		newline: 'unix'
+	});
+	const compiled = await streamTransport.sendMail(mailOptions);
+	const rawMessage = compiled.message;
+	if (!Buffer.isBuffer(rawMessage)) {
+		throw new Error('Failed to compile outbound message');
+	}
+
+	const transport = createSmtpTransport(config);
+	const info = await transport.sendMail({
+		envelope: compiled.envelope,
+		raw: rawMessage
 	});
 
-	return { messageId: info.messageId ?? null };
+	try {
+		await appendMailboxSentMessage(userId, rawMessage);
+	} catch {
+		// Delivery already succeeded; a missing Sent copy should not fail the send.
+	}
+
+	return { messageId: info.messageId ?? compiled.messageId ?? null };
 }

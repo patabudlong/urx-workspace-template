@@ -3,8 +3,8 @@
 	import {
 		encodeMailboxFolder,
 		formatMailboxDate,
-		getMailboxAddressInitials,
-		getMailboxAddressLabel
+		getMailboxMessageListInitials,
+		getMailboxMessageListLabel
 	} from '$lib/mailbox/utils';
 	import { prefetchMailboxMessage } from '$lib/mailbox/client';
 	import InboxIcon from '@lucide/svelte/icons/inbox';
@@ -43,8 +43,8 @@
 	<div class="flex flex-col gap-0.5 px-2 py-1.5 lg:px-3">
 		{#each messages as message (message.uid)}
 			{@const href = `/mailbox/${encodeMailboxFolder(folder)}/${message.uid}`}
-			{@const senderLabel = getMailboxAddressLabel(message.from)}
-			{@const senderInitials = getMailboxAddressInitials(message.from)}
+			{@const senderLabel = getMailboxMessageListLabel(message, folder)}
+			{@const senderInitials = getMailboxMessageListInitials(message, folder)}
 			{@const isActive = activeUid === message.uid}
 			<a
 				{href}

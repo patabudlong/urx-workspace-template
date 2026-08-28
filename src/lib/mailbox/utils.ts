@@ -56,6 +56,19 @@ export function isMailboxInboxFolder(folder: MailboxFolder): boolean {
 	return folder.specialUse === '\\Inbox' || isMailboxInboxPath(folder.path);
 }
 
+export function isMailboxSentPath(path: string): boolean {
+	const normalized = path.trim().toLowerCase();
+	return normalized === 'sent' || normalized.endsWith('.sent') || normalized.endsWith('/sent');
+}
+
+export function isMailboxSentFolder(folder: MailboxFolder | string): boolean {
+	if (typeof folder === 'string') {
+		return isMailboxSentPath(folder);
+	}
+
+	return folder.specialUse === '\\Sent' || isMailboxSentPath(folder.path);
+}
+
 export function findMailboxInboxFolder(folders: MailboxFolder[]): MailboxFolder | undefined {
 	return folders.find(isMailboxInboxFolder);
 }
@@ -185,6 +198,25 @@ export function getMailboxAddressLabel(value: string): string {
 	}
 
 	return email || name || 'Unknown sender';
+}
+
+export function getMailboxMessageListLabel(
+	message: MailboxMessageSummary,
+	folder: MailboxFolder | string
+): string {
+	if (isMailboxSentFolder(folder)) {
+		const recipients = message.to.join(', ').trim();
+		return recipients ? getMailboxAddressLabel(recipients) : 'No recipients';
+	}
+
+	return getMailboxAddressLabel(message.from);
+}
+
+export function getMailboxMessageListInitials(
+	message: MailboxMessageSummary,
+	folder: MailboxFolder | string
+): string {
+	return getMailboxAddressInitials(getMailboxMessageListLabel(message, folder));
 }
 
 export function getMailboxAddressInitials(value: string): string {

@@ -103,7 +103,7 @@
 	<PageHeader
 		eyebrow="Mailbox"
 		title="Compose"
-		description="Send a message through your connected mailbox. Outbound mail is sent via SMTP and not stored in MongoDB."
+		description="Send a message through your connected mailbox. Delivered via SMTP and saved to your Sent folder."
 	>
 		{#snippet actions()}
 			<Button href="/mailbox/INBOX" variant="outline" class="h-10">
