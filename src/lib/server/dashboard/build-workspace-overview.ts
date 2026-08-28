@@ -23,8 +23,11 @@ const PACKAGE_MODULE_HREFS: Record<WorkspacePackageId, string> = {
 // urixoft-workspace-accounting:dashboard-href:start
 	[WORKSPACE_PACKAGE_IDS.ACCOUNTING]: '/accounting',
 // urixoft-workspace-crm:dashboard-href:start
-	[WORKSPACE_PACKAGE_IDS.CRM]: '/crm'
+	[WORKSPACE_PACKAGE_IDS.CRM]: '/crm',
 // urixoft-workspace-crm:dashboard-href:end
+// urx-project_management-package:dashboard-href:start
+	[WORKSPACE_PACKAGE_IDS.PROJECT_MANAGEMENT]: '/project-management'
+// urx-project_management-package:dashboard-href:end
 // urixoft-workspace-accounting:dashboard-href:end
 };
 

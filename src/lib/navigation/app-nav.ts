@@ -98,6 +98,15 @@ export const APP_NAV_GROUPS: AppNavGroup[] = [
 				packageId: 'urixoft-workspace-crm'
 			},
 // urixoft-workspace-crm:end
+// urx-project_management-package:start
+			{
+				title: 'Projects',
+				href: '/project-management',
+				icon: SOLAR.projectManagement,
+				match: 'prefix',
+				packageId: 'urx-project_management-package'
+			},
+// urx-project_management-package:end
 		]
 	},
 	{

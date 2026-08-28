@@ -6,7 +6,10 @@ export const WORKSPACE_MODULE_DEFAULT_AUTH_BASE_URIS: Partial<Record<WorkspacePa
 	[WORKSPACE_PACKAGE_IDS.PAYROLL]: 'https://api.urixoft.com',
 	[WORKSPACE_PACKAGE_IDS.DTR]: 'https://api.urixoft.com',
 	[WORKSPACE_PACKAGE_IDS.ACCOUNTING]: 'https://api.urixoft.com',
-	[WORKSPACE_PACKAGE_IDS.CRM]: 'https://api.urixoft.com'
+	[WORKSPACE_PACKAGE_IDS.CRM]: 'https://api.urixoft.com',
+// urx-project_management-package:module-integrations:start
+	[WORKSPACE_PACKAGE_IDS.PROJECT_MANAGEMENT]: 'https://api.urixoft.com'
+// urx-project_management-package:module-integrations:end
 };
 
 export const workspaceModuleIntegrationAuthBaseUriSchema = z.object({

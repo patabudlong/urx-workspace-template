@@ -3,6 +3,9 @@
 // urixoft-workspace-crm:modules-import:start
 	import CrmModuleIcon from '$lib/components/crm/crm-module-icon.svelte';
 // urixoft-workspace-crm:modules-import:end
+// urx-project_management-package:modules-import:start
+	import PmModuleIcon from '$lib/components/project-management/pm-module-icon.svelte';
+// urx-project_management-package:modules-import:end
 	import CalculatorIcon from '@lucide/svelte/icons/calculator';
 // urixoft-workspace-accounting:modules-import:end
 	import { invalidateAll } from '$app/navigation';
@@ -41,8 +44,11 @@
 // urixoft-workspace-accounting:modules-icons:start
 		[WORKSPACE_PACKAGE_IDS.ACCOUNTING]: CalculatorIcon,
 // urixoft-workspace-crm:modules-icons:start
-		[WORKSPACE_PACKAGE_IDS.CRM]: CrmModuleIcon
+		[WORKSPACE_PACKAGE_IDS.CRM]: CrmModuleIcon,
 // urixoft-workspace-crm:modules-icons:end
+// urx-project_management-package:modules-icons:start
+		[WORKSPACE_PACKAGE_IDS.PROJECT_MANAGEMENT]: PmModuleIcon
+// urx-project_management-package:modules-icons:end
 // urixoft-workspace-accounting:modules-icons:end
 	};
 
@@ -53,8 +59,11 @@
 // urixoft-workspace-accounting:modules-icon-classes:start
 		[WORKSPACE_PACKAGE_IDS.ACCOUNTING]: 'size-8 text-amber-600 dark:text-amber-400',
 // urixoft-workspace-crm:modules-icon-classes:start
-		[WORKSPACE_PACKAGE_IDS.CRM]: 'size-8 text-sky-600 dark:text-sky-400'
+		[WORKSPACE_PACKAGE_IDS.CRM]: 'size-8 text-sky-600 dark:text-sky-400',
 // urixoft-workspace-crm:modules-icon-classes:end
+// urx-project_management-package:modules-icon-classes:start
+		[WORKSPACE_PACKAGE_IDS.PROJECT_MANAGEMENT]: 'size-8 text-indigo-600 dark:text-indigo-400'
+// urx-project_management-package:modules-icon-classes:end
 // urixoft-workspace-accounting:modules-icon-classes:end
 	};
 
@@ -65,8 +74,11 @@
 // urixoft-workspace-accounting:modules-hrefs:start
 		[WORKSPACE_PACKAGE_IDS.ACCOUNTING]: '/accounting',
 // urixoft-workspace-crm:modules-hrefs:start
-		[WORKSPACE_PACKAGE_IDS.CRM]: '/crm'
+		[WORKSPACE_PACKAGE_IDS.CRM]: '/crm',
 // urixoft-workspace-crm:modules-hrefs:end
+// urx-project_management-package:modules-hrefs:start
+		[WORKSPACE_PACKAGE_IDS.PROJECT_MANAGEMENT]: '/project-management'
+// urx-project_management-package:modules-hrefs:end
 // urixoft-workspace-accounting:modules-hrefs:end
 	};
 

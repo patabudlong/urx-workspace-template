@@ -39,8 +39,11 @@ export const CollectionNames = {
 // urixoft-workspace-crm:collections:start
 	crmContacts: 'crm_contacts',
 	crmCompanies: 'crm_companies',
-	crmDeals: 'crm_deals'
+	crmDeals: 'crm_deals',
 // urixoft-workspace-crm:collections:end
+// urx-project_management-package:collections:start
+	pmProjects: 'pm_projects'
+// urx-project_management-package:collections:end
 } as const;
 
 type CollectionName = keyof typeof CollectionNames;
@@ -188,3 +191,8 @@ export async function getCrmDealsCollection<T extends Document = Document>(): Pr
 	return getCollection<T>('crmDeals');
 }
 // urixoft-workspace-crm:getter:end
+// urx-project_management-package:getter:start
+export async function getPmProjectsCollection<T extends Document = Document>(): Promise<Collection<T>> {
+	return getCollection<T>('pmProjects');
+}
+// urx-project_management-package:getter:end

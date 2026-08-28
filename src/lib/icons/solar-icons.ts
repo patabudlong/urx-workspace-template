@@ -10,6 +10,9 @@ export const SOLAR = {
 // urixoft-workspace-crm:icons:start
 	crm: 'lucide:handshake',
 // urixoft-workspace-crm:icons:end
+// urx-project_management-package:icons:start
+	projectManagement: 'solar:clipboard-list-linear',
+// urx-project_management-package:icons:end
 // urixoft-workspace-accounting:icons:end
 	apiDocs: 'solar:book-bookmark-linear',
 	health: 'solar:pulse-2-linear',

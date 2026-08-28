@@ -44,7 +44,10 @@
 		"workspace:accounting:uninstall": "node ../urx-accounting-package/bin/cli.mjs uninstall",
 		"workspace:crm:install": "node ../urx-crm-package/bin/cli.mjs install",
 		"workspace:crm:sync": "node ../urx-crm-package/bin/cli.mjs sync",
-		"workspace:crm:uninstall": "node ../urx-crm-package/bin/cli.mjs uninstall"
+		"workspace:crm:uninstall": "node ../urx-crm-package/bin/cli.mjs uninstall",
+		"workspace:project-management:install": "node ../urx-project_management-package/bin/cli.mjs install",
+		"workspace:project-management:sync": "node ../urx-project_management-package/bin/cli.mjs sync",
+		"workspace:project-management:uninstall": "node ../urx-project_management-package/bin/cli.mjs uninstall"
 	},
 	"devDependencies": {
 		"@internationalized/date": "^3.12.2",

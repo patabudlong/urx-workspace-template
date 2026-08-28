@@ -1,0 +1,71 @@
+---
+description: Workspace module packages must live in sibling repos and install via CLI
+alwaysApply: true
+---
+
+# Workspace Package Architecture
+
+Every workspace module (CRM, Payroll, Project Management, etc.) is a **separate sibling repo** — never built only inside `urx-workspace-template`.
+
+## Repo layout (required)
+
+```
+../urx-<module>-package/          # or ../urx-workspace-<module>/
+├── bin/cli.mjs                   # install | sync | uninstall
+├── lib/installer.mjs             # copy files + patch host markers
+├── package.manifest.json         # nav, collections, modules page, layout, …
+├── package.json
+├── README.md
+└── files/                        # source mirrored under host src/ paths
+    └── src/routes/(app)/…
+    └── src/lib/…
+```
+
+Examples: `urx-crm-package`, `urx-accounting-package`, `urx-project_management-package`, `urx-workspace-payroll`.
+
+## Host template (`urx-workspace-template`)
+
+- **Do not** add module routes, repositories, or UI only in the template.
+- Install from the package repo:
+
+```bash
+pnpm workspace:<module>:install   # e.g. workspace:project-management:install
+pnpm workspace:<module>:sync      # after editing installed files in host
+pnpm workspace:<module>:uninstall
+```
+
+- Package scripts in host `package.json` point to `../<package-repo>/bin/cli.mjs`.
+- Installed files are tracked in `.urx-packages/<package-id>.json`.
+
+## Integration patches (marker comments)
+
+The installer patches **host core files** with `// <package-id>:<area>:start/end` markers:
+
+| Area | Host file |
+|------|-----------|
+| Nav | `src/lib/navigation/app-nav.ts` |
+| Package catalog | `src/lib/shared/workspace-packages.ts` |
+| Collections | `src/lib/server/db/collections.ts` |
+| App layout nested sections | `src/routes/(app)/+layout.svelte` |
+| Modules page | `src/routes/(app)/modules/+page.svelte` |
+| Dashboard overview | `src/lib/server/dashboard/build-workspace-overview.ts` |
+| Icons | `src/lib/icons/solar-icons.ts`, `register-solar-icons.ts` |
+| Module integrations | `src/lib/shared/workspace-module-integrations.ts` |
+| Env | `.env.example` |
+
+Define needles/replacements in `package.manifest.json` — copy from an existing package.
+
+## Workflow for a new module
+
+1. Create sibling repo with `files/`, `bin/cli.mjs`, `lib/installer.mjs`, `package.manifest.json`.
+2. Add `workspace:<module>:{install,sync,uninstall}` scripts to host `package.json`.
+3. Implement module under `files/src/…` (routes, `$lib/server/repositories`, `$lib/shared`, API `/api/v1/<module>/*`).
+4. Run `pnpm workspace:<module>:install` from host to apply patches.
+5. Update `src/lib/shared/openapi/v1.ts` in the **host** when adding API routes.
+6. After host edits, run `pnpm workspace:<module>:sync` to push changes back to the package repo.
+
+## Do not
+
+- Ship a module only in the template with no package repo.
+- Skip `.urx-packages` manifest or install scripts.
+- Import `$lib/server/**` or `mongodb` from client-eligible code (see `sveltekit-mongodb-engineering.mdc`).

@@ -204,6 +204,18 @@ flowchart TD
 - **List pagination (web)** — API paginates; web UI loads the first page only.
 - **Package manifest** — `.urx-packages/urixoft-workspace-payroll.json` may lag behind files added after install (employees, settings, deductions).
 
+### Project Management (`urx-project_management-package`)
+
+Client website projects and delivery tracking (`pm_projects`). Installed from the sibling `urx-project_management-package` repo.
+
+```sh
+pnpm workspace:project-management:install
+pnpm workspace:project-management:sync
+pnpm workspace:project-management:uninstall
+```
+
+Open **Projects** at `/project-management` (workspace owners and admins). API routes live under `/api/v1/project-management/*`.
+
 ## Dev credentials
 
 After `pnpm seed:user`:

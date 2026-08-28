@@ -38,8 +38,13 @@
 	// urixoft-workspace-crm:layout:start
 	const isCrmSection = $derived(pathname === '/crm' || pathname.startsWith('/crm/'));
 	// urixoft-workspace-crm:layout:end
+	// urx-project_management-package:layout:start
+	const isProjectManagementSection = $derived(
+		pathname === '/project-management' || pathname.startsWith('/project-management/')
+	);
+	// urx-project_management-package:layout:end
 	const isNestedAppSection = $derived(
-		isTeamSection || isSettingsSection || isMailboxSection || isPayrollSection || isDtrSection || isAccountingSection || isCrmSection
+		isTeamSection || isSettingsSection || isMailboxSection || isPayrollSection || isDtrSection || isAccountingSection || isCrmSection || isProjectManagementSection
 	);
 </script>
 

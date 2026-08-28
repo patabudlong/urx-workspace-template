@@ -7,6 +7,7 @@ import calendarDateLinear from '@iconify-icons/solar/calendar-date-linear';
 import calendarMarkLinear from '@iconify-icons/solar/calendar-mark-linear';
 import calculatorMinimalisticLinear from '@iconify-icons/solar/calculator-minimalistic-linear';
 import handshakeLinear from '@iconify-icons/lucide/handshake';
+import clipboardListLinear from '@iconify-icons/solar/clipboard-list-linear';
 import cardLinear from '@iconify-icons/solar/card-linear';
 import caseLinear from '@iconify-icons/solar/case-linear';
 import chatRoundCallLinear from '@iconify-icons/solar/chat-round-call-linear';
@@ -80,8 +81,11 @@ const registry: [string, typeof widget2Linear][] = [
 // urixoft-workspace-accounting:icon-registry:start
 	['solar:calculator-minimalistic-linear', calculatorMinimalisticLinear],
 // urixoft-workspace-crm:icon-registry:start
-	['lucide:handshake', handshakeLinear]
+	['lucide:handshake', handshakeLinear],
 // urixoft-workspace-crm:icon-registry:end
+// urx-project_management-package:icon-registry:start
+	['solar:clipboard-list-linear', clipboardListLinear]
+// urx-project_management-package:icon-registry:end
 // urixoft-workspace-accounting:icon-registry:end
 ];
 

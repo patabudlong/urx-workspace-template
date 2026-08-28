@@ -8,8 +8,11 @@ export const WORKSPACE_PACKAGE_IDS = {
 	ACCOUNTING: 'urixoft-workspace-accounting',
 // urixoft-workspace-accounting:workspace-packages:end
 // urixoft-workspace-crm:workspace-packages:start
-	CRM: 'urixoft-workspace-crm'
+	CRM: 'urixoft-workspace-crm',
 // urixoft-workspace-crm:workspace-packages:end
+// urx-project_management-package:workspace-packages:start
+	PROJECT_MANAGEMENT: 'urx-project_management-package'
+// urx-project_management-package:workspace-packages:end
 } as const;
 
 export type WorkspacePackageId =
@@ -20,7 +23,8 @@ export const workspacePackageIdSchema = z.enum([
 	WORKSPACE_PACKAGE_IDS.PAYROLL,
 	WORKSPACE_PACKAGE_IDS.DTR,
 	WORKSPACE_PACKAGE_IDS.ACCOUNTING,
-	WORKSPACE_PACKAGE_IDS.CRM
+	WORKSPACE_PACKAGE_IDS.CRM,
+	WORKSPACE_PACKAGE_IDS.PROJECT_MANAGEMENT
 ]);
 
 export const workspacePackageIdsSchema = z.array(workspacePackageIdSchema);
@@ -61,6 +65,12 @@ export const WORKSPACE_PACKAGE_CATALOG: WorkspacePackageMeta[] = [
 		label: 'CRM',
 		description:
 			'Track contacts, companies, and deals to manage customer relationships in your workspace.'
+	},
+	{
+		id: WORKSPACE_PACKAGE_IDS.PROJECT_MANAGEMENT,
+		label: 'Project Management',
+		description:
+			'Plan client website projects, track delivery status, and manage onboarding follow-ups.'
 	}
 ];
 

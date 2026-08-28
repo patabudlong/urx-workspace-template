@@ -74,6 +74,10 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 				description: 'Contacts, companies, and deals pipeline for customer relationship management'
 			},
 			{
+				name: 'Project Management',
+				description: 'Client website projects, delivery status, and onboarding follow-ups'
+			},
+			{
 				name: 'Modules',
 				description: 'Workspace module integration credentials'
 			}
@@ -3879,6 +3883,246 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						}
 					}
 				}
+			},
+			'/project-management/status': {
+				get: {
+					tags: ['Project Management'],
+					summary: 'Project Management module status',
+					description:
+						'Returns project counts for the active workspace. Requires workspace owner or admin role.',
+					operationId: 'getProjectManagementStatus',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Project Management status',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/PmStatusSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Project Management access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/project-management/projects': {
+				get: {
+					tags: ['Project Management'],
+					summary: 'List projects',
+					operationId: 'listPmProjects',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'page', in: 'query', schema: { type: 'integer', minimum: 1, default: 1 } },
+						{ name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 } },
+						{ name: 'search', in: 'query', schema: { type: 'string' } },
+						{
+							name: 'status',
+							in: 'query',
+							schema: {
+								type: 'string',
+								enum: ['planning', 'active', 'on_hold', 'completed', 'cancelled']
+							}
+						}
+					],
+					responses: {
+						'200': {
+							description: 'Paginated projects',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/PmProjectsPaginatedResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Project Management access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				post: {
+					tags: ['Project Management'],
+					summary: 'Create project',
+					operationId: 'createPmProject',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/PmProjectCreateRequest' }
+							}
+						}
+					},
+					responses: {
+						'201': {
+							description: 'Created project',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/PmProjectSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Project Management access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
+			'/project-management/projects/{id}': {
+				get: {
+					tags: ['Project Management'],
+					summary: 'Get project',
+					operationId: 'getPmProject',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+					],
+					responses: {
+						'200': {
+							description: 'Project',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/PmProjectSuccessResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'Project not found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Project Management access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				patch: {
+					tags: ['Project Management'],
+					summary: 'Update project',
+					operationId: 'updatePmProject',
+					security: [{ bearerAuth: [] }],
+					parameters: [
+						{ $ref: '#/components/parameters/XRequestId' },
+						{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+					],
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: { $ref: '#/components/schemas/PmProjectUpdateRequest' }
+							}
+						}
+					},
+					responses: {
+						'200': {
+							description: 'Updated project',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/PmProjectSuccessResponse' }
+								}
+							}
+						},
+						'400': {
+							description: 'Invalid request body',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'Project not found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'Project Management access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
 			}
 		},
 		components: {
@@ -6040,6 +6284,107 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						data: {
 							type: 'array',
 							items: { $ref: '#/components/schemas/CrmDeal' }
+						},
+						pagination: { $ref: '#/components/schemas/PaginationMeta' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				PmProject: {
+					type: 'object',
+					required: [
+						'id',
+						'workspaceId',
+						'title',
+						'status',
+						'createdAt',
+						'updatedAt'
+					],
+					properties: {
+						id: { type: 'string' },
+						workspaceId: { type: 'string' },
+						title: { type: 'string' },
+						description: { type: 'string', nullable: true },
+						status: {
+							type: 'string',
+							enum: ['planning', 'active', 'on_hold', 'completed', 'cancelled']
+						},
+						clientName: { type: 'string', nullable: true },
+						websiteUrl: { type: 'string', nullable: true },
+						crmCompanyId: { type: 'string', nullable: true },
+						crmContactId: { type: 'string', nullable: true },
+						dueDate: { type: 'string', format: 'date-time', nullable: true },
+						notes: { type: 'string', nullable: true },
+						createdAt: { type: 'string', format: 'date-time' },
+						updatedAt: { type: 'string', format: 'date-time' }
+					}
+				},
+				PmStatus: {
+					type: 'object',
+					required: ['enabled', 'workspaceId', 'projectCount', 'activeProjectCount'],
+					properties: {
+						enabled: { type: 'boolean' },
+						workspaceId: { type: 'string' },
+						projectCount: { type: 'integer', minimum: 0 },
+						activeProjectCount: { type: 'integer', minimum: 0 }
+					}
+				},
+				PmProjectCreateRequest: {
+					type: 'object',
+					required: ['title'],
+					properties: {
+						title: { type: 'string', maxLength: 200 },
+						description: { type: 'string', nullable: true },
+						status: {
+							type: 'string',
+							enum: ['planning', 'active', 'on_hold', 'completed', 'cancelled'],
+							default: 'planning'
+						},
+						clientName: { type: 'string', nullable: true },
+						websiteUrl: { type: 'string', nullable: true },
+						crmCompanyId: { type: 'string', nullable: true },
+						crmContactId: { type: 'string', nullable: true },
+						dueDate: { type: 'string', format: 'date', nullable: true },
+						notes: { type: 'string', nullable: true }
+					}
+				},
+				PmProjectUpdateRequest: {
+					type: 'object',
+					properties: {
+						title: { type: 'string', maxLength: 200 },
+						description: { type: 'string', nullable: true },
+						status: {
+							type: 'string',
+							enum: ['planning', 'active', 'on_hold', 'completed', 'cancelled']
+						},
+						clientName: { type: 'string', nullable: true },
+						websiteUrl: { type: 'string', nullable: true },
+						dueDate: { type: 'string', format: 'date', nullable: true },
+						notes: { type: 'string', nullable: true }
+					}
+				},
+				PmStatusSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/PmStatus' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				PmProjectSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/PmProject' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
+					}
+				},
+				PmProjectsPaginatedResponse: {
+					type: 'object',
+					required: ['data', 'pagination', 'meta'],
+					properties: {
+						data: {
+							type: 'array',
+							items: { $ref: '#/components/schemas/PmProject' }
 						},
 						pagination: { $ref: '#/components/schemas/PaginationMeta' },
 						meta: { $ref: '#/components/schemas/ApiMeta' }
