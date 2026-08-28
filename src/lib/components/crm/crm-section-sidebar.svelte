@@ -1,5 +1,6 @@
 <script lang="ts">
 	import AppIcon from '$lib/components/app-icon.svelte';
+	import CrmSettingsSectionMenu from '$lib/components/crm/crm-settings-section-menu.svelte';
 	import { isAppNavActive, type AppNavItem } from '$lib/navigation/app-nav';
 	import { SOLAR } from '$lib/icons/solar-icons';
 	import { cn } from '$lib/utils.js';
@@ -49,5 +50,7 @@
 				{/each}
 			</div>
 		</div>
+
+		<CrmSettingsSectionMenu />
 	</nav>
 </aside>

@@ -10,6 +10,7 @@ export type CrmContactDocument = {
 	title: string | null;
 	companyId: ObjectId | null;
 	notes: string | null;
+	isSeed?: boolean;
 	createdAt: Date;
 	updatedAt: Date;
 };

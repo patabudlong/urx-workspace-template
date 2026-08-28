@@ -22,6 +22,7 @@ export type CrmDealDocument = {
 	companyId: ObjectId | null;
 	expectedCloseDate: Date | null;
 	notes: string | null;
+	isSeed?: boolean;
 	createdAt: Date;
 	updatedAt: Date;
 };

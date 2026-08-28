@@ -4,6 +4,7 @@ import { requireCrmWorkspace } from '$lib/server/crm/api-context';
 import { countCrmCompaniesForWorkspace } from '$lib/server/repositories/crm-companies';
 import { countCrmContactsForWorkspace } from '$lib/server/repositories/crm-contacts';
 import { countCrmDealsForWorkspace, countOpenCrmDealsForWorkspace } from '$lib/server/repositories/crm-deals';
+import { getCrmSeedStatusForWorkspace } from '$lib/server/repositories/crm-seed';
 
 export const GET: RequestHandler = async ({ locals, request, url }) => {
 	const requestId = request.headers.get('x-request-id') ?? undefined;
@@ -18,11 +19,12 @@ export const GET: RequestHandler = async ({ locals, request, url }) => {
 	}
 
 	const workspaceId = context.workspace.workspaceId;
-	const [contactCount, companyCount, dealCount, openDealCount] = await Promise.all([
+	const [contactCount, companyCount, dealCount, openDealCount, seedStatus] = await Promise.all([
 		countCrmContactsForWorkspace(workspaceId),
 		countCrmCompaniesForWorkspace(workspaceId),
 		countCrmDealsForWorkspace(workspaceId),
-		countOpenCrmDealsForWorkspace(workspaceId)
+		countOpenCrmDealsForWorkspace(workspaceId),
+		getCrmSeedStatusForWorkspace(workspaceId)
 	]);
 
 	return jsonOk(
@@ -32,7 +34,8 @@ export const GET: RequestHandler = async ({ locals, request, url }) => {
 			contactCount,
 			companyCount,
 			dealCount,
-			openDealCount
+			openDealCount,
+			seedStatus
 		},
 		{ requestId }
 	);

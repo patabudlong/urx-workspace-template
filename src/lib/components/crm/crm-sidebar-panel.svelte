@@ -1,5 +1,6 @@
 <script lang="ts">
 	import AppIcon from '$lib/components/app-icon.svelte';
+	import CrmSettingsSidebarMenu from '$lib/components/crm/crm-settings-sidebar-menu.svelte';
 	import { page } from '$app/state';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { SOLAR } from '$lib/icons/solar-icons';
@@ -45,3 +46,9 @@
 		</Sidebar.Menu>
 	</Sidebar.Group>
 </Sidebar.Content>
+
+<Sidebar.Footer class="border-sidebar-border mt-auto shrink-0 border-t p-2">
+	<Sidebar.Menu>
+		<CrmSettingsSidebarMenu />
+	</Sidebar.Menu>
+</Sidebar.Footer>

@@ -3292,6 +3292,129 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 					}
 				}
 			},
+			'/crm/seed': {
+				get: {
+					tags: ['CRM'],
+					summary: 'CRM sample data status',
+					description:
+						'Returns whether sample CRM data is loaded for the active workspace and current seed record counts.',
+					operationId: 'getCrmSeedStatus',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'CRM sample data status',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmSeedStatusSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				post: {
+					tags: ['CRM'],
+					summary: 'Load CRM sample data',
+					description:
+						'Inserts tagged sample companies, contacts, and deals for the active workspace. Fails if sample data is already loaded.',
+					operationId: 'seedCrmWorkspace',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Sample data loaded',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmSeedStatusSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'409': {
+							description: 'Sample data already loaded',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				},
+				delete: {
+					tags: ['CRM'],
+					summary: 'Remove CRM sample data',
+					description:
+						'Deletes only tagged sample CRM records for the active workspace. User-created records are preserved.',
+					operationId: 'deleteCrmSeed',
+					security: [{ bearerAuth: [] }],
+					parameters: [{ $ref: '#/components/parameters/XRequestId' }],
+					responses: {
+						'200': {
+							description: 'Sample data removed',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/CrmSeedStatusSuccessResponse' }
+								}
+							}
+						},
+						'401': {
+							description: 'Authentication required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'403': {
+							description: 'CRM access required',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						},
+						'404': {
+							description: 'No sample data found',
+							content: {
+								'application/json': {
+									schema: { $ref: '#/components/schemas/ApiErrorResponse' }
+								}
+							}
+						}
+					}
+				}
+			},
 			'/crm/contacts': {
 				get: {
 					tags: ['CRM'],
@@ -5680,7 +5803,8 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						'contactCount',
 						'companyCount',
 						'dealCount',
-						'openDealCount'
+						'openDealCount',
+						'seedStatus'
 					],
 					properties: {
 						enabled: { type: 'boolean' },
@@ -5688,7 +5812,26 @@ export function createOpenApiV1Document(requestOrigin: string): OpenApiDocument 
 						contactCount: { type: 'integer', minimum: 0 },
 						companyCount: { type: 'integer', minimum: 0 },
 						dealCount: { type: 'integer', minimum: 0 },
-						openDealCount: { type: 'integer', minimum: 0 }
+						openDealCount: { type: 'integer', minimum: 0 },
+						seedStatus: { $ref: '#/components/schemas/CrmSeedStatus' }
+					}
+				},
+				CrmSeedStatus: {
+					type: 'object',
+					required: ['seeded', 'companyCount', 'contactCount', 'dealCount'],
+					properties: {
+						seeded: { type: 'boolean' },
+						companyCount: { type: 'integer', minimum: 0 },
+						contactCount: { type: 'integer', minimum: 0 },
+						dealCount: { type: 'integer', minimum: 0 }
+					}
+				},
+				CrmSeedStatusSuccessResponse: {
+					type: 'object',
+					required: ['data', 'meta'],
+					properties: {
+						data: { $ref: '#/components/schemas/CrmSeedStatus' },
+						meta: { $ref: '#/components/schemas/ApiMeta' }
 					}
 				},
 				CrmStatusSuccessResponse: {

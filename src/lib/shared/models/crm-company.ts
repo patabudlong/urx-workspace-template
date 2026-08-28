@@ -8,6 +8,7 @@ export type CrmCompanyDocument = {
 	industry: string | null;
 	phone: string | null;
 	notes: string | null;
+	isSeed?: boolean;
 	createdAt: Date;
 	updatedAt: Date;
 };

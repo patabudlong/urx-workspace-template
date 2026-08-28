@@ -2,6 +2,13 @@ import type { AppNavItem } from '$lib/navigation/app-nav';
 import { SOLAR } from '$lib/icons/solar-icons';
 import { canManageCrm } from '$lib/shared/crm/access';
 
+export const CRM_SETTINGS_NAV_ITEM: AppNavItem = {
+	title: 'Settings',
+	href: '/crm/settings',
+	icon: SOLAR.settings,
+	match: 'exact'
+};
+
 export const CRM_NAV_ITEMS: AppNavItem[] = [
 	{
 		title: 'Overview',
@@ -25,12 +32,6 @@ export const CRM_NAV_ITEMS: AppNavItem[] = [
 		title: 'Deals',
 		href: '/crm/deals',
 		icon: SOLAR.payroll,
-		match: 'exact'
-	},
-	{
-		title: 'Settings',
-		href: '/crm/settings',
-		icon: SOLAR.settings,
 		match: 'exact'
 	}
 ];
